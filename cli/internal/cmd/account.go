@@ -189,6 +189,21 @@ func (a *app) printAccount(x *api.Account) {
 		a.printf("             speech session %s\n", creditsPerMinute(*pr.SpeechPerMinuteMicrocredits))
 	}
 	a.printf("Preview clip %s credits\n", credits(int64(pr.PreviewClipMicrocredits)))
+	if g := pr.Generation; g != nil {
+		clip := ""
+		if g.ClipPerSecondMicrocredits != nil {
+			clip = " · clip " + credits(int64(*g.ClipPerSecondMicrocredits)) + "/s"
+		}
+		a.printf("Generation   portraits %s · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),
+			credits(int64(g.EnhancementsMicrocredits)), credits(int64(g.VoicesMicrocredits)), clip)
+	}
+	if g := pr.Generation; g != nil && g.ClipResolutions != nil && len(*g.ClipResolutions) > 0 {
+		sizes := make([]string, len(*g.ClipResolutions))
+		for i, r := range *g.ClipResolutions {
+			sizes[i] = fmt.Sprintf("%dx%d", r.Width, r.Height)
+		}
+		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(sizes, ", "))
+	}
 	q := x.CaptureQuota
 	a.printf("Captures     %d of %d queued or running\n", q.Pending, q.PendingLimit)
 	if po := x.Payouts; po != nil {

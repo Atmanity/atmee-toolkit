@@ -1,10 +1,10 @@
 ---
 name: create-avatar
-description: Build an Atmee talking avatar or digital twin - name, photo and voice, see it talk, then give it a character and test. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
+description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a short video clip. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
 license: Proprietary
 metadata:
   owner: Atmanity
-allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice
+allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip
 ---
 
 # Create an Atmee avatar
@@ -98,8 +98,8 @@ Read these before anything else, and keep them for the whole conversation.
    `replace_appearance` or `replace_voice`. Never download it and upload it
    again. Each one works for one avatar and expires 24 hours after it was
    made; its `url` is only for viewing, playing and saving a copy.
-3. **Never** delete an avatar, move credits, or start a paid session. The
-   creator tests the avatar on its own chat page (Step 4), not through you.
+3. **Never** delete an avatar or start a paid session, and move credits only
+   to sponsor an avatar when the creator asks and confirms. The creator tests the avatar on its own chat page (Step 4), not through you.
    Whenever anyone asks for a link to talk to the avatar, that chat page is
    the link: `links.chat` from `get_avatar` (`references/test-and-handover.md`,
    The avatar's links), not a LiveKit room from `start_session` or `session
@@ -181,10 +181,17 @@ every call (setup saves it for a sign-in that belongs to several accounts).
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
+  | `generate_clip` | a short video (up to 15 s) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
 
   If the server lists none of them, or `get_account` has no
   `pricing.generation`, say generation isn't available and work with the
   creator's own files.
+- **Sessions without video:** `start_speech_session`, `get_speech_session`
+  and `end_speech_session` give a developer's client a speech-to-speech
+  WebSocket. That is not how a person talks to the avatar: give them
+  `links.chat`.
+- **Sponsoring:** `grant_sponsor`, `update_sponsor` and `withdraw_sponsor`
+  work signed in and need `confirm: true` after asking.
 
 In claude.ai the server is a connector the creator adds; the atmee plugin
 adds it for its agents; anywhere else setup adds it
@@ -202,9 +209,14 @@ so the creator always knows where they are and what is left.
    `atmee-setup` skill): it adds the atmee server if it is missing, checks
    sign-in, the account, credits and the local setup in one pass, then comes
    back here.
-2. If `atmee-avatars/` exists in the project, list the saved avatars and offer
-   to continue one or start new (`references/iterations.md`, Resume).
-3. For a new avatar, say in two lines how it goes, then start step 1:
+2. If `atmee-avatars/clips/pending.json` exists, retry that clip first, as
+   Clips in `references/credits-and-generation.md` says.
+3. If the creator only wants a short video clip, not an avatar, skip the
+   rest of Start and the five steps: follow Clips there.
+4. If `atmee-avatars/` exists in the project, list the saved avatars, skipping
+   `clips`, and offer to continue one or start new
+   (`references/iterations.md`, Resume).
+5. For a new avatar, say in two lines how it goes, then start step 1:
    "Making an avatar takes 5 steps: **1 a name, a photo and a voice**, **2
    see it talk**, **3 give it a character**, **4 test it**, **5 hand it
    over**. Everything is saved as we go, so you can stop after any step."
@@ -231,7 +243,7 @@ length, the lip verdict, your note). Mark your pick in its heading:
 ### face_2 — short bob, freckles (Recommended)
 ![face_2.jpg](/Users/ana/project/atmee-avatars/mira-ab12cd34/media/faces/face_2.jpg)
 [Open face_2.jpg](file:///Users/ana/project/atmee-avatars/mira-ab12cd34/media/faces/face_2.jpg)
-Lips parted, face well inside the centre square.
+Lips parted, face well inside the centre crop.
 ```
 
 Never embed a server's https link instead: it expires, and Desktop hides

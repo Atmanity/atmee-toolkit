@@ -55,6 +55,9 @@ async function startSession() {
     ...(APP_TOOLS && { appTools: APP_TOOLS }),
     // visitorId: an unguessable id derived from YOUR user's session, only with
     // a key that has visitor memory; never a value taken from the page.
+    // welcome: false starts without the avatar's self-introduction, for an app
+    // that has already met the user.
+    // checkInAfterS: seconds of silence before it speaks up, 0 for no check-in.
   });
   if (r.status !== 201) {
     // The code is for the page; the message (which limit, which key) is for you.

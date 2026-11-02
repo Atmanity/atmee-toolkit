@@ -12,6 +12,7 @@ type (
 	Account     = avatarapi.Account
 	CurrentUser = avatarapi.CurrentCaller
 	Redemption  = avatarapi.CodeRedemption
+	Earnings    = avatarapi.AccountEarnings
 )
 
 // Balance is the account's credits: what a session can spend now, the
@@ -51,4 +52,14 @@ func (c *Client) Redeem(ctx context.Context, code string) (*Redemption, error) {
 		return nil, err
 	}
 	return decode[Redemption](r.HTTPResponse, r.Body, err)
+}
+
+// Earnings is the creator wallet: what monetized avatars earned, what was
+// paid out, and the balance between them.
+func (c *Client) Earnings(ctx context.Context) (*Earnings, error) {
+	r, err := c.gen.GetAccountEarningsWithResponse(ctx)
+	if r == nil {
+		return nil, err
+	}
+	return decode[Earnings](r.HTTPResponse, r.Body, err)
 }

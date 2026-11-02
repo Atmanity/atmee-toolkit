@@ -43,15 +43,18 @@ type app struct {
 	out, err io.Writer
 	in       io.Reader
 	store    creds.Store
+	variant  Variant
+	// rename puts the variant's names into text meant for people.
+	rename func(string) string
 	// mockScenario is the hidden --mock-scenario of the avatar commands.
 	mockScenario string
 }
 
 func (a *app) baseURL() string {
-	if u := strings.TrimSpace(os.Getenv("ATMEE_BASE_URL")); u != "" {
+	if u := strings.TrimSpace(os.Getenv(a.variant.BaseURLEnv)); u != "" {
 		return u
 	}
-	return api.DefaultBaseURL
+	return a.variant.BaseURL
 }
 
 func (a *app) api() (*api.Client, error) {
@@ -78,10 +81,11 @@ func (a *app) printJSON(v any) error {
 	return enc.Encode(v)
 }
 
-func (a *app) printf(format string, args ...any) { fmt.Fprintf(a.out, format, args...) }
+// printf renames the format only: the values are the user's or the API's.
+func (a *app) printf(format string, args ...any) { fmt.Fprintf(a.out, a.rename(format), args...) }
 
 // note goes to stderr so --json output stays clean.
-func (a *app) note(format string, args ...any) { fmt.Fprintf(a.err, format, args...) }
+func (a *app) note(format string, args ...any) { fmt.Fprintf(a.err, a.rename(format), args...) }
 
 // prompt reads one line; hidden input when stdin is a terminal.
 // confirm asks a yes/no question; anything but y or yes is "aborted".
@@ -121,12 +125,32 @@ var joinTimeout = api.JoinWaitTimeout
 
 // NewRoot builds the command tree.
 func NewRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
-	a := &app{out: out, err: errOut, in: in, store: creds.Default()}
+	return newApp(defaultVariant, out, errOut, in).root()
+}
+
+func newApp(v Variant, out, errOut io.Writer, in io.Reader) *app {
+	return &app{
+		out: out, err: errOut, in: in, variant: v,
+		store:  creds.In(v.HomeFolder, v.HomeEnv, v.APIKeyEnv),
+		rename: func(s string) string { return s },
+	}
+}
+
+// root builds the command tree, under the variant's names.
+func (a *app) root() *cobra.Command {
+	root := a.commands()
+	a.rename = a.variant.renamer(root)
+	renameTree(root, a.rename)
+	return root
+}
+
+// commands builds the command tree, its text written for atmee.
+func (a *app) commands() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "atmee",
+		Use:   a.variant.Name,
 		Short: "Atmee CLI — create and manage conversational avatars.",
 		Long: "Atmee CLI — create conversational avatars and talk to them.\n\n" +
-			"Every command calls the Atmee API at ATMEE_BASE_URL (default " + api.DefaultBaseURL + "; " +
+			"Every command calls the Atmee API at ATMEE_BASE_URL (default " + a.variant.BaseURL + "; " +
 			"a local mock is http://localhost:8091). Sign in first with " +
 			"`atmee login` (browser), or use an API key (`atmee login --api-key` or ATMEE_API_KEY).",
 		Example: `  atmee login
@@ -137,22 +161,33 @@ func NewRoot(out, errOut io.Writer, in io.Reader) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
-	root.SetOut(out)
-	root.SetErr(errOut)
-	root.SetIn(in)
+	root.SetOut(a.out)
+	root.SetErr(a.err)
+	root.SetIn(a.in)
 	root.AddCommand(a.loginCmd(), a.whoamiCmd(), a.logoutCmd(), a.balanceCmd(), a.accountCmd(), a.redeemCmd(), a.keysCmd(), a.avatarsCmd(), a.speechCmd())
+	root.AddCommand(a.earningsCmd(), a.generateCmd())
+	for _, extra := range a.variant.Extra {
+		root.AddCommand(extra(a))
+	}
 	return root
 }
 
 // Execute runs the CLI and returns the process exit code.
 func Execute(args []string, out, errOut io.Writer, in io.Reader) int {
-	root := NewRoot(out, errOut, in)
+	return ExecuteAs(defaultVariant, args, out, errOut, in)
+}
+
+// ExecuteAs runs the CLI as a variant and returns the process exit code.
+func ExecuteAs(v Variant, args []string, out, errOut io.Writer, in io.Reader) int {
+	a := newApp(v, out, errOut, in)
+	root := a.root()
 	root.SetArgs(args)
 	err := root.Execute()
 	if err == nil {
 		return 0
 	}
-	fmt.Fprintf(errOut, "Error: %v\n", err)
+	// Errors arrive whole, and their hints are built with the ids in them.
+	fmt.Fprintf(errOut, "Error: %s\n", a.rename(err.Error()))
 	var u usageError
 	if errors.As(err, &u) || strings.HasPrefix(err.Error(), "unknown ") || strings.Contains(err.Error(), "required flag") ||
 		strings.Contains(err.Error(), "accepts ") || strings.Contains(err.Error(), "invalid argument") {

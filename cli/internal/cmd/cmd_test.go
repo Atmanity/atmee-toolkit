@@ -468,6 +468,10 @@ func TestRuntimeSeedFlag(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
+		if r.Method == http.MethodGet { // the v2 access check
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		got = append(got, body)
@@ -530,6 +534,93 @@ func TestRuntimeSeedFromConfig(t *testing.T) {
 	}
 }
 
+// --resolution reaches the create and update bodies as the API's
+// {width, height}; a size the renderer cannot take, or one on a v1 create,
+// is refused before any request.
+func TestResolutionFlag(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	id := "11111111-2222-4333-8444-555555555555"
+	var got []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet { // the v2 access check
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		got = append(got, body)
+		if r.Method == http.MethodPost {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"avatarId":"` + id + `","kind":"conversational","status":"building","statusUrl":"/v1/avatars/` + id + `"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
+			`"engine":"v2","resolution":{"width":672,"height":384},"createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	if _, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--resolution", "384x672", "--json"); code != 0 {
+		t.Fatalf("create: %d %s", code, errOut)
+	}
+	out, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "672X384")
+	if code != 0 {
+		t.Fatalf("update: %d %s", code, errOut)
+	}
+	want := []map[string]any{{"width": float64(384), "height": float64(672)}, {"width": float64(672), "height": float64(384)}}
+	if len(got) != 2 || !reflect.DeepEqual(got[0]["resolution"], want[0]) || !reflect.DeepEqual(got[1]["resolution"], want[1]) {
+		t.Fatalf("bodies: %v", got)
+	}
+	if !strings.Contains(out, "Resolution: 672x384") {
+		t.Errorf("update output has no resolution:\n%s", out)
+	}
+	for _, bad := range [][]string{
+		{"avatars", "update", id, "--resolution", "1024x1024"}, // over 512x512 pixels
+		{"avatars", "update", id, "--resolution", "500x500"},   // not a multiple of 32
+		{"avatars", "update", id, "--resolution", "512"},
+		{"avatars", "create", "--name", "M", "--engine", "v1", "--resolution", "512x512"},
+	} {
+		if _, errOut, code := run(t, "", bad...); code == 0 || len(got) != 2 || errOut == "" {
+			t.Fatalf("%v was sent: %d %v", bad, code, got)
+		}
+	}
+}
+
+// --config's resolution takes "WxH" or the API's {width, height}.
+func TestResolutionFromConfig(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	id := "11111111-2222-4333-8444-555555555555"
+	var got []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet { // the v2 access check
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		got = append(got, body)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"avatarId":"` + id + `","kind":"conversational","status":"building","statusUrl":"/v1/avatars/` + id + `"}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	for _, cfg := range []string{`{"resolution": "384x672"}`, `{"resolution": {"width": 384, "height": 672}}`} {
+		if _, errOut, code := run(t, cfg, "avatars", "create", "--name", "M", "--config", "-", "--json"); code != 0 {
+			t.Fatalf("%s: %d %s", cfg, code, errOut)
+		}
+	}
+	want := map[string]any{"width": float64(384), "height": float64(672)}
+	if len(got) != 2 || !reflect.DeepEqual(got[0]["resolution"], want) || !reflect.DeepEqual(got[1]["resolution"], want) {
+		t.Fatalf("bodies: %v", got)
+	}
+	for _, cfg := range []string{`{"resolution": "big"}`, `{"resolution": {"width": 384}}`, `{"resolution": {"width": 2048, "height": 128}}`} {
+		if _, _, code := run(t, cfg, "avatars", "create", "--name", "M", "--config", "-"); code == 0 || len(got) != 2 {
+			t.Fatalf("%s was sent: %d %v", cfg, code, got)
+		}
+	}
+}
+
 func TestSpokenNameAndKnownAliasFlags(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -538,6 +629,10 @@ func TestSpokenNameAndKnownAliasFlags(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/account" { // the create's v2 access lookup
 			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if r.Method == http.MethodGet { // the v2 access check
+			_, _ = w.Write([]byte(`{}`))
 			return
 		}
 		var body map[string]any

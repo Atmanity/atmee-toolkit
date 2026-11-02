@@ -40,8 +40,7 @@ renewed before it expires. A login that belongs to several accounts picks one wi
 `ATMEE_BASE_URL` it was made against: set `ATMEE_BASE_URL` first, and sign in again to use
 another API. The sign-in must finish within 5 minutes. `--no-browser` prints the link
 instead of opening it; the page redirects to `127.0.0.1` on the machine running `atmee`,
-so open it in a browser on that machine (or forward the port). Sponsor commands need an
-API key.
+so open it in a browser on that machine (or forward the port).
 
 `whoami` reads the caller from `GET /v1/api_keys/current`. When the API cannot be reached
 (offline, a wrong `ATMEE_BASE_URL`) or refuses the credentials, it prints the saved ones and
@@ -55,7 +54,7 @@ Local files go up in the create or replace request itself, so the CLI does not u
 
 ```bash
 atmee balance [--json]         # credits left on your account
-atmee account [--json]         # plan, limits, prices per minute, capture quota, payout status, v2 access
+atmee account [--json]         # plan, limits, prices per minute, v2 sizes, capture quota, payout status, v2 access
 atmee redeem CODE [--json]     # redeem an invite or credit code (needs atmee login, not an API key)
 ```
 
@@ -87,7 +86,8 @@ credits only, so its coupon line says it is not spent. Credits held by running s
 are already out of the buckets; what a session does not use comes back when it ends.
 **Payouts** is the status of the account's payout account (`not started`, `unverified`,
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
-are set up in Creator Studio.
+are set up in Creator Studio. **v2 sizes** (shown only when the deployment offers some
+of the sizes the rule allows) are the frame sizes `--resolution` takes.
 
 ## API keys
 
@@ -96,6 +96,9 @@ atmee keys list [--all] [--json]                 # the account's keys; secrets a
 atmee keys create --name NAME [--scopes S,...] [--avatar AVATAR_ID] [--max-session 15m] \
   [--max-concurrent N] [--spend-cap CREDITS] [--spend-cap-window daily|monthly|total] \
   [--visitor-memory] [--out FILE [--env-var NAME]] [--json]
+atmee keys update KEY_ID [--name NAME] [--scopes S,...] [--avatar AVATAR_ID | --any-avatar] \
+  [--max-session 15m] [--max-concurrent N] [--spend-cap CREDITS] [--spend-cap-window daily|monthly|total] \
+  [--visitor-memory[=false]] [--json]
 atmee keys rotate KEY_ID [--out FILE [--env-var NAME]] [--json]
 atmee keys revoke KEY_ID [--yes] [--json]
 ```
@@ -113,9 +116,13 @@ that manages keys.
   never prints it; a symlinked file keeps its link. `--out` is checked before anything is
   sent. Without `--out` it is printed once (also with `--json`), with a warning.
 - **Keep keys narrow**: `sessions` (start and end conversations) is always included; add
-  `avatars:read`, `avatars:write` or `billing:write` only when the app needs them, bind a
+  `avatars:read`, `avatars:write`, `billing:write` or `generation:write` only when the app needs them, bind a
   key that serves one avatar with `--avatar`, and set a spend cap. Unset caps take the
   database's defaults (the plan is the ceiling).
+- **Update** changes only the flags you pass and keeps the secret. `--scopes` replaces the
+  whole set, `--any-avatar` widens a bound key to the account. The plan's ceilings apply
+  again on every edit, also to limits you did not pass, so read the limits from the answer.
+  A revoked key is `409 api_key_revoked`. An edit that fails partway is safe to send again.
 - **Rotate** keeps the key's id, name, scopes and caps and issues a new secret; the old one
   stops working within about 30 seconds. **Revoke** is for good (again is no error);
   running sessions keep going. `list` hides revoked keys unless `--all`.
@@ -174,11 +181,22 @@ while the take itself is good, try another with `atmee avatars update ID
 `avatars get` shows the one in use, and `--runtime-seed 42` goes back to the
 default. It is an API setting only: Creator Studio doesn't show it.
 
+**Resolution (v2).** `--resolution WIDTHxHEIGHT` sets the frame size the avatar's
+candidates, previews and conversations render at: `512x512` (the default, square),
+`384x672` (portrait) or `672x384` (landscape). Each side is a multiple of 32 from 256 to
+1024, at most 512x512 pixels in all; the CLI checks that rule, and the API says which
+sizes the deployment offers (`atmee account` lists them as `v2 sizes` when not every
+size is; another is `400 invalid_input`). The portrait is framed at that size, so on
+`update` a new size builds a new version with new candidates, as a new portrait does,
+while the current candidate keeps serving; the current size sent again builds nothing.
+v1 avatars refuse it. `avatars get` shows it.
+
 `create` flags: `--engine v2|v1` (default v2; v1 for an account without v2 access, which `atmee account` shows), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
 used automatically, once completed), `--preview-message` (v2: at most 60
-characters), `--runtime-seed` (v2: 0-2147483647, default 42; also on `update`, see below), `--who-prompt` (Studio's "Who are you"), `--what-prompt` ("What are we doing"), `--greeting`, `--self-intro`,
+characters), `--runtime-seed` (v2: 0-2147483647, default 42; also on `update`, see below), `--resolution WxH` (v2: default
+512x512; also on `update`, see above), `--who-prompt` (Studio's "Who are you"), `--what-prompt` ("What are we doing"), `--greeting`, `--self-intro`,
 `--guardrail` (repeatable), `--facts`/`--facts-file` (text it knows, up to 32,000
 characters, saved as Studio's "Facts with context"), `--knowledge FILE` (repeatable; v1
 conversations use knowledge, v2 ones do not yet),
@@ -201,6 +219,7 @@ before running it again.
 `--answer QUESTION=ANSWER` (repeatable; a question of Studio's knowledge questionnaire, its text or its number in
 `atmee avatars questionnaire`; the other answers stay, an empty answer removes that one),
 `--runtime-seed` (v2: 0-2147483647; `42` goes back to the default; applies from the next session),
+`--resolution WxH` (v2: a new size builds new candidates),
 the Explore profile (below), `--monetize on|off` and `--confirm-sponsor-withdrawal`,
 and `--clear FIELD` (repeatable) to remove a value. Fields you leave out stay unchanged.
 `--clear` sends the field empty and takes `description`, `greeting`, `alias`, `spoken-name`, `known-aliases`, `habits`,
@@ -241,7 +260,8 @@ Earnings     2.50 credits this cycle (1 session) · 1,234.56 credits all time (4
 `--config` takes a JSON object (or `-` for stdin) with the create fields in snake_case.
 Flags win over it, and its `name` is ignored (`--name` is the name). An unknown field is
 an error, so a typo never creates an avatar with defaults. `personality` and `scenario` are still read as the
-older names of `who_prompt` and `what_prompt` (giving both names of one field is an error). Relative file paths are read
+older names of `who_prompt` and `what_prompt` (giving both names of one field is an error). `resolution` takes
+`"384x672"` or the API's `{"width": 384, "height": 672}`. Relative file paths are read
 from the directory you run `atmee` in.
 
 ```bash
@@ -265,7 +285,8 @@ atmee avatars create --name Coach --config examples/create_with_config.json --wa
   "language": "en",
   "sponsor_microcredits": 1000,
   "sponsor_max_per_session": 200,
-  "runtime_seed": 7
+  "runtime_seed": 7,
+  "resolution": "512x512"
 }
 ```
 
@@ -308,6 +329,54 @@ It applies from the next session and rebuilds nothing. A v1 avatar is refused
 `/graph/nodes/0/edges/1/weight: ...`, with the path in a bare-graph file too); `get` with
 none set is `404 conductor_not_set`.
 
+## Earnings
+
+```bash
+atmee earnings [--json]                         # the creator wallet: earned, paid out, balance
+```
+
+`earnings` is what monetized avatars earned, not the credits sessions spend (`atmee
+balance`); it works signed in or with an account-wide key with `avatars:read`.
+
+## Generate
+
+```bash
+atmee generate portraits --description TEXT [--idempotency-key K] [--json]
+atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--idempotency-key K] [--json]
+atmee generate voice --description TEXT [--name NAME] [--language LANG] [--text SAMPLE] \
+  [--idempotency-key K] [--json]
+atmee generate clip --image PATH|URL|upload:ID --prompt TEXT [--audio PATH|URL|upload:ID] \
+  [--duration SECONDS] [--resolution WxH] [--seed N] [--idempotency-key K] [--json]
+```
+
+Each answers with `upload:<uploadId>` references and short-lived links to look or listen.
+`avatars create --image/--voice` and `avatars replace-appearance/replace-voice` take a
+reference as they are, as they do an https URL (with `create`, not mixed with local
+files). A reference works once and lasts 24 hours.
+
+- **`portraits`** is for invented characters only. For a real person, with their
+  permission, use `enhance` on their own photo.
+- **`enhance`** keeps the subject's identity; with `--prompt` it restyles the photo. A local
+  file (jpg, png or webp, at most 10 MB) goes up through `POST /v1/uploads` first.
+- **`voice`** makes previews of 10 to 60 seconds. `--description` is 20 to 1000 characters;
+  `--text` is what every preview says, in `--language`.
+- **`clip`** renders an mp4 of 1 to 15 seconds from an image and a prompt, silent or speaking
+  `--audio`; no avatar is made or needed. `--duration` is required with `--audio`, set to the
+  audio's length, because it is not read from the file, and defaults to 8 for a silent clip.
+  `--resolution` defaults to 512x512. Local files go up through `POST /v1/uploads` first. A
+  clip costs 10 microcredits a second (`atmee account` shows the current price), so a
+  15-second clip costs 1.5 credits, with or without audio. It needs v2 access (otherwise `403
+  v2_access_required`) and comes back as an `upload:<uploadId>` with a download link for 24
+  hours.
+
+Like the other generation commands, none of these asks first.
+
+The price is in `atmee account`, charged only when something comes back. A call still
+running is waited for with the same key, up to 10 minutes. After a network failure nothing
+is sent again: the error prints the key, and `--idempotency-key` retries it without
+charging twice. They work signed in, or with a key holding `generation:write` and
+`avatars:write`.
+
 ## Sponsor and sessions
 
 ```bash
@@ -319,6 +388,7 @@ atmee avatars sponsor grant ID MICROCREDITS [--idempotency-key K]   # 100 microc
 atmee avatars sponsor withdraw ID [--microcredits N]                 # all unreserved by default
 
 atmee avatars session chat ID [--open] [--max-seconds N] [--visitor-id ID] [--language L]
+                              [--no-welcome] [--check-in-after SECONDS]
                               [--tools FILE] [--tool-instructions FILE|-]
 atmee avatars session render ID --livekit-url URL --livekit-token TOKEN [--agent-identity A]
                                 [--max-seconds N] [--wait-joined]
@@ -347,6 +417,19 @@ avatar-only sessions (`session render`).
 `--visitor-id` unlocks that visitor's memory across sessions: use an unguessable id your
 server derives (16-256 characters), never one from the browser.
 
+`--no-welcome` starts without the avatar's self-introduction or welcome back, for an app
+that has already met the user: the avatar waits for them to speak, though a long silence
+still gets its check-in (`--check-in-after` sets it or turns it off). It needs a v2 avatar;
+any other answers `400 welcome_not_supported`. A speech session does the same with
+`{"welcome": false}` in `--settings`. `session render` has no welcome: the avatar says only
+what your agent sends.
+
+`--check-in-after SECONDS` sets how long a silence lasts before the avatar speaks up, 0 to
+3600, `0` for no check-in; a second check-in waits twice as long, then it stays quiet until
+the user speaks. Left out, it keeps the default, about 10 seconds. It needs a v2 avatar; any
+other answers `400 check_in_not_supported`, nothing billed. A speech session does the same
+with `{"checkin_after_s": 0}` in `--settings`. `session render` has no check-in.
+
 ### App tools on `session chat`
 
 `--tools FILE` declares functions the avatar may call in this conversation: a JSON array
@@ -365,6 +448,7 @@ the avatar wait for the answer. That page must be your own LiveKit client: LiveK
 (`--open`, or the link the command prints) answers no `atmee.tool` call, so `await` calls
 fail and `notify` calls are lost there. With `--tools` the command warns about it on
 stderr.
+
 
 ## Speech sessions
 

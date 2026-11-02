@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -266,7 +267,7 @@ func TestCreateFromLocalFilesSendsADeterministicBundle(t *testing.T) {
 func TestCreateRefusesMixedURLsAndFiles(t *testing.T) {
 	c := newTest(t, func(http.ResponseWriter, *http.Request) { t.Error("no request expected") })
 	_, _, err := c.Create(context.Background(), CreateInput{Name: "x", Image: "https://x/p.png", Voice: "local.wav"})
-	if err == nil || !strings.Contains(err.Error(), "all as https URLs or all as local files") {
+	if err == nil || !strings.Contains(err.Error(), "or all as local files") {
 		t.Fatalf("got %v", err)
 	}
 }
@@ -308,6 +309,65 @@ func TestStartSessionChecksTheVisitorID(t *testing.T) {
 	c := newTest(t, func(http.ResponseWriter, *http.Request) { t.Error("no request expected") })
 	if _, err := c.StartSession(context.Background(), aid, EmbedSessionInput{VisitorID: "short"}); err == nil {
 		t.Fatal("a short visitor id is guessable")
+	}
+}
+
+func TestStartSessionSendsWelcomeOnlyWhenOff(t *testing.T) {
+	var bodies []map[string]any
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Error(err)
+		}
+		bodies = append(bodies, body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"sessionId":"` + aid + `","serverUrl":"wss://lk.test","roomName":"r","userToken":"t","billingMode":"reserve"}`))
+	})
+	for _, in := range []EmbedSessionInput{{}, {NoWelcome: true}} {
+		if _, err := c.StartSession(context.Background(), aid, in); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, sent := bodies[0]["welcome"]; sent {
+		t.Fatalf("the default sent welcome: %v", bodies[0])
+	}
+	if bodies[1]["welcome"] != false {
+		t.Fatalf("no-welcome: %v", bodies[1])
+	}
+}
+
+func TestStartSessionSendsOnlyAChosenCheckIn(t *testing.T) {
+	var bodies []map[string]any
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Error(err)
+		}
+		bodies = append(bodies, body)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"sessionId":"` + aid + `","serverUrl":"wss://lk.test","roomName":"r","userToken":"t","billingMode":"reserve"}`))
+	})
+	off, later := 0.0, 45.5
+	for _, in := range []EmbedSessionInput{{}, {CheckInAfterS: &off}, {CheckInAfterS: &later}} {
+		if _, err := c.StartSession(context.Background(), aid, in); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, sent := bodies[0]["checkInAfterS"]; sent {
+		t.Fatalf("the default sent a check-in: %v", bodies[0])
+	}
+	if bodies[1]["checkInAfterS"] != 0.0 || bodies[2]["checkInAfterS"] != 45.5 {
+		t.Fatalf("check-ins: %v, %v", bodies[1], bodies[2])
+	}
+	for _, bad := range []float64{-1, 3600.5, math.NaN()} {
+		if _, err := c.StartSession(context.Background(), aid, EmbedSessionInput{CheckInAfterS: &bad}); err == nil || !strings.Contains(err.Error(), "check-in") {
+			t.Fatalf("%v: err = %v", bad, err)
+		}
+	}
+	if len(bodies) != 3 {
+		t.Fatalf("%d requests, want the 3 in range", len(bodies))
 	}
 }
 
@@ -777,5 +837,17 @@ func TestCreateDraftBodies(t *testing.T) {
 	}
 	if !strings.HasPrefix(ct, "multipart/form-data") || !bytes.Contains(body, []byte("voice/v.wav")) || bytes.Contains(body, []byte("image/")) {
 		t.Fatalf("zip of a voice-only draft: %s", ct)
+	}
+}
+
+func TestParseResolution(t *testing.T) {
+	for in, ok := range map[string]bool{
+		"512x512": true, "384x672": true, "672 x 384": true, "256x1024": true, "1024X256": true, "256x256": true,
+		"544x512": false, "1024x1024": false, "224x512": false, "500x500": false, "512": false, "x512": false, "512x512x1": false, "": false,
+	} {
+		r, err := ParseResolution(in)
+		if (err == nil) != ok {
+			t.Errorf("ParseResolution(%q) = %v, %v; want ok=%v", in, r, err, ok)
+		}
 	}
 }

@@ -81,6 +81,9 @@ func (a *app) printAvatar(x *api.Avatar) {
 		if x.RuntimeSeed != nil {
 			a.printf("Runtime seed: %d\n", *x.RuntimeSeed)
 		}
+		if r := x.Resolution; r != nil {
+			a.printf("Resolution: %dx%d\n", r.Width, r.Height)
+		}
 		if cd := x.Conductor; cd != nil {
 			if cd.Configured {
 				a.printf("Conductor: %s (atmee avatars conductor get %s)\n", plural(deref(cd.Nodes), "node"), x.Id)
@@ -215,7 +218,7 @@ func (a *app) noteMissing(id string, missing []string) {
 	a.printf("Draft: no %s yet. It builds once given:\n", strings.Join(missing, " or "))
 	for _, m := range missing {
 		if c, ok := cmds[m]; ok {
-			a.printf("  %s\n", c)
+			a.printf("  %s\n", a.rename(c))
 		}
 	}
 }

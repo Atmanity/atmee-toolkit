@@ -8,10 +8,12 @@
 - Portraits
 - Enhancing or restyling the creator's photo
 - Voices
+- Clips
 - Using generated outputs
 
 The server makes portraits (`generate_portraits`), enhances or restyles the
-creator's photo (`enhance_portrait`) and designs voices (`design_voice`). Each is a paid
+creator's photo (`enhance_portrait`), designs voices (`design_voice`) and
+renders short video clips (`generate_clip`). Each is a paid
 call, charged only when results come back. Its price comes from
 `get_account`, and the balance only from `get_balance` (SKILL.md rule 12).
 
@@ -28,7 +30,9 @@ likeness from a description, ever (the people-and-publishing reference).
 
 1. Read the price from `get_account`: `pricing.generation` has
    `portraitsMicrocredits`, `enhancementsMicrocredits` and
-   `voicesMicrocredits`, each divided by 100 for credits; never assume 1.
+   `voicesMicrocredits` per call, and `clipPerSecondMicrocredits` per second
+   of clip (where clips are offered), each divided by 100 for credits; never
+   assume 1.
    Read the balance from `get_balance`: `spendableMicrocredits` / 100.
 2. Ask once for the whole round: every paid call the step needs (portraits
    and a voice together, for example), each with its price, then the total
@@ -106,9 +110,11 @@ avatar moves what the portrait shows.
 - Be specific: age, gender, expression, clothing, style, and the framing
   when the creator gave one.
 - Keep the face front-facing with the lips slightly parted, and the whole
-  figure inside a square: the engine keeps only the centre square. In a full
-  body shot the face gets small, so check each option against the portrait
-  checks' fifth-of-the-square rule.
+  figure inside the avatar's shape: the engine keeps only the centre crop of
+  its frame, a square unless the creator chose a portrait or landscape
+  resolution (the candidates reference, Create). In a full body shot the
+  face gets small, so check each option against the portrait checks'
+  fifth-of-the-crop rule.
 - Photorealistic, half-body: "A professional woman in her 30s, navy blazer,
   warm smile, lips slightly parted, half-body from the waist up, hands
   visible, neutral background."
@@ -201,6 +207,60 @@ and choose. Mention a preview whose length is unknown as such. If none
 suits the creator, offer one new design at the stated price, with a changed
 description or `sampleText`: a "slower delivery" in the description doesn't
 make the sample longer.
+
+## Clips
+
+`generate_clip` renders an mp4 of up to 15 seconds (25 fps) of the person in
+`image` moving as `prompt` says, with sound if audio is given. `image` and
+`prompt` are required. No avatar is made: offer it only when the creator asks
+for a clip (a teaser, a post), not as part of the five steps. Clips need v2
+access: without it the call answers `v2_access_required`, so ask for an invite
+code (`redeem_code`); there is no v1 clip. In a shell, `atmee generate clip`
+does the same (`--image`, `--prompt`, `--audio`, `--duration`, `--resolution`,
+`--seed`), and uploads local files first. Like the other `atmee generate`
+commands it does not ask first, so confirm the price with the creator before
+running it.
+
+- **`image`:** a portrait as `upload:<uploadId>` (kind `portrait`; it stays
+  usable afterwards, and a generated portrait works too) or a public https
+  link. Rule 4 applies: never a real person other than the creator without
+  their permission. The image and `prompt` (the shot and the motion, up to
+  2,000 characters) are moderated.
+- **`audio`** (optional; with sound if audio is given): a voice upload or
+  https link. Then `durationSeconds` is required: set it to the audio's
+  length, at most 15; the server doesn't read it from the file. A silent clip
+  defaults to 8.
+- **`resolution`:** 512×512 unless the creator wants another size, such as
+  384×672 (portrait) or 672×384 (landscape); when `clipResolutions` is listed,
+  pick from it. `seed` defaults to 0; another seed gives other motion, as a
+  new request.
+- **Price:** `clipPerSecondMicrocredits` times `durationSeconds`, with or
+  without sound. Ask with the price `get_account` gives for the chosen length. If
+  `get_account` has no `clipPerSecondMicrocredits`, clips aren't offered here:
+  say so and stop.
+- **Retry:** a cold render takes minutes, and past about 45 seconds the call
+  answers `request_in_progress`: wait `retryAfter` and send the same call
+  again, as step 4 above says. It charges once.
+- **`invalid_input`** naming `input_failure image` (no face, unreadable) or
+  `audio` needs another file; `input_failure resolution` ("the render pool
+  does not serve WxH") needs another size, not another image.
+
+The result's `clip.upload` lasts 24 hours and `clip.url` less: save the clip
+at once with `scripts/media.sh save` (kind `seeds`, named `clip_1`, …) and
+show it. You can't watch it, so the creator judges it.
+
+A clip with no avatar has no folder, so save it in `atmee-avatars/clips`.
+Before the call, make that folder and write the `requestId` and exact inputs
+to `atmee-avatars/clips/pending.json`. Delete the file once the clip is saved,
+the replay answers `unavailable`, or the call answers `moderation_flagged`,
+`provider_failed`, `invalid_input`, `insufficient_credits`,
+`api_key_spend_cap_reached` or `generation_unavailable`, after which a further
+try is a new request. After a timeout or any other lost answer, keep the file. While the file exists, make no new clip: retry that one with the
+same `requestId` and inputs.
+
+Without a filesystem, keep the `requestId` and inputs in the chat summary
+(`references/iterations.md`, Without a filesystem) and give the creator
+`clip.url` to download.
 
 ## Using generated outputs
 

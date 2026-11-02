@@ -13,16 +13,32 @@ import (
 	"time"
 )
 
-// Store is one credentials file.
-type Store struct{ Dir string }
+// The environment variables of the default store: the folder that replaces
+// ~/.atmee, and an API key.
+const (
+	DefaultHomeEnv = "ATMEE_HOME"
+	DefaultKeyEnv  = "ATMEE_API_KEY"
+)
+
+// Store is one credentials file. KeyEnv names the variable whose key wins
+// over the file (DefaultKeyEnv when empty).
+type Store struct {
+	Dir    string
+	KeyEnv string
+}
 
 // Default is ~/.atmee (ATMEE_HOME overrides).
-func Default() Store {
-	if d := os.Getenv("ATMEE_HOME"); d != "" {
-		return Store{Dir: d}
+func Default() Store { return In(".atmee", DefaultHomeEnv, DefaultKeyEnv) }
+
+// In is the store in the folder of that name under the home directory (homeEnv
+// overrides), with its API key read from keyEnv. Each variant passes its own
+// variables, so one never reads another's saved key.
+func In(folder, homeEnv, keyEnv string) Store {
+	if d := os.Getenv(homeEnv); d != "" {
+		return Store{Dir: d, KeyEnv: keyEnv}
 	}
 	home, _ := os.UserHomeDir()
-	return Store{Dir: filepath.Join(home, ".atmee")}
+	return Store{Dir: filepath.Join(home, folder), KeyEnv: keyEnv}
 }
 
 // Session is a browser sign-in: the user's OAuth tokens and what refreshing
@@ -61,9 +77,13 @@ func (s Store) read() file {
 	return f
 }
 
-// APIKey is ATMEE_API_KEY, else the saved key ("" when none).
+// APIKey is the key in KeyEnv, else the saved key ("" when none).
 func (s Store) APIKey() string {
-	if k := strings.TrimSpace(os.Getenv("ATMEE_API_KEY")); k != "" {
+	env := s.KeyEnv
+	if env == "" {
+		env = DefaultKeyEnv
+	}
+	if k := strings.TrimSpace(os.Getenv(env)); k != "" {
 		return k
 	}
 	return strings.TrimSpace(s.read().APIKey)

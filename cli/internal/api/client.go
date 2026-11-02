@@ -37,6 +37,10 @@ const (
 type Client struct {
 	BaseURL string
 	gen     *avatarapi.ClientWithResponses
+	// http and sign are what gen sends with, for clients of routes outside
+	// the generated Avatar API client.
+	http *http.Client
+	sign func(context.Context, *http.Request) error
 	// Sleep is time.Sleep; tests replace it.
 	Sleep func(time.Duration)
 	// InProgressSleep is the pause before re-sending a request whose first
@@ -96,17 +100,18 @@ func New(baseURL string, cred Credential, timeout time.Duration) (*Client, error
 	}
 	baseURL = strings.TrimRight(baseURL, "/")
 	c := &Client{BaseURL: baseURL, Sleep: time.Sleep, InProgressSleep: 2 * time.Second, JoinTimeout: JoinWaitTimeout, WarmingTimeout: JoinWaitTimeout, now: time.Now, sleepCtx: sleepCtx}
+	c.http = &http.Client{Transport: defaultTimeout{http.DefaultTransport, timeout}}
+	c.sign = func(ctx context.Context, r *http.Request) error {
+		if err := cred.Authorize(ctx, r); err != nil {
+			return err
+		}
+		if c.MockScenario != "" {
+			r.Header.Set("X-Mock-Scenario", c.MockScenario)
+		}
+		return nil
+	}
 	gen, err := avatarapi.NewClientWithResponses(baseURL,
-		avatarapi.WithHTTPClient(&http.Client{Transport: defaultTimeout{http.DefaultTransport, timeout}}),
-		avatarapi.WithRequestEditorFn(func(ctx context.Context, r *http.Request) error {
-			if err := cred.Authorize(ctx, r); err != nil {
-				return err
-			}
-			if c.MockScenario != "" {
-				r.Header.Set("X-Mock-Scenario", c.MockScenario)
-			}
-			return nil
-		}))
+		avatarapi.WithHTTPClient(c.http), avatarapi.WithRequestEditorFn(c.sign))
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +124,8 @@ type Error struct {
 	Status  int
 	Code    string
 	Message string
-	// Set on 429 rate_limited (reason pending_cap) and 503: the seconds
-	// from Retry-After.
+	// Set on 409 (request_in_progress), 429 rate_limited (reason pending_cap)
+	// and 503: the seconds from Retry-After.
 	Reason     string
 	RetryAfter int
 	// What a refused share, statement or monetization change found (see
@@ -190,7 +195,7 @@ func check(resp *http.Response, body []byte) error {
 	if e.Status == 429 && e.Code == "" {
 		e.Code = "rate_limited"
 	}
-	if e.Status == 429 || e.Status == 503 {
+	if e.Status == 409 || e.Status == 429 || e.Status == 503 {
 		// A full or cold pool (503) says when to come back, like a capture limit.
 		e.RetryAfter, _ = strconv.Atoi(resp.Header.Get("Retry-After"))
 	}

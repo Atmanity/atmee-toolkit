@@ -110,9 +110,10 @@ invite code before it can make one: ask the user for it and redeem it with
 `redeem_code`.
 
 The persona is the avatar's: it greets and introduces itself as it was made,
-whatever the app says. Per-app behaviour comes from `state` and the agenda; if
-the persona itself is wrong for the app, change it with `update_avatar` (from
-the next session) or use another avatar.
+whatever the app says, unless the session starts with `welcome: false`, for an
+app that has already met the user (`references/server.md`). Per-app behaviour
+comes from `state` and the agenda; if the persona itself is wrong for the app,
+change it with `update_avatar` (from the next session) or use another avatar.
 
 ### 2. Shape the app
 
@@ -229,9 +230,10 @@ What the API cannot do yet; tell the developer when their app runs into one.
   `limits.maxSessionSeconds`); show a countdown from `actualDurationSeconds`
   and warn near the end. Longer use chains sessions, with a visible cut.
 - **The avatar speaks up on its own** after about 10 seconds of silence (a
-  check-in), even when muted, and it can't be turned off per session.
+  check-in), even when muted, unless the session sets `checkInAfterS`
+  (`references/server.md`): another length, or `0` for none, on a v2 avatar.
 - **The persona is fixed** per avatar; there is no per-session persona or
-  greeting.
+  greeting, only `welcome: false` to turn the greeting off.
 - **No server-side feed.** Captions, tool calls and the session's progress
   exist only in the room: the page relays what the backend needs (a
   transcript, a tool's outcome).

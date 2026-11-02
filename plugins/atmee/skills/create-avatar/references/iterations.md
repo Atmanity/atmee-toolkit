@@ -93,7 +93,8 @@ When the skill starts and `atmee-avatars/` has avatars:
 
 1. List them: name, where it stands (below), avatar id, environment. A
    folder with no iteration file yet was named but not created: read the name
-   back from the folder's slug and confirm it with the creator.
+   back from the folder's slug and confirm it with the creator. `clips` holds
+   standalone clips and is never an avatar, so skip it.
 2. Offer to continue one from where it stands, or start a new one.
 3. When continuing, read the latest file. If its `paid_calls` has a
    `status: pending` entry, retry it first with the same `request_id`,

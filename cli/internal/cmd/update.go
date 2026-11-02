@@ -152,7 +152,7 @@ func (a *app) updateCmd() *cobra.Command {
 		Use:   "update AVATAR_ID",
 		Short: "Change an avatar's name, persona, knowledge, Explore profile, visibility or monetization.",
 		Long: "Change fields of an avatar; only the flags you pass change. v1 rebuilds its persona and is briefly not ready. " +
-			"v2 keeps serving while the persona rebuilds; a new --preview-message builds new candidates.\n\n" +
+			"v2 keeps serving while the persona rebuilds; a new --preview-message or --resolution builds new candidates.\n\n" +
 			"The Explore profile (--title, --subtitle, --description, --tag, --social, the thumbnail of " +
 			"`atmee avatars thumbnail set`) is what Creator Studio's \"Share to community\" card edits; nothing is rebuilt. " +
 			"--visibility public needs a title, a tag, a subtitle, a description and a thumbnail.\n\n" +
@@ -247,6 +247,14 @@ func (a *app) updateCmd() *cobra.Command {
 					return usagef("%v", err)
 				}
 				set("runtime-seed", "runtimeSeed", seed)
+			}
+			if f.Changed("resolution") {
+				v, _ := f.GetString("resolution")
+				r, err := api.ParseResolution(v)
+				if err != nil {
+					return usagef("%v", err)
+				}
+				set("resolution", "resolution", map[string]int{"width": r.Width, "height": r.Height})
 			}
 			if f.Changed("facts") || factsFile != "" {
 				facts, _ := f.GetString("facts")
@@ -392,6 +400,7 @@ func (a *app) updateCmd() *cobra.Command {
 	f.StringVar(&monetize, "monetize", "", "Turn monetization on or off (on needs a statement, verified payouts, the 30-day requirements and room under the plan's cap)")
 	f.BoolVar(&confirmWithdrawal, "confirm-sponsor-withdrawal", false, "With --monetize on: withdraw the sponsor pool's credits to the account without asking")
 	f.Int("runtime-seed", 0, runtimeSeedHelp)
+	f.String("resolution", "", resolutionHelp)
 	f.StringArrayVar(&clear, "clear", nil, "Remove a value: description, greeting, alias, spoken-name, known-aliases, habits, guardrails, facts, questionnaire, "+
 		"title, subtitle, tags, socials, statement (resets it) or preview-message (back to the default line); repeat for several")
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)

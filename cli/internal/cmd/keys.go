@@ -27,8 +27,8 @@ const keysNeedLogin = "Needs a signed-in user who is the account's owner or an a
 const defaultKeyVar = "ATMEE_API_KEY"
 
 func (a *app) keysCmd() *cobra.Command {
-	return group("keys", "Create, rotate and revoke the account's API keys (signed-in user only)",
-		a.keysListCmd(), a.keysCreateCmd(), a.keysRotateCmd(), a.keysRevokeCmd())
+	return group("keys", "Create, edit, rotate and revoke the account's API keys (signed-in user only)",
+		a.keysListCmd(), a.keysCreateCmd(), a.keysUpdateCmd(), a.keysRotateCmd(), a.keysRevokeCmd())
 }
 
 func (a *app) keysListCmd() *cobra.Command {
@@ -78,14 +78,9 @@ func (a *app) keysListCmd() *cobra.Command {
 }
 
 func (a *app) keysCreateCmd() *cobra.Command {
-	var (
-		name, avatar, window, out, envVar string
-		scopes                            []string
-		maxSession                        time.Duration
-		maxConcurrent                     int
-		spendCap                          float64
-		visitorMemory, jsonOut            bool
-	)
+	var name, out, envVar string
+	var flags keyFlags
+	var jsonOut bool
 	c := &cobra.Command{
 		Use:   "create",
 		Short: "Create an API key; its secret is shown once (or written to --out).",
@@ -100,57 +95,11 @@ func (a *app) keysCreateCmd() *cobra.Command {
 			if strings.TrimSpace(name) == "" {
 				return usagef("--name is required (what the key is for, e.g. the app's name)")
 			}
-			req := api.NewKey{Name: name}
-			if len(scopes) > 0 {
-				list := make([]avatarapi.ApiKeyCreateRequestScopes, 0, len(scopes))
-				for _, s := range scopes {
-					s = strings.TrimSpace(s)
-					sc := avatarapi.ApiKeyCreateRequestScopes(s)
-					if !sc.Valid() {
-						return usagef("--scopes: unknown scope %q (sessions, avatars:read, avatars:write, billing:write)", s)
-					}
-					list = append(list, sc)
-				}
-				req.Scopes = &list
+			req, err := flags.fields(cmd)
+			if err != nil {
+				return err
 			}
-			if avatar != "" {
-				id, err := uuid.Parse(avatar)
-				if err != nil {
-					return usagef("--avatar: %q is not an avatar id (find it with `atmee avatars list`)", avatar)
-				}
-				req.AvatarId = &id
-			}
-			if cmd.Flags().Changed("max-session") {
-				secs := int(maxSession.Seconds())
-				if secs < 30 || secs > 14400 {
-					return usagef("--max-session takes 30s to 4h")
-				}
-				req.MaxSessionSeconds = &secs
-			}
-			if cmd.Flags().Changed("max-concurrent") {
-				if maxConcurrent < 1 || maxConcurrent > 100 {
-					return usagef("--max-concurrent takes 1 to 100")
-				}
-				req.MaxConcurrentSessions = &maxConcurrent
-			}
-			if cmd.Flags().Changed("spend-cap") {
-				microcredits := math.Round(spendCap * 100) // 100 microcredits = 1 credit
-				if math.IsNaN(microcredits) || microcredits < 1 || microcredits > math.MaxInt32 {
-					return usagef("--spend-cap takes a positive number of credits")
-				}
-				m := int(microcredits)
-				req.SpendCapMicrocredits = &m
-			}
-			if window != "" {
-				w := avatarapi.ApiKeyCreateRequestSpendCapWindow(window)
-				if !w.Valid() {
-					return usagef("--spend-cap-window takes daily, monthly or total")
-				}
-				req.SpendCapWindow = &w
-			}
-			if visitorMemory {
-				req.VisitorMemory = &visitorMemory
-			}
+			req["name"] = name
 			path, err := checkOut(out, envVar)
 			if err != nil {
 				return err
@@ -167,15 +116,144 @@ func (a *app) keysCreateCmd() *cobra.Command {
 		},
 	}
 	c.Flags().StringVar(&name, "name", "", "What the key is for, e.g. the app's name (required)")
-	c.Flags().StringSliceVar(&scopes, "scopes", nil, "Scopes besides sessions: avatars:read, avatars:write, billing:write (comma-separated)")
-	c.Flags().StringVar(&avatar, "avatar", "", "Restrict the key to this one avatar")
-	c.Flags().DurationVar(&maxSession, "max-session", 0, "Longest session the key may start, e.g. 15m (default: the plan's)")
-	c.Flags().IntVar(&maxConcurrent, "max-concurrent", 0, "Sessions the key may run at once (default: the plan's)")
-	c.Flags().Float64Var(&spendCap, "spend-cap", 0, "Credits the key may spend per window (default 500)")
-	c.Flags().StringVar(&window, "spend-cap-window", "", "daily, monthly (default) or total")
-	c.Flags().BoolVar(&visitorMemory, "visitor-memory", false, "Let the key's sessions remember a visitor across sessions (visitorId)")
+	flags.add(c)
 	a.secretFlags(c, &out, &envVar, &jsonOut)
 	return c
+}
+
+func (a *app) keysUpdateCmd() *cobra.Command {
+	var name string
+	var flags keyFlags
+	var anyAvatar, jsonOut bool
+	c := &cobra.Command{
+		Use:   "update KEY_ID",
+		Short: "Change a key's name, scopes, avatar and limits; its secret stays.",
+		Long: "Change a key's name, scopes, avatar and limits; only the flags you pass change, and the secret stays. --scopes replaces the whole " +
+			"set (`sessions` is always kept). The plan's ceilings apply again on every edit, also to limits you did not pass, so the " +
+			"answer can show lower limits than before. If an edit fails partway, send it again. A revoked key answers 409 api_key_revoked. " + keysNeedLogin,
+		Example: `  atmee keys update KEY_ID --name "stream app v2" --spend-cap 100
+  atmee keys update KEY_ID --scopes avatars:read,generation:write --any-avatar
+  atmee keys update KEY_ID --visitor-memory=false`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if _, err := api.ParseKeyID(args[0]); err != nil {
+				return usagef("%v", err)
+			}
+			if flags.avatar != "" && anyAvatar {
+				return usagef("--avatar and --any-avatar contradict each other: give one")
+			}
+			req, err := flags.fields(cmd)
+			if err != nil {
+				return err
+			}
+			if cmd.Flags().Changed("name") {
+				if strings.TrimSpace(name) == "" {
+					return usagef("--name cannot be empty")
+				}
+				req["name"] = name
+			}
+			if anyAvatar {
+				req["avatarId"] = nil
+			}
+			if len(req) == 0 {
+				return usagef("nothing to update: pass at least one flag")
+			}
+			cl, err := a.keysAPI()
+			if err != nil {
+				return err
+			}
+			k, err := cl.UpdateAPIKey(ctx(), args[0], req)
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return a.printJSON(k)
+			}
+			a.printf("Updated. The key as saved:\n")
+			a.printKey(*k)
+			return nil
+		},
+	}
+	c.Flags().StringVar(&name, "name", "", "A new name")
+	flags.add(c)
+	c.Flags().BoolVar(&anyAvatar, "any-avatar", false, "Widen the key to every avatar of the account")
+	c.Flags().BoolVar(&jsonOut, "json", false, jsonHelp)
+	return c
+}
+
+// keyFlags are the settings keys create and keys update share.
+type keyFlags struct {
+	scopes         []string
+	avatar, window string
+	maxSession     time.Duration
+	maxConcurrent  int
+	spendCap       float64
+	visitorMemory  bool
+}
+
+func (k *keyFlags) add(c *cobra.Command) {
+	f := c.Flags()
+	f.StringSliceVar(&k.scopes, "scopes", nil, "Scopes besides sessions: avatars:read, avatars:write, billing:write, generation:write (comma-separated)")
+	f.StringVar(&k.avatar, "avatar", "", "Restrict the key to this one avatar")
+	f.DurationVar(&k.maxSession, "max-session", 0, "Longest session the key may start, e.g. 15m (default: the plan's)")
+	f.IntVar(&k.maxConcurrent, "max-concurrent", 0, "Sessions the key may run at once (default: the plan's)")
+	f.Float64Var(&k.spendCap, "spend-cap", 0, "Credits the key may spend per window (default 500)")
+	f.StringVar(&k.window, "spend-cap-window", "", "daily, monthly (default) or total")
+	f.BoolVar(&k.visitorMemory, "visitor-memory", false, "Let the key's sessions remember a visitor across sessions (visitorId)")
+}
+
+// fields checks the flags given and returns them under the API's names.
+func (k *keyFlags) fields(cmd *cobra.Command) (map[string]any, error) {
+	f := cmd.Flags()
+	out := map[string]any{}
+	if f.Changed("scopes") {
+		list := make([]string, 0, len(k.scopes))
+		for _, s := range k.scopes {
+			s = strings.TrimSpace(s)
+			if !avatarapi.ApiKeyCreateRequestScopes(s).Valid() {
+				return nil, usagef("--scopes: unknown scope %q (sessions, avatars:read, avatars:write, billing:write, generation:write)", s)
+			}
+			list = append(list, s)
+		}
+		out["scopes"] = list
+	}
+	if k.avatar != "" {
+		id, err := uuid.Parse(k.avatar)
+		if err != nil {
+			return nil, usagef("--avatar: %q is not an avatar id (find it with `atmee avatars list`)", k.avatar)
+		}
+		out["avatarId"] = id
+	}
+	if f.Changed("max-session") {
+		secs := int(k.maxSession.Seconds())
+		if secs < 30 || secs > 14400 {
+			return nil, usagef("--max-session takes 30s to 4h")
+		}
+		out["maxSessionSeconds"] = secs
+	}
+	if f.Changed("max-concurrent") {
+		if k.maxConcurrent < 1 || k.maxConcurrent > 100 {
+			return nil, usagef("--max-concurrent takes 1 to 100")
+		}
+		out["maxConcurrentSessions"] = k.maxConcurrent
+	}
+	if f.Changed("spend-cap") {
+		microcredits := math.Round(k.spendCap * 100) // 100 microcredits = 1 credit
+		if math.IsNaN(microcredits) || microcredits < 1 || microcredits > math.MaxInt32 {
+			return nil, usagef("--spend-cap takes a positive number of credits")
+		}
+		out["spendCapMicrocredits"] = int(microcredits)
+	}
+	if k.window != "" {
+		if !avatarapi.ApiKeyCreateRequestSpendCapWindow(k.window).Valid() {
+			return nil, usagef("--spend-cap-window takes daily, monthly or total")
+		}
+		out["spendCapWindow"] = k.window
+	}
+	if f.Changed("visitor-memory") {
+		out["visitorMemory"] = k.visitorMemory
+	}
+	return out, nil
 }
 
 func (a *app) keysRotateCmd() *cobra.Command {
@@ -245,9 +323,12 @@ func (a *app) keysRevokeCmd() *cobra.Command {
 }
 
 // keysAPI is the client for the key commands: a signed-in user only.
-func (a *app) keysAPI() (*api.Client, error) {
+func (a *app) keysAPI() (*api.Client, error) { return a.loginAPI("managing API keys") }
+
+// loginAPI is the client for what only a signed-in user may do.
+func (a *app) loginAPI(what string) (*api.Client, error) {
 	if a.store.APIKey() != "" {
-		return nil, usagef("managing API keys needs a signed-in user, but an API key is in use (ATMEE_API_KEY, or one saved by `atmee login --api-key`): unset ATMEE_API_KEY and run `atmee login`")
+		return nil, usagef("%s needs a signed-in user, but an API key is in use (ATMEE_API_KEY, or one saved by `atmee login --api-key`): unset ATMEE_API_KEY and run `atmee login`", what)
 	}
 	return a.api()
 }

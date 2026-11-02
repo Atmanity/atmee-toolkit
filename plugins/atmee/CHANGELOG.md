@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.8 (2026-11-02)
+
+
+### Features
+
+* set a chat session's check-in from the cli
+* start a chat session without the avatar's welcome
+* update plugin pricing, sponsoring, clips and session skills
+
 ## 0.10.7 (2026-10-30)
 
 

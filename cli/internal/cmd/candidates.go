@@ -282,7 +282,7 @@ func (a *app) candSheetCmd() *cobra.Command {
 // --- sponsor ---
 
 func (a *app) sponsorCmd() *cobra.Command {
-	c := group("sponsor", "Pay for visitors' conversations from an avatar's own credit pool (API key only)",
+	c := group("sponsor", "Pay for visitors' conversations from an avatar's own credit pool (signed-in user, or API key with billing:write)",
 		a.sponsorShowCmd(), a.sponsorUpdateCmd(), a.sponsorGrantCmd(), a.sponsorWithdrawCmd())
 	// These print JSON either way; --json is accepted like on the other commands.
 	c.PersistentFlags().Bool("json", true, "These commands always print JSON")
@@ -315,8 +315,15 @@ func (a *app) sponsorUpdateCmd() *cobra.Command {
 	var anon, noAnon, clearMax, clearDaily bool
 	c := &cobra.Command{
 		Use:   "update AVATAR_ID",
-		Short: "Change who the pool pays for and how much (API key with billing:write).",
-		Args:  exactArgs(1),
+		Short: "Change who the pool pays for and how much (signed-in user, or API key with billing:write).",
+		Long: "Change who the pool pays for and how much; one request applies all of its settings or none. --anonymous lets visitors " +
+			"without an account spend the pool, so the avatar must be public or unlisted (409 avatar_not_shared) and funded first " +
+			"(409 avatar_not_budget_managed: `atmee avatars sponsor grant`). A monetized avatar cannot be sponsored " +
+			"(409 monetized_avatar_cannot_be_sponsored).",
+		Example: `  atmee avatars update AVATAR_ID --visibility unlisted
+  atmee avatars sponsor grant AVATAR_ID 1000
+  atmee avatars sponsor update AVATAR_ID --anonymous --anonymous-daily-seconds 300`,
+		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
 			s := map[string]any{}
@@ -503,6 +510,7 @@ func (a *app) sessionEndCmd() *cobra.Command {
 func (a *app) sessionChatCmd() *cobra.Command {
 	var in api.EmbedSessionInput
 	var maxSeconds int
+	var checkInAfter float64
 	var open bool
 	var tools appToolFlags
 	c := &cobra.Command{
@@ -530,6 +538,9 @@ func (a *app) sessionChatCmd() *cobra.Command {
 				a.note("Warning: tool calls go to the participant that joins with the user token, and LiveKit Meet (the link " +
 					"below, and --open) does not answer them: await calls fail and notify calls are lost. Join with your own " +
 					"LiveKit client that registers the atmee.tool RPC (see the handbook).\n")
+			}
+			if cmd.Flags().Changed("check-in-after") {
+				in.CheckInAfterS = &checkInAfter
 			}
 			cl, err := a.api()
 			if err != nil {
@@ -566,6 +577,8 @@ func (a *app) sessionChatCmd() *cobra.Command {
 	f.IntVar(&maxSeconds, "max-seconds", 0, "Longest the conversation may run, in seconds")
 	f.StringVar(&in.VisitorID, "visitor-id", "", "Remember this visitor across conversations: an unguessable id your server derives")
 	f.StringVar(&in.Language, "language", "", "Language for this conversation: en, zh-TW, ja, ... (default: the avatar's)")
+	f.BoolVar(&in.NoWelcome, "no-welcome", false, "Start without the avatar's self-introduction: it waits for the user to speak (v2 avatars)")
+	f.Float64Var(&checkInAfter, "check-in-after", 0, "Seconds of silence before the avatar checks in, 0 to 3600, 0 for no check-in (v2 avatars; default: about 10)")
 	tools.register(c)
 	return c
 }

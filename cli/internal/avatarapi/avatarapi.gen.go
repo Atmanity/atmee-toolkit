@@ -177,6 +177,54 @@ func (e ApiKeyCreateRequestSpendCapWindow) Valid() bool {
 	}
 }
 
+// Defines values for ApiKeyUpdateRequestScopes.
+const (
+	ApiKeyUpdateRequestScopesAvatarsRead     ApiKeyUpdateRequestScopes = "avatars:read"
+	ApiKeyUpdateRequestScopesAvatarsWrite    ApiKeyUpdateRequestScopes = "avatars:write"
+	ApiKeyUpdateRequestScopesBillingWrite    ApiKeyUpdateRequestScopes = "billing:write"
+	ApiKeyUpdateRequestScopesGenerationWrite ApiKeyUpdateRequestScopes = "generation:write"
+	ApiKeyUpdateRequestScopesSessions        ApiKeyUpdateRequestScopes = "sessions"
+)
+
+// Valid indicates whether the value is a known member of the ApiKeyUpdateRequestScopes enum.
+func (e ApiKeyUpdateRequestScopes) Valid() bool {
+	switch e {
+	case ApiKeyUpdateRequestScopesAvatarsRead:
+		return true
+	case ApiKeyUpdateRequestScopesAvatarsWrite:
+		return true
+	case ApiKeyUpdateRequestScopesBillingWrite:
+		return true
+	case ApiKeyUpdateRequestScopesGenerationWrite:
+		return true
+	case ApiKeyUpdateRequestScopesSessions:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApiKeyUpdateRequestSpendCapWindow.
+const (
+	ApiKeyUpdateRequestSpendCapWindowDaily   ApiKeyUpdateRequestSpendCapWindow = "daily"
+	ApiKeyUpdateRequestSpendCapWindowMonthly ApiKeyUpdateRequestSpendCapWindow = "monthly"
+	ApiKeyUpdateRequestSpendCapWindowTotal   ApiKeyUpdateRequestSpendCapWindow = "total"
+)
+
+// Valid indicates whether the value is a known member of the ApiKeyUpdateRequestSpendCapWindow enum.
+func (e ApiKeyUpdateRequestSpendCapWindow) Valid() bool {
+	switch e {
+	case ApiKeyUpdateRequestSpendCapWindowDaily:
+		return true
+	case ApiKeyUpdateRequestSpendCapWindowMonthly:
+		return true
+	case ApiKeyUpdateRequestSpendCapWindowTotal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AvatarCreateJsonRequestEngine.
 const (
 	AvatarCreateJsonRequestEngineV1 AvatarCreateJsonRequestEngine = "v1"
@@ -881,43 +929,43 @@ func (e AvatarUpdateRequestConversationalHabits) Valid() bool {
 
 // Defines values for AvatarUpdateRequestLanguage.
 const (
-	De   AvatarUpdateRequestLanguage = "de"
-	En   AvatarUpdateRequestLanguage = "en"
-	Es   AvatarUpdateRequestLanguage = "es"
-	Fr   AvatarUpdateRequestLanguage = "fr"
-	Hi   AvatarUpdateRequestLanguage = "hi"
-	Ja   AvatarUpdateRequestLanguage = "ja"
-	Ko   AvatarUpdateRequestLanguage = "ko"
-	Ru   AvatarUpdateRequestLanguage = "ru"
-	Vi   AvatarUpdateRequestLanguage = "vi"
-	ZhCN AvatarUpdateRequestLanguage = "zh-CN"
-	ZhTW AvatarUpdateRequestLanguage = "zh-TW"
+	AvatarUpdateRequestLanguageDe   AvatarUpdateRequestLanguage = "de"
+	AvatarUpdateRequestLanguageEn   AvatarUpdateRequestLanguage = "en"
+	AvatarUpdateRequestLanguageEs   AvatarUpdateRequestLanguage = "es"
+	AvatarUpdateRequestLanguageFr   AvatarUpdateRequestLanguage = "fr"
+	AvatarUpdateRequestLanguageHi   AvatarUpdateRequestLanguage = "hi"
+	AvatarUpdateRequestLanguageJa   AvatarUpdateRequestLanguage = "ja"
+	AvatarUpdateRequestLanguageKo   AvatarUpdateRequestLanguage = "ko"
+	AvatarUpdateRequestLanguageRu   AvatarUpdateRequestLanguage = "ru"
+	AvatarUpdateRequestLanguageVi   AvatarUpdateRequestLanguage = "vi"
+	AvatarUpdateRequestLanguageZhCN AvatarUpdateRequestLanguage = "zh-CN"
+	AvatarUpdateRequestLanguageZhTW AvatarUpdateRequestLanguage = "zh-TW"
 )
 
 // Valid indicates whether the value is a known member of the AvatarUpdateRequestLanguage enum.
 func (e AvatarUpdateRequestLanguage) Valid() bool {
 	switch e {
-	case De:
+	case AvatarUpdateRequestLanguageDe:
 		return true
-	case En:
+	case AvatarUpdateRequestLanguageEn:
 		return true
-	case Es:
+	case AvatarUpdateRequestLanguageEs:
 		return true
-	case Fr:
+	case AvatarUpdateRequestLanguageFr:
 		return true
-	case Hi:
+	case AvatarUpdateRequestLanguageHi:
 		return true
-	case Ja:
+	case AvatarUpdateRequestLanguageJa:
 		return true
-	case Ko:
+	case AvatarUpdateRequestLanguageKo:
 		return true
-	case Ru:
+	case AvatarUpdateRequestLanguageRu:
 		return true
-	case Vi:
+	case AvatarUpdateRequestLanguageVi:
 		return true
-	case ZhCN:
+	case AvatarUpdateRequestLanguageZhCN:
 		return true
-	case ZhTW:
+	case AvatarUpdateRequestLanguageZhTW:
 		return true
 	default:
 		return false
@@ -1101,6 +1149,96 @@ func (e CurrentCallerKind) Valid() bool {
 	}
 }
 
+// Defines values for DesignVoiceRequestLanguage.
+const (
+	DesignVoiceRequestLanguageDe   DesignVoiceRequestLanguage = "de"
+	DesignVoiceRequestLanguageEn   DesignVoiceRequestLanguage = "en"
+	DesignVoiceRequestLanguageEs   DesignVoiceRequestLanguage = "es"
+	DesignVoiceRequestLanguageFr   DesignVoiceRequestLanguage = "fr"
+	DesignVoiceRequestLanguageHi   DesignVoiceRequestLanguage = "hi"
+	DesignVoiceRequestLanguageJa   DesignVoiceRequestLanguage = "ja"
+	DesignVoiceRequestLanguageKo   DesignVoiceRequestLanguage = "ko"
+	DesignVoiceRequestLanguageRu   DesignVoiceRequestLanguage = "ru"
+	DesignVoiceRequestLanguageVi   DesignVoiceRequestLanguage = "vi"
+	DesignVoiceRequestLanguageZhCN DesignVoiceRequestLanguage = "zh-CN"
+	DesignVoiceRequestLanguageZhTW DesignVoiceRequestLanguage = "zh-TW"
+)
+
+// Valid indicates whether the value is a known member of the DesignVoiceRequestLanguage enum.
+func (e DesignVoiceRequestLanguage) Valid() bool {
+	switch e {
+	case DesignVoiceRequestLanguageDe:
+		return true
+	case DesignVoiceRequestLanguageEn:
+		return true
+	case DesignVoiceRequestLanguageEs:
+		return true
+	case DesignVoiceRequestLanguageFr:
+		return true
+	case DesignVoiceRequestLanguageHi:
+		return true
+	case DesignVoiceRequestLanguageJa:
+		return true
+	case DesignVoiceRequestLanguageKo:
+		return true
+	case DesignVoiceRequestLanguageRu:
+		return true
+	case DesignVoiceRequestLanguageVi:
+		return true
+	case DesignVoiceRequestLanguageZhCN:
+		return true
+	case DesignVoiceRequestLanguageZhTW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DesignedVoicesResponseLanguage.
+const (
+	DesignedVoicesResponseLanguageDe   DesignedVoicesResponseLanguage = "de"
+	DesignedVoicesResponseLanguageEn   DesignedVoicesResponseLanguage = "en"
+	DesignedVoicesResponseLanguageEs   DesignedVoicesResponseLanguage = "es"
+	DesignedVoicesResponseLanguageFr   DesignedVoicesResponseLanguage = "fr"
+	DesignedVoicesResponseLanguageHi   DesignedVoicesResponseLanguage = "hi"
+	DesignedVoicesResponseLanguageJa   DesignedVoicesResponseLanguage = "ja"
+	DesignedVoicesResponseLanguageKo   DesignedVoicesResponseLanguage = "ko"
+	DesignedVoicesResponseLanguageRu   DesignedVoicesResponseLanguage = "ru"
+	DesignedVoicesResponseLanguageVi   DesignedVoicesResponseLanguage = "vi"
+	DesignedVoicesResponseLanguageZhCN DesignedVoicesResponseLanguage = "zh-CN"
+	DesignedVoicesResponseLanguageZhTW DesignedVoicesResponseLanguage = "zh-TW"
+)
+
+// Valid indicates whether the value is a known member of the DesignedVoicesResponseLanguage enum.
+func (e DesignedVoicesResponseLanguage) Valid() bool {
+	switch e {
+	case DesignedVoicesResponseLanguageDe:
+		return true
+	case DesignedVoicesResponseLanguageEn:
+		return true
+	case DesignedVoicesResponseLanguageEs:
+		return true
+	case DesignedVoicesResponseLanguageFr:
+		return true
+	case DesignedVoicesResponseLanguageHi:
+		return true
+	case DesignedVoicesResponseLanguageJa:
+		return true
+	case DesignedVoicesResponseLanguageKo:
+		return true
+	case DesignedVoicesResponseLanguageRu:
+		return true
+	case DesignedVoicesResponseLanguageVi:
+		return true
+	case DesignedVoicesResponseLanguageZhCN:
+		return true
+	case DesignedVoicesResponseLanguageZhTW:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for EmbedSessionStartResponseBillingMode.
 const (
 	EmbedSessionStartResponseBillingModeMetered EmbedSessionStartResponseBillingMode = "metered"
@@ -1113,6 +1251,42 @@ func (e EmbedSessionStartResponseBillingMode) Valid() bool {
 	case EmbedSessionStartResponseBillingModeMetered:
 		return true
 	case EmbedSessionStartResponseBillingModeReserve:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EnhancePortraitRequestEngine.
+const (
+	EnhancePortraitRequestEngineV1 EnhancePortraitRequestEngine = "v1"
+	EnhancePortraitRequestEngineV2 EnhancePortraitRequestEngine = "v2"
+)
+
+// Valid indicates whether the value is a known member of the EnhancePortraitRequestEngine enum.
+func (e EnhancePortraitRequestEngine) Valid() bool {
+	switch e {
+	case EnhancePortraitRequestEngineV1:
+		return true
+	case EnhancePortraitRequestEngineV2:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GeneratePortraitsRequestEngine.
+const (
+	GeneratePortraitsRequestEngineV1 GeneratePortraitsRequestEngine = "v1"
+	GeneratePortraitsRequestEngineV2 GeneratePortraitsRequestEngine = "v2"
+)
+
+// Valid indicates whether the value is a known member of the GeneratePortraitsRequestEngine enum.
+func (e GeneratePortraitsRequestEngine) Valid() bool {
+	switch e {
+	case GeneratePortraitsRequestEngineV1:
+		return true
+	case GeneratePortraitsRequestEngineV2:
 		return true
 	default:
 		return false
@@ -1302,6 +1476,66 @@ func (e TtsProvider) Valid() bool {
 	}
 }
 
+// Defines values for UploadStatus.
+const (
+	UploadStatusConsumed UploadStatus = "consumed"
+	UploadStatusExpired  UploadStatus = "expired"
+	UploadStatusPending  UploadStatus = "pending"
+	UploadStatusUploaded UploadStatus = "uploaded"
+)
+
+// Valid indicates whether the value is a known member of the UploadStatus enum.
+func (e UploadStatus) Valid() bool {
+	switch e {
+	case UploadStatusConsumed:
+		return true
+	case UploadStatusExpired:
+		return true
+	case UploadStatusPending:
+		return true
+	case UploadStatusUploaded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UploadCreateResponseStatus.
+const (
+	UploadCreateResponseStatusPending UploadCreateResponseStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the UploadCreateResponseStatus enum.
+func (e UploadCreateResponseStatus) Valid() bool {
+	switch e {
+	case UploadCreateResponseStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UploadKind.
+const (
+	UploadKindKnowledge UploadKind = "knowledge"
+	UploadKindPortrait  UploadKind = "portrait"
+	UploadKindVoice     UploadKind = "voice"
+)
+
+// Valid indicates whether the value is a known member of the UploadKind enum.
+func (e UploadKind) Valid() bool {
+	switch e {
+	case UploadKindKnowledge:
+		return true
+	case UploadKindPortrait:
+		return true
+	case UploadKindVoice:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateAvatarSessionParamsWaitFor.
 const (
 	CreateAvatarSessionParamsWaitForAvatarJoined CreateAvatarSessionParamsWaitFor = "avatar_joined"
@@ -1411,6 +1645,15 @@ type AccountBalance struct {
 
 // AccountBalanceWallet The wallet API usage spends; always `direct`.
 type AccountBalanceWallet string
+
+// AccountEarnings defines model for AccountEarnings.
+type AccountEarnings struct {
+	TotalEarningsMicrocredits int64 `json:"totalEarningsMicrocredits"`
+	TotalPayoutsMicrocredits  int64 `json:"totalPayoutsMicrocredits"`
+
+	// WalletBalanceMicrocredits Earned and not yet paid out.
+	WalletBalanceMicrocredits int64 `json:"walletBalanceMicrocredits"`
+}
 
 // AccountLimits defines model for AccountLimits.
 type AccountLimits struct {
@@ -1619,6 +1862,27 @@ type ApiKeySpendCap struct {
 	// WindowResetsAt When the window starts over; absent for a total cap.
 	WindowResetsAt *time.Time `json:"windowResetsAt,omitempty"`
 }
+
+// ApiKeyUpdateRequest The fields to change; an absent or null field stays as it is, except `avatarId`.
+type ApiKeyUpdateRequest struct {
+	// AvatarId Restrict the key to this one avatar of the account; null widens it to the whole account.
+	AvatarId              *openapi_types.UUID `json:"avatarId,omitempty"`
+	MaxConcurrentSessions *int                `json:"maxConcurrentSessions,omitempty"`
+	MaxSessionSeconds     *int                `json:"maxSessionSeconds,omitempty"`
+	Name                  *string             `json:"name,omitempty"`
+
+	// Scopes The key's whole set of scopes; `sessions` is always included.
+	Scopes               *[]ApiKeyUpdateRequestScopes       `json:"scopes,omitempty"`
+	SpendCapMicrocredits *int                               `json:"spendCapMicrocredits,omitempty"`
+	SpendCapWindow       *ApiKeyUpdateRequestSpendCapWindow `json:"spendCapWindow,omitempty"`
+	VisitorMemory        *bool                              `json:"visitorMemory,omitempty"`
+}
+
+// ApiKeyUpdateRequestScopes defines model for ApiKeyUpdateRequest.Scopes.
+type ApiKeyUpdateRequestScopes string
+
+// ApiKeyUpdateRequestSpendCapWindow defines model for ApiKeyUpdateRequest.SpendCapWindow.
+type ApiKeyUpdateRequestSpendCapWindow string
 
 // AppTool A function tool in the OpenAI function-tool shape, plus `x-atmee`
 // saying whether the avatar waits for the client's result.
@@ -3215,6 +3479,67 @@ type CurrentCaller struct {
 // CurrentCallerKind defines model for CurrentCaller.Kind.
 type CurrentCallerKind string
 
+// DesignVoiceRequest defines model for DesignVoiceRequest.
+type DesignVoiceRequest struct {
+	// AvatarName The avatar's name; the written sample says it.
+	AvatarName *string `json:"avatarName,omitempty"`
+
+	// Language The language the voice speaks. Default `en`.
+	Language *DesignVoiceRequestLanguage `json:"language,omitempty"`
+
+	// SampleText What every preview says, in `language` (per-script lengths in the operation's description). Absent, Atmee writes it.
+	SampleText *string `json:"sampleText,omitempty"`
+
+	// VoiceDescription How the voice should sound: age, tone, pace, accent, character.
+	VoiceDescription string `json:"voiceDescription"`
+}
+
+// DesignVoiceRequestLanguage The language the voice speaks. Default `en`.
+type DesignVoiceRequestLanguage string
+
+// DesignedVoice defines model for DesignedVoice.
+type DesignedVoice struct {
+	// DurationSeconds The preview's length as the provider reported it; null when it did not.
+	DurationSeconds *float64 `json:"durationSeconds"`
+
+	// ExpiresAt When the upload stops working (24 hours after it was made).
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Provider The voice provider that designed it.
+	Provider string `json:"provider"`
+
+	// SpokenText The text the preview actually speaks.
+	SpokenText string `json:"spokenText"`
+
+	// Unavailable True on a replay when this output's upload was already used or has expired; it is not made again, and has no `url`.
+	Unavailable bool `json:"unavailable"`
+
+	// Upload `upload:<uploadId>`: pass it where an avatar takes its voice.
+	//
+	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
+	Upload string `json:"upload"`
+
+	// Url A short-lived link to play the preview; absent when the preview is unavailable or no link could be made.
+	Url *string `json:"url,omitempty"`
+}
+
+// DesignedVoicesResponse defines model for DesignedVoicesResponse.
+type DesignedVoicesResponse struct {
+	// FailedProviders The providers that returned nothing usable.
+	FailedProviders []string                       `json:"failedProviders"`
+	Language        DesignedVoicesResponseLanguage `json:"language"`
+
+	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit); 0 on a replay.
+	MicrocreditsCharged int `json:"microcreditsCharged"`
+
+	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
+	Replayed bool            `json:"replayed"`
+	Voices   []DesignedVoice `json:"voices"`
+}
+
+// DesignedVoicesResponseLanguage defines model for DesignedVoicesResponse.Language.
+type DesignedVoicesResponseLanguage string
+
 // EmbedSessionStartRequest Request body for `/v1/session`. No `framework` field — embeds are
 // always LiveKit.
 type EmbedSessionStartRequest struct {
@@ -3225,6 +3550,16 @@ type EmbedSessionStartRequest struct {
 	//
 	// Examples: 123e4567-e89b-12d3-a456-426614174000
 	AvatarId string `json:"avatarId"`
+
+	// CheckInAfterS Seconds of silence before the avatar speaks up in character, from
+	// 0 to 3600; a second check-in waits twice as long, then it stays
+	// quiet until the visitor speaks. `0` turns the check-in off. Absent
+	// or null keeps the default, about 10 seconds. Needs a v2 avatar
+	// that launches on the default conversation runtime, as every avatar
+	// built through this API does; any other answers `400
+	// check_in_not_supported`, with nothing billed. Billing and session
+	// length are the same either way.
+	CheckInAfterS *float64 `json:"checkInAfterS,omitempty"`
 
 	// Language Per-session language override (BCP-47), e.g. `en`, `zh-TW`, `ja`.
 	// Omit to use the avatar's own language. Any well-formed tag is
@@ -3253,6 +3588,18 @@ type EmbedSessionStartRequest struct {
 	// your own server-side session and never taken from the page:
 	// whoever can name it reads that visitor's conversation history.
 	VisitorId *string `json:"visitorId,omitempty"`
+
+	// Welcome `false` starts the session without the avatar's welcome: no
+	// self-introduction and no welcome back, first visit or return. It
+	// waits for the visitor to speak and answers as usual; a long
+	// silence still gets its check-in, which `checkInAfterS` sets or
+	// turns off. Absent, null or `true`, the
+	// avatar speaks first, as it always has. Needs a v2 avatar that
+	// launches on the default conversation runtime, as every avatar
+	// built through this API does; any other answers `400
+	// welcome_not_supported`, with nothing billed. Billing and session
+	// length are the same either way.
+	Welcome *bool `json:"welcome,omitempty"`
 }
 
 // EmbedSessionStartResponse Response body for `/v1/session`'s 201 response. Deliberately
@@ -3311,6 +3658,24 @@ type EmbedSessionStartResponse struct {
 // while the session runs; nothing is locked up front.
 type EmbedSessionStartResponseBillingMode string
 
+// EnhancePortraitRequest defines model for EnhancePortraitRequest.
+type EnhancePortraitRequest struct {
+	// AvatarId An existing avatar the photo is for, to replace its photo; its own engine is used. Leave `engine` out when this is given (a different `engine` is `invalid_input`). Refused before any charge as `avatar_not_found` (404) when the account has no such avatar, and as `avatar_not_allowed` (403) when an avatar-scoped API key is for another avatar.
+	AvatarId *openapi_types.UUID `json:"avatarId,omitempty"`
+
+	// Engine The avatar engine the photo is for. `v1` (the default) turns the face to the camera, shoulders up, and blurs the background; `v2` keeps the pose, gaze, hands, framing and background and only improves quality. Pass the engine the avatar will be created with.
+	Engine *EnhancePortraitRequestEngine `json:"engine,omitempty"`
+
+	// Image The photo to enhance, `upload:<uploadId>` or a public https link (jpg, png or webp, at most 10 MB).
+	Image string `json:"image"`
+
+	// Prompt How to restyle the photo ("as a 1920s detective, film noir lighting"). The person in the photo is kept unless the prompt asks otherwise. Absent or blank, the photo is only enhanced.
+	Prompt *string `json:"prompt,omitempty"`
+}
+
+// EnhancePortraitRequestEngine The avatar engine the photo is for. `v1` (the default) turns the face to the camera, shoulders up, and blurs the background; `v2` keeps the pose, gaze, hands, framing and background and only improves quality. Pass the engine the avatar will be created with.
+type EnhancePortraitRequestEngine string
+
 // FrameworkErrorResponse Error shape returned by the request-validation layer before an
 // operation's own handler logic runs — e.g. a malformed/unparseable
 // JSON body, a field violating a schema constraint (`maxLength`,
@@ -3328,6 +3693,121 @@ type FrameworkErrorResponse struct {
 	//
 	// Examples: avatarId in body is required
 	Message *string `json:"message,omitempty"`
+}
+
+// GenerateClipRequest defines model for GenerateClipRequest.
+type GenerateClipRequest struct {
+	// Audio What the clip says or plays, `upload:<uploadId>` (a `voice` upload) or a public https link to an audio file. Absent, the clip is silent.
+	Audio *string `json:"audio,omitempty"`
+
+	// DurationSeconds The clip's length. Required with `audio` (set it to the audio's length, at most 15; it is not read from the file); default 8 for a silent clip.
+	DurationSeconds *int `json:"durationSeconds,omitempty"`
+
+	// Image Who or what the clip shows, `upload:<uploadId>` (a `portrait` upload) or a public https link (jpg, png or webp, at most 10 MB).
+	Image string `json:"image"`
+
+	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following".
+	Prompt string `json:"prompt"`
+
+	// Resolution A frame size in pixels for the v2 renderer: width and height are each
+	// a multiple of 32 from 256 to 1024, and width x height is at most
+	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest` on an
+	// avatar, `400 invalid_input` on a clip. Default 512 x 512 (square).
+	// Common shapes: square 512 x 512, portrait 384 x 672, landscape
+	// 672 x 384. A deployment offers only some sizes (512 x 512 always;
+	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
+	// where clips are offered): another is `400 invalid_input` ("resolution
+	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
+	// (`400 invalid_input` for a v1 avatar): the portrait is preprocessed
+	// at that size, so a change on PATCH builds a new version with new
+	// candidates, like a new portrait; sending the current size again
+	// builds nothing. Absent or null keeps the current size (on create:
+	// the default).
+	Resolution *RenderResolution `json:"resolution,omitempty"`
+
+	// Seed The render's seed; another seed gives other motion. Default 0.
+	Seed *int64 `json:"seed,omitempty"`
+}
+
+// GeneratePortraitsRequest defines model for GeneratePortraitsRequest.
+type GeneratePortraitsRequest struct {
+	// Description What the portrait shows (an invented character).
+	Description string `json:"description"`
+
+	// Engine The avatar engine the portrait is for. `v1` (the default) frames it from the shoulders up, facing the camera; `v2` frames it half-body (waist up, hands visible) unless the description sets another framing, and keeps the pose and setting it asks for. Pass the engine the avatar will be created with.
+	Engine *GeneratePortraitsRequestEngine `json:"engine,omitempty"`
+}
+
+// GeneratePortraitsRequestEngine The avatar engine the portrait is for. `v1` (the default) frames it from the shoulders up, facing the camera; `v2` frames it half-body (waist up, hands visible) unless the description sets another framing, and keeps the pose and setting it asks for. Pass the engine the avatar will be created with.
+type GeneratePortraitsRequestEngine string
+
+// GeneratedClip defines model for GeneratedClip.
+type GeneratedClip struct {
+	// DurationSeconds The clip's length.
+	DurationSeconds int `json:"durationSeconds"`
+
+	// ExpiresAt When the upload stops working (24 hours after it was made).
+	ExpiresAt time.Time `json:"expiresAt"`
+	Height    int       `json:"height"`
+
+	// Unavailable True on a replay when the clip's upload has expired; it is not made again, and has no `url`.
+	Unavailable bool `json:"unavailable"`
+
+	// Upload `upload:<uploadId>`: the clip, an mp4.
+	//
+	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
+	Upload string `json:"upload"`
+
+	// Url A short-lived link to download the mp4; absent when the clip is unavailable or no link could be made.
+	Url   *string `json:"url,omitempty"`
+	Width int     `json:"width"`
+}
+
+// GeneratedClipResponse defines model for GeneratedClipResponse.
+type GeneratedClipResponse struct {
+	Clip GeneratedClip `json:"clip"`
+
+	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit), the price per second times `durationSeconds`; 0 on a replay.
+	MicrocreditsCharged int `json:"microcreditsCharged"`
+
+	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
+	Replayed bool `json:"replayed"`
+}
+
+// GeneratedPortrait defines model for GeneratedPortrait.
+type GeneratedPortrait struct {
+	// ExpiresAt When the upload stops working (24 hours after it was made).
+	ExpiresAt time.Time `json:"expiresAt"`
+
+	// Preview A small JPEG of the portrait, base64-encoded, to show without fetching `url`.
+	Preview []byte `json:"preview"`
+
+	// Provider The image provider that made it.
+	Provider string `json:"provider"`
+
+	// Unavailable True on a replay when this output's upload was already used or has expired; it is not made again, and has no `url`.
+	Unavailable bool `json:"unavailable"`
+
+	// Upload `upload:<uploadId>`: pass it where an avatar takes its portrait.
+	//
+	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
+	Upload string `json:"upload"`
+
+	// Url A short-lived link to view the full-size portrait; absent when the portrait is unavailable or no link could be made.
+	Url *string `json:"url,omitempty"`
+}
+
+// GeneratedPortraitsResponse defines model for GeneratedPortraitsResponse.
+type GeneratedPortraitsResponse struct {
+	// FailedProviders The providers that returned nothing usable.
+	FailedProviders []string `json:"failedProviders"`
+
+	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit); 0 on a replay.
+	MicrocreditsCharged int                 `json:"microcreditsCharged"`
+	Portraits           []GeneratedPortrait `json:"portraits"`
+
+	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
+	Replayed bool `json:"replayed"`
 }
 
 // GenerationPricing The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
@@ -3539,7 +4019,10 @@ type SpeechSessionPinnedSettings struct {
 
 	// AvatarTimezone An IANA time zone name (e.g. `Europe/Paris`).
 	AvatarTimezone *string `json:"avatar_timezone,omitempty"`
-	Delegation     *struct {
+
+	// CheckinAfterS Seconds of silence before the avatar speaks up in character, from 0 to 3600; a second check-in waits twice as long, then it stays quiet until the user speaks. `0` turns the check-in off. Unpinned, it keeps the default, about 10 seconds.
+	CheckinAfterS *float64 `json:"checkin_after_s,omitempty"`
+	Delegation    *struct {
 		Responses *struct {
 			// Instructions At most 4,000 characters.
 			Instructions *string `json:"instructions,omitempty"`
@@ -3584,6 +4067,9 @@ type SpeechSessionPinnedSettings struct {
 
 	// UserTimezone An IANA time zone name.
 	UserTimezone *string `json:"user_timezone,omitempty"`
+
+	// Welcome `false` starts the session without the avatar's welcome: no self-introduction and no welcome back, first conversation or return. It waits for the user to speak and answers as usual; a long silence still gets its check-in, which `checkin_after_s` sets or turns off. Otherwise it speaks first, unless the session starts with a history.
+	Welcome *bool `json:"welcome,omitempty"`
 }
 
 // SpeechSessionPinnedSettingsDelegationType defines model for SpeechSessionPinnedSettings.Delegation.Type.
@@ -3654,10 +4140,81 @@ type SponsorWithdrawResponse struct {
 // TtsProvider The voice engine (`voice.ttsProvider` on a v1 create); every v2 avatar speaks with fish_audio.
 type TtsProvider string
 
+// Upload defines model for Upload.
+type Upload struct {
+	// ContentType The declared type, then the type the file was sent with.
+	ContentType *string    `json:"contentType,omitempty"`
+	ExpiresAt   time.Time  `json:"expiresAt"`
+	FileName    *string    `json:"fileName,omitempty"`
+	Kind        UploadKind `json:"kind"`
+
+	// Size Bytes received, once uploaded.
+	Size     *int64             `json:"size,omitempty"`
+	Status   UploadStatus       `json:"status"`
+	UploadId openapi_types.UUID `json:"uploadId"`
+}
+
+// UploadStatus defines model for Upload.Status.
+type UploadStatus string
+
+// UploadCreateRequest defines model for UploadCreateRequest.
+type UploadCreateRequest struct {
+	// ContentType The file's type, one this kind takes; the upload then accepts only it.
+	ContentType *string `json:"contentType,omitempty"`
+
+	// FileName The file's name; a knowledge file is stored and described under it.
+	FileName *string    `json:"fileName,omitempty"`
+	Kind     UploadKind `json:"kind"`
+}
+
+// UploadCreateResponse defines model for UploadCreateResponse.
+type UploadCreateResponse struct {
+	AllowedTypes []string   `json:"allowedTypes"`
+	ExpiresAt    time.Time  `json:"expiresAt"`
+	Kind         UploadKind `json:"kind"`
+
+	// MaxBytes The most bytes the PUT takes. A knowledge upload declared as audio or video gets the media cap (20 MB), one declared as a document or with no type the document cap (50 MB).
+	MaxBytes int64                      `json:"maxBytes"`
+	Status   UploadCreateResponseStatus `json:"status"`
+
+	// UploadHeaders Headers the PUT must send. Without a declared contentType, send a Content-Type from allowedTypes.
+	UploadHeaders       map[string]string  `json:"uploadHeaders"`
+	UploadId            openapi_types.UUID `json:"uploadId"`
+	UploadPageExpiresAt *time.Time         `json:"uploadPageExpiresAt,omitempty"`
+
+	// UploadPageUrl A page a person opens to upload the file (or record a voice). Absent where no page is served.
+	UploadPageUrl *string `json:"uploadPageUrl,omitempty"`
+
+	// UploadUrl The signed target to PUT the file's bytes to, before expiresAt.
+	UploadUrl string `json:"uploadUrl"`
+}
+
+// UploadCreateResponseStatus defines model for UploadCreateResponse.Status.
+type UploadCreateResponseStatus string
+
+// UploadKind defines model for UploadKind.
+type UploadKind string
+
 // UploadableAssetRef defines model for UploadableAssetRef.
 type UploadableAssetRef struct {
 	// Url Public https URL the service downloads (private, loopback and link-local hosts are refused, `invalid_url`), or `upload:<uploadId>`.
 	Url string `json:"url"`
+}
+
+// VersionDeleteResponse The takes are deleted at once. Their files (the ones only this
+// version used) are deleted from storage in the same request; when
+// storage fails, `pendingFiles` says how many are left and repeating
+// the same DELETE (also once the version is gone) retries them.
+type VersionDeleteResponse struct {
+	// DeletedCandidateIds The takes this request deleted (empty on a retry of files only).
+	DeletedCandidateIds []openapi_types.UUID `json:"deletedCandidateIds"`
+
+	// DeletedFiles How many files were deleted from storage by this request.
+	DeletedFiles int `json:"deletedFiles"`
+
+	// PendingFiles How many files could not be deleted now; repeat the DELETE to retry them. 0 when everything is gone.
+	PendingFiles int    `json:"pendingFiles"`
+	VersionId    string `json:"versionId"`
 }
 
 // ApiKeyIdPath defines model for ApiKeyIdPath.
@@ -3668,6 +4225,9 @@ type AvatarIdPath = openapi_types.UUID
 
 // AvatarSessionIdPath defines model for AvatarSessionIdPath.
 type AvatarSessionIdPath = openapi_types.UUID
+
+// GenerationIdempotencyKey defines model for GenerationIdempotencyKey.
+type GenerationIdempotencyKey = string
 
 // SpeechSessionIdPath defines model for SpeechSessionIdPath.
 type SpeechSessionIdPath = openapi_types.UUID
@@ -3680,6 +4240,27 @@ type UploadIdPath = openapi_types.UUID
 
 // AccountAmbiguous defines model for AccountAmbiguous.
 type AccountAmbiguous = ApiErrorResponse
+
+// GenerationBadRequest defines model for GenerationBadRequest.
+type GenerationBadRequest = ApiErrorResponse
+
+// GenerationConflict defines model for GenerationConflict.
+type GenerationConflict = ApiErrorResponse
+
+// GenerationForbidden defines model for GenerationForbidden.
+type GenerationForbidden = ApiErrorResponse
+
+// GenerationPaymentRequired defines model for GenerationPaymentRequired.
+type GenerationPaymentRequired = ApiErrorResponse
+
+// GenerationProviderFailed defines model for GenerationProviderFailed.
+type GenerationProviderFailed = ApiErrorResponse
+
+// GenerationRateLimited defines model for GenerationRateLimited.
+type GenerationRateLimited = ApiErrorResponse
+
+// GenerationUnavailable defines model for GenerationUnavailable.
+type GenerationUnavailable = ApiErrorResponse
 
 // RateLimited defines model for RateLimited.
 type RateLimited = RateLimitedResponse
@@ -3751,6 +4332,42 @@ type ReplaceAvatarVoiceMultipartBody struct {
 	File openapi_types.File `json:"file"`
 }
 
+// GenerateClipParams defines parameters for GenerateClip.
+type GenerateClipParams struct {
+	// IdempotencyKey A new UUID minted for this request. Reuse it only to retry the same
+	// request: a retry never charges twice and returns the first result. A
+	// malformed key, or a key already used with different inputs, gets 400
+	// invalid_input.
+	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// EnhancePortraitParams defines parameters for EnhancePortrait.
+type EnhancePortraitParams struct {
+	// IdempotencyKey A new UUID minted for this request. Reuse it only to retry the same
+	// request: a retry never charges twice and returns the first result. A
+	// malformed key, or a key already used with different inputs, gets 400
+	// invalid_input.
+	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// GeneratePortraitsParams defines parameters for GeneratePortraits.
+type GeneratePortraitsParams struct {
+	// IdempotencyKey A new UUID minted for this request. Reuse it only to retry the same
+	// request: a retry never charges twice and returns the first result. A
+	// malformed key, or a key already used with different inputs, gets 400
+	// invalid_input.
+	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DesignVoiceParams defines parameters for DesignVoice.
+type DesignVoiceParams struct {
+	// IdempotencyKey A new UUID minted for this request. Reuse it only to retry the same
+	// request: a retry never charges twice and returns the first result. A
+	// malformed key, or a key already used with different inputs, gets 400
+	// invalid_input.
+	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CreateSpeechSession422JSONResponseBody defines parameters for CreateSpeechSession.
 type CreateSpeechSession422JSONResponseBody struct {
 	union json.RawMessage
@@ -3761,6 +4378,9 @@ type RedeemAccountCodeJSONRequestBody = RedeemCodeRequest
 
 // CreateApiKeyJSONRequestBody defines body for CreateApiKey for application/json ContentType.
 type CreateApiKeyJSONRequestBody = ApiKeyCreateRequest
+
+// UpdateApiKeyJSONRequestBody defines body for UpdateApiKey for application/json ContentType.
+type UpdateApiKeyJSONRequestBody = ApiKeyUpdateRequest
 
 // CreateAvatarJSONRequestBody defines body for CreateAvatar for application/json ContentType.
 type CreateAvatarJSONRequestBody = AvatarCreateJsonRequest
@@ -3818,6 +4438,18 @@ type ReplaceAvatarVoiceJSONRequestBody = AvatarVoiceJsonRequest
 // ReplaceAvatarVoiceMultipartRequestBody defines body for ReplaceAvatarVoice for multipart/form-data ContentType.
 type ReplaceAvatarVoiceMultipartRequestBody ReplaceAvatarVoiceMultipartBody
 
+// GenerateClipJSONRequestBody defines body for GenerateClip for application/json ContentType.
+type GenerateClipJSONRequestBody = GenerateClipRequest
+
+// EnhancePortraitJSONRequestBody defines body for EnhancePortrait for application/json ContentType.
+type EnhancePortraitJSONRequestBody = EnhancePortraitRequest
+
+// GeneratePortraitsJSONRequestBody defines body for GeneratePortraits for application/json ContentType.
+type GeneratePortraitsJSONRequestBody = GeneratePortraitsRequest
+
+// DesignVoiceJSONRequestBody defines body for DesignVoice for application/json ContentType.
+type DesignVoiceJSONRequestBody = DesignVoiceRequest
+
 // StartEmbedSessionJSONRequestBody defines body for StartEmbedSession for application/json ContentType.
 //
 // Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
@@ -3825,6 +4457,9 @@ type StartEmbedSessionJSONRequestBody = EmbedSessionStartRequest
 
 // CreateSpeechSessionJSONRequestBody defines body for CreateSpeechSession for application/json ContentType.
 type CreateSpeechSessionJSONRequestBody = SpeechSessionCreateRequest
+
+// CreateUploadJSONRequestBody defines body for CreateUpload for application/json ContentType.
+type CreateUploadJSONRequestBody = UploadCreateRequest
 
 // AsFrameworkErrorResponse returns the union data inside the CreateSpeechSession422JSONResponseBody as a FrameworkErrorResponse
 func (t CreateSpeechSession422JSONResponseBody) AsFrameworkErrorResponse() (FrameworkErrorResponse, error) {
@@ -4005,6 +4640,21 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 	GetAccountBalance(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAccountEarnings The account's creator wallet and earnings
+	//
+	// What the account's monetized avatars earned, what was paid out, and
+	// the wallet balance between the two, in microcredits (100 microcredits
+	// = 1 credit), as Studio's billing page shows them. This is not the
+	// credit balance sessions spend (`GET /v1/account/balance`). One
+	// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+	//
+	// Any account-wide key with `avatars:read` may read it, and so may a
+	// signed-in user acting for the account; an avatar-scoped key is
+	// answered `403 avatar_not_allowed`.
+	//
+	// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
+	GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RedeemAccountCodeWithBody Redeem an invite or credit code
 	//
 	// Redeems a code for the account, as Creator Studio's Billing page
@@ -4127,6 +4777,38 @@ type ClientInterface interface {
 	//
 	// Corresponds with DELETE /v1/api_keys/{apiKeyId} (the `RevokeApiKey` operationId).
 	RevokeApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateApiKeyWithBody Edit an API key's scopes and limits (signed-in user only)
+	//
+	// Changes the fields sent; the secret stays. `scopes` replaces the whole
+	// set (`sessions` is always kept). `avatarId` binds the key to one
+	// avatar, and `null` widens it to the whole account. The plan's ceilings
+	// are applied again on every edit, also to limits not sent, so the
+	// answer can show lower limits than before: read them from it.
+	//
+	// Only the account's owner or an admin may edit a key; an API key is
+	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+	UpdateApiKeyWithBody(ctx context.Context, apiKeyId ApiKeyIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateApiKey Edit an API key's scopes and limits (signed-in user only)
+	//
+	// Changes the fields sent; the secret stays. `scopes` replaces the whole
+	// set (`sessions` is always kept). `avatarId` binds the key to one
+	// avatar, and `null` widens it to the whole account. The plan's ceilings
+	// are applied again on every edit, also to limits not sent, so the
+	// answer can show lower limits than before: read them from it.
+	//
+	// Only the account's owner or an admin may edit a key; an API key is
+	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+	UpdateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RotateApiKey Issue a new secret for an API key (signed-in user only); the old secret stops working
 	//
@@ -5092,10 +5774,24 @@ type ClientInterface interface {
 
 	// GetAvatarSponsor Sponsor pool balance and settings
 	//
+	// Callable by an API key (`avatars:read`) or a signed-in user acting for
+	// the account. Sponsoring otherwise takes an API key with
+	// `billing:write` or a signed-in user, who sponsors the account's
+	// avatars as in Studio without holding that scope.
+	//
 	// Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 	GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateAvatarSponsorWithBody Update sponsor settings
+	//
+	// One request applies all of its fields or none. `anonymousAccess: true`
+	// lets visitors without an account spend the pool, so it needs an avatar
+	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+	// or turn on auto top-up) and is public or unlisted (`409
+	// avatar_not_shared`: change its visibility first). A monetized avatar
+	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+	// already stored (`400 auto_topup_incomplete`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5103,6 +5799,15 @@ type ClientInterface interface {
 	UpdateAvatarSponsorWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateAvatarSponsor Update sponsor settings
+	//
+	// One request applies all of its fields or none. `anonymousAccess: true`
+	// lets visitors without an account spend the pool, so it needs an avatar
+	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+	// or turn on auto top-up) and is public or unlisted (`409
+	// avatar_not_shared`: change its visibility first). A monetized avatar
+	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+	// already stored (`400 auto_topup_incomplete`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5193,6 +5898,24 @@ type ClientInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnail(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarThumbnailJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteAvatarVersion Delete an older version of a v2 avatar
+	//
+	// Deletes every take of an older version and the files only that
+	// version uses: its takes' sink latents and preview clips, and its
+	// portrait, voice sample, voice clone, prime clip and bundle unless a
+	// kept take or the current inputs still use them. Files that any kept
+	// take or the current inputs reference are never deleted. The version
+	// cannot be restored afterwards. The current version, and a version
+	// holding the serving or selected take, cannot be deleted; nor can a
+	// version whose capture is still running (retry when it ends). When
+	// storage cannot delete the files now, the takes are still gone and
+	// `pendingFiles` counts what is left: repeat the DELETE to retry.
+	// Deleting the avatar deletes all of its files, every version's
+	// included.
+	//
+	// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
+	DeleteAvatarVersion(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAvatarVoice The avatar's voice sample and engine
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/voice (the `GetAvatarVoice` operationId).
@@ -5231,6 +5954,240 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GenerateClipWithBody Render a video clip from an image and a prompt
+	//
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+	// character in `image`, moving as `prompt` describes, optionally
+	// speaking `audio`. No avatar is made or needed: the clip is rendered
+	// directly by Atmee's v2 renderer.
+	//
+	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+	// usable afterwards) or a public https link to a jpg, png or webp of at
+	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+	// webm, ...). The audio plays once from the start of the clip, padded
+	// with silence and cut at its end. `durationSeconds` is required with
+	// `audio` (the audio's own length is not read: set it to the audio's
+	// length, at most 15; without it the request is `400 invalid_input`)
+	// and defaults to 8 for a silent clip; `resolution` defaults to
+	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+	// are moderated first. If the image shows a real person other than the
+	// creator, have that person's permission first.
+	//
+	// The clip is returned as `upload:<uploadId>` (24 hours) with a
+	// short-lived `url` to download it. It costs the price per second
+	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+	// times `durationSeconds`, charged only when the clip comes back; a
+	// flagged, failed or refused call costs nothing. Clips use the v2
+	// renderer, so an account without v2 access gets
+	// `403 v2_access_required`. A render can take
+	// minutes when the renderer starts cold: past about 45 seconds the
+	// request answers `409 request_in_progress`, and a retry with the same
+	// `Idempotency-Key` after `Retry-After` returns the clip once it is
+	// done, charged once. An image or audio the renderer cannot use (no
+	// face, an unreadable file) is `400 invalid_input` naming
+	// `input_failure image` or `input_failure audio`. Where clips are not
+	// offered the route answers `503 generation_unavailable`. A size this
+	// deployment offers but its render pool does not serve is `400
+	// invalid_input` naming `input_failure resolution` ("the render pool
+	// does not serve WxH"), not an image error. Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+	GenerateClipWithBody(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GenerateClip Render a video clip from an image and a prompt
+	//
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+	// character in `image`, moving as `prompt` describes, optionally
+	// speaking `audio`. No avatar is made or needed: the clip is rendered
+	// directly by Atmee's v2 renderer.
+	//
+	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+	// usable afterwards) or a public https link to a jpg, png or webp of at
+	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+	// webm, ...). The audio plays once from the start of the clip, padded
+	// with silence and cut at its end. `durationSeconds` is required with
+	// `audio` (the audio's own length is not read: set it to the audio's
+	// length, at most 15; without it the request is `400 invalid_input`)
+	// and defaults to 8 for a silent clip; `resolution` defaults to
+	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+	// are moderated first. If the image shows a real person other than the
+	// creator, have that person's permission first.
+	//
+	// The clip is returned as `upload:<uploadId>` (24 hours) with a
+	// short-lived `url` to download it. It costs the price per second
+	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+	// times `durationSeconds`, charged only when the clip comes back; a
+	// flagged, failed or refused call costs nothing. Clips use the v2
+	// renderer, so an account without v2 access gets
+	// `403 v2_access_required`. A render can take
+	// minutes when the renderer starts cold: past about 45 seconds the
+	// request answers `409 request_in_progress`, and a retry with the same
+	// `Idempotency-Key` after `Retry-After` returns the clip once it is
+	// done, charged once. An image or audio the renderer cannot use (no
+	// face, an unreadable file) is `400 invalid_input` naming
+	// `input_failure image` or `input_failure audio`. Where clips are not
+	// offered the route answers `503 generation_unavailable`. A size this
+	// deployment offers but its render pool does not serve is `400
+	// invalid_input` naming `input_failure resolution` ("the render pool
+	// does not serve WxH"), not an image error. Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+	GenerateClip(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EnhancePortraitWithBody Enhance or restyle a portrait photo
+	//
+	// Crops the caller's own photo to a square and returns up to four square
+	// portraits, one per image provider. Without `prompt` they are enhanced
+	// versions that keep the subject's identity. With `prompt` they restyle
+	// the photo as the prompt asks ("this person as a 1920s detective"): the
+	// person is kept unless the prompt asks otherwise. The prompt and the
+	// photo are each moderated before any provider is called. `image` is
+	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+	// stays usable afterwards) or a public https link to a jpg, png or webp of
+	// at most 10 MB. If the photo shows a real person other than the creator,
+	// have that person's permission first.
+	//
+	// The outputs, price, charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+	EnhancePortraitWithBody(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EnhancePortrait Enhance or restyle a portrait photo
+	//
+	// Crops the caller's own photo to a square and returns up to four square
+	// portraits, one per image provider. Without `prompt` they are enhanced
+	// versions that keep the subject's identity. With `prompt` they restyle
+	// the photo as the prompt asks ("this person as a 1920s detective"): the
+	// person is kept unless the prompt asks otherwise. The prompt and the
+	// photo are each moderated before any provider is called. `image` is
+	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+	// stays usable afterwards) or a public https link to a jpg, png or webp of
+	// at most 10 MB. If the photo shows a real person other than the creator,
+	// have that person's permission first.
+	//
+	// The outputs, price, charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+	EnhancePortrait(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GeneratePortraitsWithBody Generate portraits from a description
+	//
+	// Generates up to four square portraits from a text description, one from
+	// each configured image provider, with Atmee Studio's portrait prompt. For
+	// an invented character only: never use it to depict a real person from a
+	// description. For a real person, enhance their own photo with
+	// `POST /v1/generation/enhancements`, with their permission.
+	//
+	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+	// take as they are (an upload works once and expires 24 hours after it was
+	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+	//
+	// Costs the operation's price (`GET /v1/account`), charged only when at least
+	// one portrait comes back; a flagged, failed or refused call costs nothing.
+	// The `Idempotency-Key` is required: a retry with the same key never charges
+	// twice and returns the first result (`replayed: true`). Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+	GeneratePortraitsWithBody(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GeneratePortraits Generate portraits from a description
+	//
+	// Generates up to four square portraits from a text description, one from
+	// each configured image provider, with Atmee Studio's portrait prompt. For
+	// an invented character only: never use it to depict a real person from a
+	// description. For a real person, enhance their own photo with
+	// `POST /v1/generation/enhancements`, with their permission.
+	//
+	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+	// take as they are (an upload works once and expires 24 hours after it was
+	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+	//
+	// Costs the operation's price (`GET /v1/account`), charged only when at least
+	// one portrait comes back; a flagged, failed or refused call costs nothing.
+	// The `Idempotency-Key` is required: a retry with the same key never charges
+	// twice and returns the first result (`replayed: true`). Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+	GeneratePortraits(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DesignVoiceWithBody Design a voice from a description
+	//
+	// Designs voice previews from a description of how the voice should sound.
+	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+	// sample needs: a preview under 10 seconds is made once more with a longer
+	// read and dropped if it is still short, and one over 60 seconds is
+	// dropped. A preview whose length the provider did not report has
+	// `durationSeconds: null`.
+	//
+	// `sampleText`, when given, is what every preview says, in `language`:
+	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+	// greeting from the description, long enough for 10 seconds. Each preview
+	// reports the text it actually speaks (`spokenText`).
+	//
+	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+	// take as they are, plus a short-lived `url` to play it. The price,
+	// charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+	DesignVoiceWithBody(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DesignVoice Design a voice from a description
+	//
+	// Designs voice previews from a description of how the voice should sound.
+	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+	// sample needs: a preview under 10 seconds is made once more with a longer
+	// read and dropped if it is still short, and one over 60 seconds is
+	// dropped. A preview whose length the provider did not report has
+	// `durationSeconds: null`.
+	//
+	// `sampleText`, when given, is what every preview says, in `language`:
+	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+	// greeting from the description, long enough for 10 seconds. Each preview
+	// reports the text it actually speaks (`spokenText`).
+	//
+	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+	// take as they are, plus a short-lived `url` to play it. The price,
+	// charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+	DesignVoice(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartEmbedSessionWithBody Start an embed avatar session (API-key authenticated, LiveKit only)
 	//
@@ -5467,6 +6424,76 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 	EndSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUploadWithBody Start a file upload
+	//
+	// Gets a file to the Avatar API ahead of the create or replace that uses it,
+	// for clients that cannot send a file in the same request (an MCP tool, a
+	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	//
+	// Send the file one of two ways:
+	//
+	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+	//   `allowedTypes` when none was declared), at most `maxBytes`:
+	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
+	//   uploaded and how it will be used, takes the file (or, for a voice, records
+	//   one in the browser) and sends it. The link works for 15 minutes
+	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//
+	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+	// upload works once and expires an hour after it was created. Requires
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+	CreateUploadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUpload Start a file upload
+	//
+	// Gets a file to the Avatar API ahead of the create or replace that uses it,
+	// for clients that cannot send a file in the same request (an MCP tool, a
+	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	//
+	// Send the file one of two ways:
+	//
+	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+	//   `allowedTypes` when none was declared), at most `maxBytes`:
+	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
+	//   uploaded and how it will be used, takes the file (or, for a voice, records
+	//   one in the browser) and sends it. The link works for 15 minutes
+	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//
+	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+	// upload works once and expires an hour after it was created. Requires
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+	CreateUpload(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUpload Upload status
+	//
+	// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
+	// once a create or replace used it, or `expired` an hour after it was
+	// created. Only the account that created it sees it. Requires
+	// `avatars:read` or `avatars:write`.
+	//
+	// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
+	GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // GetAccount The account's plan, limits, prices and capture quota
@@ -5522,6 +6549,31 @@ func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) 
 // Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 func (c *Client) GetAccountBalance(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAccountBalanceRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAccountEarnings The account's creator wallet and earnings
+//
+// What the account's monetized avatars earned, what was paid out, and
+// the wallet balance between the two, in microcredits (100 microcredits
+// = 1 credit), as Studio's billing page shows them. This is not the
+// credit balance sessions spend (`GET /v1/account/balance`). One
+// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+//
+// Any account-wide key with `avatars:read` may read it, and so may a
+// signed-in user acting for the account; an avatar-scoped key is
+// answered `403 avatar_not_allowed`.
+//
+// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
+func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountEarningsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -5715,6 +6767,58 @@ func (c *Client) GetCurrentApiKey(ctx context.Context, reqEditors ...RequestEdit
 // Corresponds with DELETE /v1/api_keys/{apiKeyId} (the `RevokeApiKey` operationId).
 func (c *Client) RevokeApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevokeApiKeyRequest(c.Server, apiKeyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateApiKeyWithBody Edit an API key's scopes and limits (signed-in user only)
+//
+// Changes the fields sent; the secret stays. `scopes` replaces the whole
+// set (`sessions` is always kept). `avatarId` binds the key to one
+// avatar, and `null` widens it to the whole account. The plan's ceilings
+// are applied again on every edit, also to limits not sent, so the
+// answer can show lower limits than before: read them from it.
+//
+// Only the account's owner or an admin may edit a key; an API key is
+// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+func (c *Client) UpdateApiKeyWithBody(ctx context.Context, apiKeyId ApiKeyIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateApiKeyRequestWithBody(c.Server, apiKeyId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateApiKey Edit an API key's scopes and limits (signed-in user only)
+//
+// Changes the fields sent; the secret stays. `scopes` replaces the whole
+// set (`sessions` is always kept). `avatarId` binds the key to one
+// avatar, and `null` widens it to the whole account. The plan's ceilings
+// are applied again on every edit, also to limits not sent, so the
+// answer can show lower limits than before: read them from it.
+//
+// Only the account's owner or an admin may edit a key; an API key is
+// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+func (c *Client) UpdateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateApiKeyRequest(c.Server, apiKeyId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6967,6 +8071,11 @@ func (c *Client) SelectAvatarCandidate(ctx context.Context, avatarId AvatarIdPat
 
 // GetAvatarSponsor Sponsor pool balance and settings
 //
+// Callable by an API key (`avatars:read`) or a signed-in user acting for
+// the account. Sponsoring otherwise takes an API key with
+// `billing:write` or a signed-in user, who sponsors the account's
+// avatars as in Studio without holding that scope.
+//
 // Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAvatarSponsorRequest(c.Server, avatarId)
@@ -6981,6 +8090,15 @@ func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, re
 }
 
 // UpdateAvatarSponsorWithBody Update sponsor settings
+//
+// One request applies all of its fields or none. `anonymousAccess: true`
+// lets visitors without an account spend the pool, so it needs an avatar
+// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+// or turn on auto top-up) and is public or unlisted (`409
+// avatar_not_shared`: change its visibility first). A monetized avatar
+// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+// already stored (`400 auto_topup_incomplete`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -6998,6 +8116,15 @@ func (c *Client) UpdateAvatarSponsorWithBody(ctx context.Context, avatarId Avata
 }
 
 // UpdateAvatarSponsor Update sponsor settings
+//
+// One request applies all of its fields or none. `anonymousAccess: true`
+// lets visitors without an account spend the pool, so it needs an avatar
+// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+// or turn on auto top-up) and is public or unlisted (`409
+// avatar_not_shared`: change its visibility first). A monetized avatar
+// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+// already stored (`400 auto_topup_incomplete`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7168,6 +8295,34 @@ func (c *Client) ReplaceAvatarThumbnail(ctx context.Context, avatarId AvatarIdPa
 	return c.Client.Do(req)
 }
 
+// DeleteAvatarVersion Delete an older version of a v2 avatar
+//
+// Deletes every take of an older version and the files only that
+// version uses: its takes' sink latents and preview clips, and its
+// portrait, voice sample, voice clone, prime clip and bundle unless a
+// kept take or the current inputs still use them. Files that any kept
+// take or the current inputs reference are never deleted. The version
+// cannot be restored afterwards. The current version, and a version
+// holding the serving or selected take, cannot be deleted; nor can a
+// version whose capture is still running (retry when it ends). When
+// storage cannot delete the files now, the takes are still gone and
+// `pendingFiles` counts what is left: repeat the DELETE to retry.
+// Deleting the avatar deletes all of its files, every version's
+// included.
+//
+// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
+func (c *Client) DeleteAvatarVersion(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAvatarVersionRequest(c.Server, avatarId, versionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetAvatarVoice The avatar's voice sample and engine
 //
 // Corresponds with GET /v1/avatars/{avatarId}/voice (the `GetAvatarVoice` operationId).
@@ -7227,6 +8382,320 @@ func (c *Client) ReplaceAvatarVoiceWithBody(ctx context.Context, avatarId Avatar
 // Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReplaceAvatarVoiceRequest(c.Server, avatarId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GenerateClipWithBody Render a video clip from an image and a prompt
+//
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+// character in `image`, moving as `prompt` describes, optionally
+// speaking `audio`. No avatar is made or needed: the clip is rendered
+// directly by Atmee's v2 renderer.
+//
+// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+// usable afterwards) or a public https link to a jpg, png or webp of at
+// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+// webm, ...). The audio plays once from the start of the clip, padded
+// with silence and cut at its end. `durationSeconds` is required with
+// `audio` (the audio's own length is not read: set it to the audio's
+// length, at most 15; without it the request is `400 invalid_input`)
+// and defaults to 8 for a silent clip; `resolution` defaults to
+// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+// are moderated first. If the image shows a real person other than the
+// creator, have that person's permission first.
+//
+// The clip is returned as `upload:<uploadId>` (24 hours) with a
+// short-lived `url` to download it. It costs the price per second
+// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+// times `durationSeconds`, charged only when the clip comes back; a
+// flagged, failed or refused call costs nothing. Clips use the v2
+// renderer, so an account without v2 access gets
+// `403 v2_access_required`. A render can take
+// minutes when the renderer starts cold: past about 45 seconds the
+// request answers `409 request_in_progress`, and a retry with the same
+// `Idempotency-Key` after `Retry-After` returns the clip once it is
+// done, charged once. An image or audio the renderer cannot use (no
+// face, an unreadable file) is `400 invalid_input` naming
+// `input_failure image` or `input_failure audio`. Where clips are not
+// offered the route answers `503 generation_unavailable`. A size this
+// deployment offers but its render pool does not serve is `400
+// invalid_input` naming `input_failure resolution` ("the render pool
+// does not serve WxH"), not an image error. Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGenerateClipRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GenerateClip Render a video clip from an image and a prompt
+//
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+// character in `image`, moving as `prompt` describes, optionally
+// speaking `audio`. No avatar is made or needed: the clip is rendered
+// directly by Atmee's v2 renderer.
+//
+// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+// usable afterwards) or a public https link to a jpg, png or webp of at
+// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+// webm, ...). The audio plays once from the start of the clip, padded
+// with silence and cut at its end. `durationSeconds` is required with
+// `audio` (the audio's own length is not read: set it to the audio's
+// length, at most 15; without it the request is `400 invalid_input`)
+// and defaults to 8 for a silent clip; `resolution` defaults to
+// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+// are moderated first. If the image shows a real person other than the
+// creator, have that person's permission first.
+//
+// The clip is returned as `upload:<uploadId>` (24 hours) with a
+// short-lived `url` to download it. It costs the price per second
+// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+// times `durationSeconds`, charged only when the clip comes back; a
+// flagged, failed or refused call costs nothing. Clips use the v2
+// renderer, so an account without v2 access gets
+// `403 v2_access_required`. A render can take
+// minutes when the renderer starts cold: past about 45 seconds the
+// request answers `409 request_in_progress`, and a retry with the same
+// `Idempotency-Key` after `Retry-After` returns the clip once it is
+// done, charged once. An image or audio the renderer cannot use (no
+// face, an unreadable file) is `400 invalid_input` naming
+// `input_failure image` or `input_failure audio`. Where clips are not
+// offered the route answers `503 generation_unavailable`. A size this
+// deployment offers but its render pool does not serve is `400
+// invalid_input` naming `input_failure resolution` ("the render pool
+// does not serve WxH"), not an image error. Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGenerateClipRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EnhancePortraitWithBody Enhance or restyle a portrait photo
+//
+// Crops the caller's own photo to a square and returns up to four square
+// portraits, one per image provider. Without `prompt` they are enhanced
+// versions that keep the subject's identity. With `prompt` they restyle
+// the photo as the prompt asks ("this person as a 1920s detective"): the
+// person is kept unless the prompt asks otherwise. The prompt and the
+// photo are each moderated before any provider is called. `image` is
+// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+// stays usable afterwards) or a public https link to a jpg, png or webp of
+// at most 10 MB. If the photo shows a real person other than the creator,
+// have that person's permission first.
+//
+// The outputs, price, charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+func (c *Client) EnhancePortraitWithBody(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEnhancePortraitRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EnhancePortrait Enhance or restyle a portrait photo
+//
+// Crops the caller's own photo to a square and returns up to four square
+// portraits, one per image provider. Without `prompt` they are enhanced
+// versions that keep the subject's identity. With `prompt` they restyle
+// the photo as the prompt asks ("this person as a 1920s detective"): the
+// person is kept unless the prompt asks otherwise. The prompt and the
+// photo are each moderated before any provider is called. `image` is
+// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+// stays usable afterwards) or a public https link to a jpg, png or webp of
+// at most 10 MB. If the photo shows a real person other than the creator,
+// have that person's permission first.
+//
+// The outputs, price, charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEnhancePortraitRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GeneratePortraitsWithBody Generate portraits from a description
+//
+// Generates up to four square portraits from a text description, one from
+// each configured image provider, with Atmee Studio's portrait prompt. For
+// an invented character only: never use it to depict a real person from a
+// description. For a real person, enhance their own photo with
+// `POST /v1/generation/enhancements`, with their permission.
+//
+// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+// take as they are (an upload works once and expires 24 hours after it was
+// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+//
+// Costs the operation's price (`GET /v1/account`), charged only when at least
+// one portrait comes back; a flagged, failed or refused call costs nothing.
+// The `Idempotency-Key` is required: a retry with the same key never charges
+// twice and returns the first result (`replayed: true`). Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGeneratePortraitsRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GeneratePortraits Generate portraits from a description
+//
+// Generates up to four square portraits from a text description, one from
+// each configured image provider, with Atmee Studio's portrait prompt. For
+// an invented character only: never use it to depict a real person from a
+// description. For a real person, enhance their own photo with
+// `POST /v1/generation/enhancements`, with their permission.
+//
+// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+// take as they are (an upload works once and expires 24 hours after it was
+// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+//
+// Costs the operation's price (`GET /v1/account`), charged only when at least
+// one portrait comes back; a flagged, failed or refused call costs nothing.
+// The `Idempotency-Key` is required: a retry with the same key never charges
+// twice and returns the first result (`replayed: true`). Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+func (c *Client) GeneratePortraits(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGeneratePortraitsRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DesignVoiceWithBody Design a voice from a description
+//
+// Designs voice previews from a description of how the voice should sound.
+// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+// sample needs: a preview under 10 seconds is made once more with a longer
+// read and dropped if it is still short, and one over 60 seconds is
+// dropped. A preview whose length the provider did not report has
+// `durationSeconds: null`.
+//
+// `sampleText`, when given, is what every preview says, in `language`:
+// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+// greeting from the description, long enough for 10 seconds. Each preview
+// reports the text it actually speaks (`spokenText`).
+//
+// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+// take as they are, plus a short-lived `url` to play it. The price,
+// charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+func (c *Client) DesignVoiceWithBody(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDesignVoiceRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DesignVoice Design a voice from a description
+//
+// Designs voice previews from a description of how the voice should sound.
+// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+// sample needs: a preview under 10 seconds is made once more with a longer
+// read and dropped if it is still short, and one over 60 seconds is
+// dropped. A preview whose length the provider did not report has
+// `durationSeconds: null`.
+//
+// `sampleText`, when given, is what every preview says, in `language`:
+// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+// greeting from the description, long enough for 10 seconds. Each preview
+// reports the text it actually speaks (`spokenText`).
+//
+// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+// take as they are, plus a short-lived `url` to play it. The price,
+// charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+func (c *Client) DesignVoice(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDesignVoiceRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7531,6 +9000,106 @@ func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 	return c.Client.Do(req)
 }
 
+// CreateUploadWithBody Start a file upload
+//
+// Gets a file to the Avatar API ahead of the create or replace that uses it,
+// for clients that cannot send a file in the same request (an MCP tool, a
+// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+//
+// Send the file one of two ways:
+//
+//   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+//     `allowedTypes` when none was declared), at most `maxBytes`:
+//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
+//     uploaded and how it will be used, takes the file (or, for a voice, records
+//     one in the browser) and sends it. The link works for 15 minutes
+//     (`uploadPageExpiresAt`) and until the file has arrived.
+//
+// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+// upload works once and expires an hour after it was created. Requires
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+func (c *Client) CreateUploadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUploadRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUpload Start a file upload
+//
+// Gets a file to the Avatar API ahead of the create or replace that uses it,
+// for clients that cannot send a file in the same request (an MCP tool, a
+// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+//
+// Send the file one of two ways:
+//
+//   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+//     `allowedTypes` when none was declared), at most `maxBytes`:
+//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
+//     uploaded and how it will be used, takes the file (or, for a voice, records
+//     one in the browser) and sends it. The link works for 15 minutes
+//     (`uploadPageExpiresAt`) and until the file has arrived.
+//
+// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+// upload works once and expires an hour after it was created. Requires
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+func (c *Client) CreateUpload(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUploadRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetUpload Upload status
+//
+// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
+// once a create or replace used it, or `expired` an hour after it was
+// created. Only the account that created it sees it. Requires
+// `avatars:read` or `avatars:write`.
+//
+// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
+func (c *Client) GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUploadRequest(c.Server, uploadId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewGetAccountRequest constructs an http.Request for the GetAccount method
 func NewGetAccountRequest(server string) (*http.Request, error) {
 	var err error
@@ -7568,6 +9137,33 @@ func NewGetAccountBalanceRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/v1/account/balance")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAccountEarningsRequest constructs an http.Request for the GetAccountEarnings method
+func NewGetAccountEarningsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/account/earnings")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7749,6 +9345,53 @@ func NewRevokeApiKeyRequest(server string, apiKeyId ApiKeyIdPath) (*http.Request
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateApiKeyRequest calls the generic UpdateApiKey builder with application/json body
+func NewUpdateApiKeyRequest(server string, apiKeyId ApiKeyIdPath, body UpdateApiKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateApiKeyRequestWithBody(server, apiKeyId, "application/json", bodyReader)
+}
+
+// NewUpdateApiKeyRequestWithBody constructs an http.Request for the UpdateApiKey method, with any body, and a specified content type
+func NewUpdateApiKeyRequestWithBody(server string, apiKeyId ApiKeyIdPath, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "apiKeyId", apiKeyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/api_keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -8887,6 +10530,47 @@ func NewReplaceAvatarThumbnailRequestWithBody(server string, avatarId AvatarIdPa
 	return req, nil
 }
 
+// NewDeleteAvatarVersionRequest constructs an http.Request for the DeleteAvatarVersion method
+func NewDeleteAvatarVersionRequest(server string, avatarId AvatarIdPath, versionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "avatarId", avatarId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "versionId", versionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/avatars/%s/versions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetAvatarVoiceRequest constructs an http.Request for the GetAvatarVoice method
 func NewGetAvatarVoiceRequest(server string, avatarId AvatarIdPath) (*http.Request, error) {
 	var err error
@@ -8964,6 +10648,218 @@ func NewReplaceAvatarVoiceRequestWithBody(server string, avatarId AvatarIdPath, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGenerateClipRequest calls the generic GenerateClip builder with application/json body
+func NewGenerateClipRequest(server string, params *GenerateClipParams, body GenerateClipJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGenerateClipRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewGenerateClipRequestWithBody constructs an http.Request for the GenerateClip method, with any body, and a specified content type
+func NewGenerateClipRequestWithBody(server string, params *GenerateClipParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/clips")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewEnhancePortraitRequest calls the generic EnhancePortrait builder with application/json body
+func NewEnhancePortraitRequest(server string, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewEnhancePortraitRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewEnhancePortraitRequestWithBody constructs an http.Request for the EnhancePortrait method, with any body, and a specified content type
+func NewEnhancePortraitRequestWithBody(server string, params *EnhancePortraitParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/enhancements")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewGeneratePortraitsRequest calls the generic GeneratePortraits builder with application/json body
+func NewGeneratePortraitsRequest(server string, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewGeneratePortraitsRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewGeneratePortraitsRequestWithBody constructs an http.Request for the GeneratePortraits method, with any body, and a specified content type
+func NewGeneratePortraitsRequestWithBody(server string, params *GeneratePortraitsParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/portraits")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// NewDesignVoiceRequest calls the generic DesignVoice builder with application/json body
+func NewDesignVoiceRequest(server string, params *DesignVoiceParams, body DesignVoiceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDesignVoiceRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewDesignVoiceRequestWithBody constructs an http.Request for the DesignVoice method, with any body, and a specified content type
+func NewDesignVoiceRequestWithBody(server string, params *DesignVoiceParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/voices")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
 
 	return req, nil
 }
@@ -9116,6 +11012,80 @@ func NewEndSpeechSessionRequest(server string, sessionId SpeechSessionPathId) (*
 	return req, nil
 }
 
+// NewCreateUploadRequest calls the generic CreateUpload builder with application/json body
+func NewCreateUploadRequest(server string, body CreateUploadJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUploadRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateUploadRequestWithBody constructs an http.Request for the CreateUpload method, with any body, and a specified content type
+func NewCreateUploadRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uploads")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetUploadRequest constructs an http.Request for the GetUpload method
+func NewGetUploadRequest(server string, uploadId UploadIdPath) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "uploadId", uploadId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uploads/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -9206,6 +11176,23 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 	GetAccountBalanceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
+
+	// GetAccountEarningsWithResponse The account's creator wallet and earnings
+	//
+	// What the account's monetized avatars earned, what was paid out, and
+	// the wallet balance between the two, in microcredits (100 microcredits
+	// = 1 credit), as Studio's billing page shows them. This is not the
+	// credit balance sessions spend (`GET /v1/account/balance`). One
+	// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+	//
+	// Any account-wide key with `avatars:read` may read it, and so may a
+	// signed-in user acting for the account; an avatar-scoped key is
+	// answered `403 avatar_not_allowed`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
+	GetAccountEarningsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountEarningsResponse, error)
 
 	// RedeemAccountCodeWithBodyWithResponse Redeem an invite or credit code
 	//
@@ -9335,6 +11322,38 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with DELETE /v1/api_keys/{apiKeyId} (the `RevokeApiKey` operationId).
 	RevokeApiKeyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*RevokeApiKeyResponse, error)
+
+	// UpdateApiKeyWithBodyWithResponse Edit an API key's scopes and limits (signed-in user only)
+	//
+	// Changes the fields sent; the secret stays. `scopes` replaces the whole
+	// set (`sessions` is always kept). `avatarId` binds the key to one
+	// avatar, and `null` widens it to the whole account. The plan's ceilings
+	// are applied again on every edit, also to limits not sent, so the
+	// answer can show lower limits than before: read them from it.
+	//
+	// Only the account's owner or an admin may edit a key; an API key is
+	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+	UpdateApiKeyWithBodyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error)
+
+	// UpdateApiKeyWithResponse Edit an API key's scopes and limits (signed-in user only)
+	//
+	// Changes the fields sent; the secret stays. `scopes` replaces the whole
+	// set (`sessions` is always kept). `avatarId` binds the key to one
+	// avatar, and `null` widens it to the whole account. The plan's ceilings
+	// are applied again on every edit, also to limits not sent, so the
+	// answer can show lower limits than before: read them from it.
+	//
+	// Only the account's owner or an admin may edit a key; an API key is
+	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+	UpdateApiKeyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error)
 
 	// RotateApiKeyWithResponse Issue a new secret for an API key (signed-in user only); the old secret stops working
 	//
@@ -10324,6 +12343,11 @@ type ClientWithResponsesInterface interface {
 
 	// GetAvatarSponsorWithResponse Sponsor pool balance and settings
 	//
+	// Callable by an API key (`avatars:read`) or a signed-in user acting for
+	// the account. Sponsoring otherwise takes an API key with
+	// `billing:write` or a signed-in user, who sponsors the account's
+	// avatars as in Studio without holding that scope.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
@@ -10331,12 +12355,30 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 	//
+	// One request applies all of its fields or none. `anonymousAccess: true`
+	// lets visitors without an account spend the pool, so it needs an avatar
+	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+	// or turn on auto top-up) and is public or unlisted (`409
+	// avatar_not_shared`: change its visibility first). A monetized avatar
+	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+	// already stored (`400 auto_topup_incomplete`).
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId}/sponsor (the `UpdateAvatarSponsor` operationId).
 	UpdateAvatarSponsorWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAvatarSponsorResponse, error)
 
 	// UpdateAvatarSponsorWithResponse Update sponsor settings
+	//
+	// One request applies all of its fields or none. `anonymousAccess: true`
+	// lets visitors without an account spend the pool, so it needs an avatar
+	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+	// or turn on auto top-up) and is public or unlisted (`409
+	// avatar_not_shared`: change its visibility first). A monetized avatar
+	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+	// already stored (`400 auto_topup_incomplete`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -10429,6 +12471,26 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnailWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarThumbnailJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarThumbnailResponse, error)
 
+	// DeleteAvatarVersionWithResponse Delete an older version of a v2 avatar
+	//
+	// Deletes every take of an older version and the files only that
+	// version uses: its takes' sink latents and preview clips, and its
+	// portrait, voice sample, voice clone, prime clip and bundle unless a
+	// kept take or the current inputs still use them. Files that any kept
+	// take or the current inputs reference are never deleted. The version
+	// cannot be restored afterwards. The current version, and a version
+	// holding the serving or selected take, cannot be deleted; nor can a
+	// version whose capture is still running (retry when it ends). When
+	// storage cannot delete the files now, the takes are still gone and
+	// `pendingFiles` counts what is left: repeat the DELETE to retry.
+	// Deleting the avatar deletes all of its files, every version's
+	// included.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
+	DeleteAvatarVersionWithResponse(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*DeleteAvatarVersionResponse, error)
+
 	// GetAvatarVoiceWithResponse The avatar's voice sample and engine
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -10469,6 +12531,240 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoiceWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarVoiceResponse, error)
+
+	// GenerateClipWithBodyWithResponse Render a video clip from an image and a prompt
+	//
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+	// character in `image`, moving as `prompt` describes, optionally
+	// speaking `audio`. No avatar is made or needed: the clip is rendered
+	// directly by Atmee's v2 renderer.
+	//
+	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+	// usable afterwards) or a public https link to a jpg, png or webp of at
+	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+	// webm, ...). The audio plays once from the start of the clip, padded
+	// with silence and cut at its end. `durationSeconds` is required with
+	// `audio` (the audio's own length is not read: set it to the audio's
+	// length, at most 15; without it the request is `400 invalid_input`)
+	// and defaults to 8 for a silent clip; `resolution` defaults to
+	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+	// are moderated first. If the image shows a real person other than the
+	// creator, have that person's permission first.
+	//
+	// The clip is returned as `upload:<uploadId>` (24 hours) with a
+	// short-lived `url` to download it. It costs the price per second
+	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+	// times `durationSeconds`, charged only when the clip comes back; a
+	// flagged, failed or refused call costs nothing. Clips use the v2
+	// renderer, so an account without v2 access gets
+	// `403 v2_access_required`. A render can take
+	// minutes when the renderer starts cold: past about 45 seconds the
+	// request answers `409 request_in_progress`, and a retry with the same
+	// `Idempotency-Key` after `Retry-After` returns the clip once it is
+	// done, charged once. An image or audio the renderer cannot use (no
+	// face, an unreadable file) is `400 invalid_input` naming
+	// `input_failure image` or `input_failure audio`. Where clips are not
+	// offered the route answers `503 generation_unavailable`. A size this
+	// deployment offers but its render pool does not serve is `400
+	// invalid_input` naming `input_failure resolution` ("the render pool
+	// does not serve WxH"), not an image error. Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+	GenerateClipWithBodyWithResponse(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error)
+
+	// GenerateClipWithResponse Render a video clip from an image and a prompt
+	//
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+	// character in `image`, moving as `prompt` describes, optionally
+	// speaking `audio`. No avatar is made or needed: the clip is rendered
+	// directly by Atmee's v2 renderer.
+	//
+	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+	// usable afterwards) or a public https link to a jpg, png or webp of at
+	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+	// webm, ...). The audio plays once from the start of the clip, padded
+	// with silence and cut at its end. `durationSeconds` is required with
+	// `audio` (the audio's own length is not read: set it to the audio's
+	// length, at most 15; without it the request is `400 invalid_input`)
+	// and defaults to 8 for a silent clip; `resolution` defaults to
+	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+	// are moderated first. If the image shows a real person other than the
+	// creator, have that person's permission first.
+	//
+	// The clip is returned as `upload:<uploadId>` (24 hours) with a
+	// short-lived `url` to download it. It costs the price per second
+	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+	// times `durationSeconds`, charged only when the clip comes back; a
+	// flagged, failed or refused call costs nothing. Clips use the v2
+	// renderer, so an account without v2 access gets
+	// `403 v2_access_required`. A render can take
+	// minutes when the renderer starts cold: past about 45 seconds the
+	// request answers `409 request_in_progress`, and a retry with the same
+	// `Idempotency-Key` after `Retry-After` returns the clip once it is
+	// done, charged once. An image or audio the renderer cannot use (no
+	// face, an unreadable file) is `400 invalid_input` naming
+	// `input_failure image` or `input_failure audio`. Where clips are not
+	// offered the route answers `503 generation_unavailable`. A size this
+	// deployment offers but its render pool does not serve is `400
+	// invalid_input` naming `input_failure resolution` ("the render pool
+	// does not serve WxH"), not an image error. Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+	GenerateClipWithResponse(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error)
+
+	// EnhancePortraitWithBodyWithResponse Enhance or restyle a portrait photo
+	//
+	// Crops the caller's own photo to a square and returns up to four square
+	// portraits, one per image provider. Without `prompt` they are enhanced
+	// versions that keep the subject's identity. With `prompt` they restyle
+	// the photo as the prompt asks ("this person as a 1920s detective"): the
+	// person is kept unless the prompt asks otherwise. The prompt and the
+	// photo are each moderated before any provider is called. `image` is
+	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+	// stays usable afterwards) or a public https link to a jpg, png or webp of
+	// at most 10 MB. If the photo shows a real person other than the creator,
+	// have that person's permission first.
+	//
+	// The outputs, price, charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+	EnhancePortraitWithBodyWithResponse(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error)
+
+	// EnhancePortraitWithResponse Enhance or restyle a portrait photo
+	//
+	// Crops the caller's own photo to a square and returns up to four square
+	// portraits, one per image provider. Without `prompt` they are enhanced
+	// versions that keep the subject's identity. With `prompt` they restyle
+	// the photo as the prompt asks ("this person as a 1920s detective"): the
+	// person is kept unless the prompt asks otherwise. The prompt and the
+	// photo are each moderated before any provider is called. `image` is
+	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+	// stays usable afterwards) or a public https link to a jpg, png or webp of
+	// at most 10 MB. If the photo shows a real person other than the creator,
+	// have that person's permission first.
+	//
+	// The outputs, price, charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+	EnhancePortraitWithResponse(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error)
+
+	// GeneratePortraitsWithBodyWithResponse Generate portraits from a description
+	//
+	// Generates up to four square portraits from a text description, one from
+	// each configured image provider, with Atmee Studio's portrait prompt. For
+	// an invented character only: never use it to depict a real person from a
+	// description. For a real person, enhance their own photo with
+	// `POST /v1/generation/enhancements`, with their permission.
+	//
+	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+	// take as they are (an upload works once and expires 24 hours after it was
+	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+	//
+	// Costs the operation's price (`GET /v1/account`), charged only when at least
+	// one portrait comes back; a flagged, failed or refused call costs nothing.
+	// The `Idempotency-Key` is required: a retry with the same key never charges
+	// twice and returns the first result (`replayed: true`). Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+	GeneratePortraitsWithBodyWithResponse(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error)
+
+	// GeneratePortraitsWithResponse Generate portraits from a description
+	//
+	// Generates up to four square portraits from a text description, one from
+	// each configured image provider, with Atmee Studio's portrait prompt. For
+	// an invented character only: never use it to depict a real person from a
+	// description. For a real person, enhance their own photo with
+	// `POST /v1/generation/enhancements`, with their permission.
+	//
+	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+	// take as they are (an upload works once and expires 24 hours after it was
+	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+	//
+	// Costs the operation's price (`GET /v1/account`), charged only when at least
+	// one portrait comes back; a flagged, failed or refused call costs nothing.
+	// The `Idempotency-Key` is required: a retry with the same key never charges
+	// twice and returns the first result (`replayed: true`). Requires
+	// `generation:write` and `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+	GeneratePortraitsWithResponse(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error)
+
+	// DesignVoiceWithBodyWithResponse Design a voice from a description
+	//
+	// Designs voice previews from a description of how the voice should sound.
+	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+	// sample needs: a preview under 10 seconds is made once more with a longer
+	// read and dropped if it is still short, and one over 60 seconds is
+	// dropped. A preview whose length the provider did not report has
+	// `durationSeconds: null`.
+	//
+	// `sampleText`, when given, is what every preview says, in `language`:
+	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+	// greeting from the description, long enough for 10 seconds. Each preview
+	// reports the text it actually speaks (`spokenText`).
+	//
+	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+	// take as they are, plus a short-lived `url` to play it. The price,
+	// charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+	DesignVoiceWithBodyWithResponse(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error)
+
+	// DesignVoiceWithResponse Design a voice from a description
+	//
+	// Designs voice previews from a description of how the voice should sound.
+	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+	// sample needs: a preview under 10 seconds is made once more with a longer
+	// read and dropped if it is still short, and one over 60 seconds is
+	// dropped. A preview whose length the provider did not report has
+	// `durationSeconds: null`.
+	//
+	// `sampleText`, when given, is what every preview says, in `language`:
+	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+	// greeting from the description, long enough for 10 seconds. Each preview
+	// reports the text it actually speaks (`spokenText`).
+	//
+	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+	// take as they are, plus a short-lived `url` to play it. The price,
+	// charging and `Idempotency-Key` work as for
+	// `POST /v1/generation/portraits`. Requires `generation:write` and
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+	DesignVoiceWithResponse(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error)
 
 	// StartEmbedSessionWithBodyWithResponse Start an embed avatar session (API-key authenticated, LiveKit only)
 	//
@@ -10709,6 +13005,78 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 	EndSpeechSessionWithResponse(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*EndSpeechSessionResponse, error)
+
+	// CreateUploadWithBodyWithResponse Start a file upload
+	//
+	// Gets a file to the Avatar API ahead of the create or replace that uses it,
+	// for clients that cannot send a file in the same request (an MCP tool, a
+	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	//
+	// Send the file one of two ways:
+	//
+	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+	//   `allowedTypes` when none was declared), at most `maxBytes`:
+	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
+	//   uploaded and how it will be used, takes the file (or, for a voice, records
+	//   one in the browser) and sends it. The link works for 15 minutes
+	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//
+	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+	// upload works once and expires an hour after it was created. Requires
+	// `avatars:write`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+	CreateUploadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
+
+	// CreateUploadWithResponse Start a file upload
+	//
+	// Gets a file to the Avatar API ahead of the create or replace that uses it,
+	// for clients that cannot send a file in the same request (an MCP tool, a
+	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	//
+	// Send the file one of two ways:
+	//
+	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+	//   `allowedTypes` when none was declared), at most `maxBytes`:
+	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
+	//   uploaded and how it will be used, takes the file (or, for a voice, records
+	//   one in the browser) and sends it. The link works for 15 minutes
+	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//
+	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+	// upload works once and expires an hour after it was created. Requires
+	// `avatars:write`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+	CreateUploadWithResponse(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
+
+	// GetUploadWithResponse Upload status
+	//
+	// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
+	// once a create or replace used it, or `expired` an hour after it was
+	// created. Only the account that created it sees it. Requires
+	// `avatars:read` or `avatars:write`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
+	GetUploadWithResponse(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*GetUploadResponse, error)
 }
 
 type GetAccountResponse struct {
@@ -10815,6 +13183,61 @@ func (r GetAccountBalanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetAccountBalanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetAccountEarningsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountEarnings
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountEarningsResponse) GetJSON200() *AccountEarnings {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAccountEarningsResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetAccountEarningsResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountEarningsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountEarningsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountEarningsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountEarningsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11139,6 +13562,75 @@ func (r RevokeApiKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RevokeApiKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateApiKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ApiKey
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ApiErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateApiKeyResponse) GetJSON200() *ApiKey {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateApiKeyResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r UpdateApiKeyResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateApiKeyResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateApiKeyResponse) GetJSON409() *ApiErrorResponse {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateApiKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateApiKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateApiKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateApiKeyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12512,6 +15004,47 @@ func (r ReplaceAvatarThumbnailResponse) ContentType() string {
 	return ""
 }
 
+type DeleteAvatarVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *VersionDeleteResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DeleteAvatarVersionResponse) GetJSON200() *VersionDeleteResponse {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteAvatarVersionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAvatarVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAvatarVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteAvatarVersionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetAvatarVoiceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -12595,6 +15128,429 @@ func (r ReplaceAvatarVoiceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReplaceAvatarVoiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GenerateClipResponse409Headers the declared response headers of an HTTP 409 response for GenerateClip
+type GenerateClipResponse409Headers struct {
+	RetryAfter *int
+}
+
+// GenerateClipResponse429Headers the declared response headers of an HTTP 429 response for GenerateClip
+type GenerateClipResponse429Headers struct {
+	RetryAfter *int
+}
+
+type GenerateClipResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GeneratedClipResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *GenerationBadRequest
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *GenerationPaymentRequired
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *GenerationForbidden
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *GenerationConflict
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *GenerationRateLimited
+	// JSON502 the response for an HTTP 502 `application/json` response
+	JSON502 *GenerationProviderFailed
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GenerateClipResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GenerateClipResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GenerateClipResponse) GetJSON200() *GeneratedClipResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GenerateClipResponse) GetJSON400() *GenerationBadRequest {
+	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r GenerateClipResponse) GetJSON402() *GenerationPaymentRequired {
+	return r.JSON402
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GenerateClipResponse) GetJSON403() *GenerationForbidden {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GenerateClipResponse) GetJSON409() *GenerationConflict {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GenerateClipResponse) GetJSON429() *GenerationRateLimited {
+	return r.JSON429
+}
+
+// GetJSON502 returns the response for an HTTP 502 `application/json` response
+func (r GenerateClipResponse) GetJSON502() *GenerationProviderFailed {
+	return r.JSON502
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GenerateClipResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GenerateClipResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GenerateClipResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GenerateClipResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GenerateClipResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// EnhancePortraitResponse409Headers the declared response headers of an HTTP 409 response for EnhancePortrait
+type EnhancePortraitResponse409Headers struct {
+	RetryAfter *int
+}
+
+// EnhancePortraitResponse429Headers the declared response headers of an HTTP 429 response for EnhancePortrait
+type EnhancePortraitResponse429Headers struct {
+	RetryAfter *int
+}
+
+type EnhancePortraitResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GeneratedPortraitsResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *GenerationBadRequest
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *GenerationPaymentRequired
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *GenerationConflict
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *GenerationRateLimited
+	// JSON502 the response for an HTTP 502 `application/json` response
+	JSON502 *GenerationProviderFailed
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *EnhancePortraitResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *EnhancePortraitResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EnhancePortraitResponse) GetJSON200() *GeneratedPortraitsResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r EnhancePortraitResponse) GetJSON400() *GenerationBadRequest {
+	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r EnhancePortraitResponse) GetJSON402() *GenerationPaymentRequired {
+	return r.JSON402
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r EnhancePortraitResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r EnhancePortraitResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r EnhancePortraitResponse) GetJSON409() *GenerationConflict {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r EnhancePortraitResponse) GetJSON429() *GenerationRateLimited {
+	return r.JSON429
+}
+
+// GetJSON502 returns the response for an HTTP 502 `application/json` response
+func (r EnhancePortraitResponse) GetJSON502() *GenerationProviderFailed {
+	return r.JSON502
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r EnhancePortraitResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r EnhancePortraitResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EnhancePortraitResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EnhancePortraitResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EnhancePortraitResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GeneratePortraitsResponse409Headers the declared response headers of an HTTP 409 response for GeneratePortraits
+type GeneratePortraitsResponse409Headers struct {
+	RetryAfter *int
+}
+
+// GeneratePortraitsResponse429Headers the declared response headers of an HTTP 429 response for GeneratePortraits
+type GeneratePortraitsResponse429Headers struct {
+	RetryAfter *int
+}
+
+type GeneratePortraitsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GeneratedPortraitsResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *GenerationBadRequest
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *GenerationPaymentRequired
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *GenerationForbidden
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *GenerationConflict
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *GenerationRateLimited
+	// JSON502 the response for an HTTP 502 `application/json` response
+	JSON502 *GenerationProviderFailed
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *GeneratePortraitsResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GeneratePortraitsResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON200() *GeneratedPortraitsResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON400() *GenerationBadRequest {
+	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON402() *GenerationPaymentRequired {
+	return r.JSON402
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON403() *GenerationForbidden {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON409() *GenerationConflict {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON429() *GenerationRateLimited {
+	return r.JSON429
+}
+
+// GetJSON502 returns the response for an HTTP 502 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON502() *GenerationProviderFailed {
+	return r.JSON502
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GeneratePortraitsResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GeneratePortraitsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GeneratePortraitsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GeneratePortraitsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GeneratePortraitsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DesignVoiceResponse409Headers the declared response headers of an HTTP 409 response for DesignVoice
+type DesignVoiceResponse409Headers struct {
+	RetryAfter *int
+}
+
+// DesignVoiceResponse429Headers the declared response headers of an HTTP 429 response for DesignVoice
+type DesignVoiceResponse429Headers struct {
+	RetryAfter *int
+}
+
+type DesignVoiceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DesignedVoicesResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *GenerationBadRequest
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *GenerationPaymentRequired
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *GenerationForbidden
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *GenerationConflict
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *GenerationRateLimited
+	// JSON502 the response for an HTTP 502 `application/json` response
+	JSON502 *GenerationProviderFailed
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+	// Headers409 the parsed response headers for an HTTP 409 response
+	Headers409 *DesignVoiceResponse409Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DesignVoiceResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DesignVoiceResponse) GetJSON200() *DesignedVoicesResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DesignVoiceResponse) GetJSON400() *GenerationBadRequest {
+	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r DesignVoiceResponse) GetJSON402() *GenerationPaymentRequired {
+	return r.JSON402
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DesignVoiceResponse) GetJSON403() *GenerationForbidden {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DesignVoiceResponse) GetJSON409() *GenerationConflict {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DesignVoiceResponse) GetJSON429() *GenerationRateLimited {
+	return r.JSON429
+}
+
+// GetJSON502 returns the response for an HTTP 502 `application/json` response
+func (r DesignVoiceResponse) GetJSON502() *GenerationProviderFailed {
+	return r.JSON502
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DesignVoiceResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DesignVoiceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DesignVoiceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DesignVoiceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DesignVoiceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12905,6 +15861,151 @@ func (r EndSpeechSessionResponse) ContentType() string {
 	return ""
 }
 
+type CreateUploadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *UploadCreateResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *ApiErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ApiErrorResponse
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateUploadResponse) GetJSON201() *UploadCreateResponse {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateUploadResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r CreateUploadResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateUploadResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r CreateUploadResponse) GetJSON429() *ApiErrorResponse {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r CreateUploadResponse) GetJSON503() *ApiErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateUploadResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateUploadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateUploadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateUploadResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetUploadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Upload
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ApiErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetUploadResponse) GetJSON200() *Upload {
+	return r.JSON200
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetUploadResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetUploadResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetUploadResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetUploadResponse) GetJSON503() *ApiErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetUploadResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUploadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUploadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetUploadResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetAccountWithResponse The account's plan, limits, prices and capture quota
 //
 // The plan the account is on (and the one it changes to at the end of
@@ -12962,6 +16063,29 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseGetAccountBalanceResponse(rsp)
+}
+
+// GetAccountEarningsWithResponse The account's creator wallet and earnings
+//
+// What the account's monetized avatars earned, what was paid out, and
+// the wallet balance between the two, in microcredits (100 microcredits
+// = 1 credit), as Studio's billing page shows them. This is not the
+// credit balance sessions spend (`GET /v1/account/balance`). One
+// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+//
+// Any account-wide key with `avatars:read` may read it, and so may a
+// signed-in user acting for the account; an avatar-scoped key is
+// answered `403 avatar_not_allowed`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
+func (c *ClientWithResponses) GetAccountEarningsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountEarningsResponse, error) {
+	rsp, err := c.GetAccountEarnings(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountEarningsResponse(rsp)
 }
 
 // RedeemAccountCodeWithBodyWithResponse Redeem an invite or credit code
@@ -13133,6 +16257,50 @@ func (c *ClientWithResponses) RevokeApiKeyWithResponse(ctx context.Context, apiK
 		return nil, err
 	}
 	return ParseRevokeApiKeyResponse(rsp)
+}
+
+// UpdateApiKeyWithBodyWithResponse Edit an API key's scopes and limits (signed-in user only)
+//
+// Changes the fields sent; the secret stays. `scopes` replaces the whole
+// set (`sessions` is always kept). `avatarId` binds the key to one
+// avatar, and `null` widens it to the whole account. The plan's ceilings
+// are applied again on every edit, also to limits not sent, so the
+// answer can show lower limits than before: read them from it.
+//
+// Only the account's owner or an admin may edit a key; an API key is
+// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+func (c *ClientWithResponses) UpdateApiKeyWithBodyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error) {
+	rsp, err := c.UpdateApiKeyWithBody(ctx, apiKeyId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateApiKeyResponse(rsp)
+}
+
+// UpdateApiKeyWithResponse Edit an API key's scopes and limits (signed-in user only)
+//
+// Changes the fields sent; the secret stays. `scopes` replaces the whole
+// set (`sessions` is always kept). `avatarId` binds the key to one
+// avatar, and `null` widens it to the whole account. The plan's ceilings
+// are applied again on every edit, also to limits not sent, so the
+// answer can show lower limits than before: read them from it.
+//
+// Only the account's owner or an admin may edit a key; an API key is
+// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/api_keys/{apiKeyId} (the `UpdateApiKey` operationId).
+func (c *ClientWithResponses) UpdateApiKeyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error) {
+	rsp, err := c.UpdateApiKey(ctx, apiKeyId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateApiKeyResponse(rsp)
 }
 
 // RotateApiKeyWithResponse Issue a new secret for an API key (signed-in user only); the old secret stops working
@@ -14290,6 +17458,11 @@ func (c *ClientWithResponses) SelectAvatarCandidateWithResponse(ctx context.Cont
 
 // GetAvatarSponsorWithResponse Sponsor pool balance and settings
 //
+// Callable by an API key (`avatars:read`) or a signed-in user acting for
+// the account. Sponsoring otherwise takes an API key with
+// `billing:write` or a signed-in user, who sponsors the account's
+// avatars as in Studio without holding that scope.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
@@ -14303,6 +17476,15 @@ func (c *ClientWithResponses) GetAvatarSponsorWithResponse(ctx context.Context, 
 
 // UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 //
+// One request applies all of its fields or none. `anonymousAccess: true`
+// lets visitors without an account spend the pool, so it needs an avatar
+// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+// or turn on auto top-up) and is public or unlisted (`409
+// avatar_not_shared`: change its visibility first). A monetized avatar
+// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+// already stored (`400 auto_topup_incomplete`).
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /v1/avatars/{avatarId}/sponsor (the `UpdateAvatarSponsor` operationId).
@@ -14315,6 +17497,15 @@ func (c *ClientWithResponses) UpdateAvatarSponsorWithBodyWithResponse(ctx contex
 }
 
 // UpdateAvatarSponsorWithResponse Update sponsor settings
+//
+// One request applies all of its fields or none. `anonymousAccess: true`
+// lets visitors without an account spend the pool, so it needs an avatar
+// that was funded (`409 avatar_not_budget_managed`: grant credits first,
+// or turn on auto top-up) and is public or unlisted (`409
+// avatar_not_shared`: change its visibility first). A monetized avatar
+// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
+// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
+// already stored (`400 auto_topup_incomplete`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14455,6 +17646,32 @@ func (c *ClientWithResponses) ReplaceAvatarThumbnailWithResponse(ctx context.Con
 	return ParseReplaceAvatarThumbnailResponse(rsp)
 }
 
+// DeleteAvatarVersionWithResponse Delete an older version of a v2 avatar
+//
+// Deletes every take of an older version and the files only that
+// version uses: its takes' sink latents and preview clips, and its
+// portrait, voice sample, voice clone, prime clip and bundle unless a
+// kept take or the current inputs still use them. Files that any kept
+// take or the current inputs reference are never deleted. The version
+// cannot be restored afterwards. The current version, and a version
+// holding the serving or selected take, cannot be deleted; nor can a
+// version whose capture is still running (retry when it ends). When
+// storage cannot delete the files now, the takes are still gone and
+// `pendingFiles` counts what is left: repeat the DELETE to retry.
+// Deleting the avatar deletes all of its files, every version's
+// included.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
+func (c *ClientWithResponses) DeleteAvatarVersionWithResponse(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*DeleteAvatarVersionResponse, error) {
+	rsp, err := c.DeleteAvatarVersion(ctx, avatarId, versionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAvatarVersionResponse(rsp)
+}
+
 // GetAvatarVoiceWithResponse The avatar's voice sample and engine
 //
 // Returns a wrapper object for the known response body format(s).
@@ -14512,6 +17729,288 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseReplaceAvatarVoiceResponse(rsp)
+}
+
+// GenerateClipWithBodyWithResponse Render a video clip from an image and a prompt
+//
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+// character in `image`, moving as `prompt` describes, optionally
+// speaking `audio`. No avatar is made or needed: the clip is rendered
+// directly by Atmee's v2 renderer.
+//
+// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+// usable afterwards) or a public https link to a jpg, png or webp of at
+// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+// webm, ...). The audio plays once from the start of the clip, padded
+// with silence and cut at its end. `durationSeconds` is required with
+// `audio` (the audio's own length is not read: set it to the audio's
+// length, at most 15; without it the request is `400 invalid_input`)
+// and defaults to 8 for a silent clip; `resolution` defaults to
+// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+// are moderated first. If the image shows a real person other than the
+// creator, have that person's permission first.
+//
+// The clip is returned as `upload:<uploadId>` (24 hours) with a
+// short-lived `url` to download it. It costs the price per second
+// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+// times `durationSeconds`, charged only when the clip comes back; a
+// flagged, failed or refused call costs nothing. Clips use the v2
+// renderer, so an account without v2 access gets
+// `403 v2_access_required`. A render can take
+// minutes when the renderer starts cold: past about 45 seconds the
+// request answers `409 request_in_progress`, and a retry with the same
+// `Idempotency-Key` after `Retry-After` returns the clip once it is
+// done, charged once. An image or audio the renderer cannot use (no
+// face, an unreadable file) is `400 invalid_input` naming
+// `input_failure image` or `input_failure audio`. Where clips are not
+// offered the route answers `503 generation_unavailable`. A size this
+// deployment offers but its render pool does not serve is `400
+// invalid_input` naming `input_failure resolution` ("the render pool
+// does not serve WxH"), not an image error. Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error) {
+	rsp, err := c.GenerateClipWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGenerateClipResponse(rsp)
+}
+
+// GenerateClipWithResponse Render a video clip from an image and a prompt
+//
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
+// character in `image`, moving as `prompt` describes, optionally
+// speaking `audio`. No avatar is made or needed: the clip is rendered
+// directly by Atmee's v2 renderer.
+//
+// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
+// usable afterwards) or a public https link to a jpg, png or webp of at
+// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
+// webm, ...). The audio plays once from the start of the clip, padded
+// with silence and cut at its end. `durationSeconds` is required with
+// `audio` (the audio's own length is not read: set it to the audio's
+// length, at most 15; without it the request is `400 invalid_input`)
+// and defaults to 8 for a silent clip; `resolution` defaults to
+// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
+// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
+// are moderated first. If the image shows a real person other than the
+// creator, have that person's permission first.
+//
+// The clip is returned as `upload:<uploadId>` (24 hours) with a
+// short-lived `url` to download it. It costs the price per second
+// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
+// times `durationSeconds`, charged only when the clip comes back; a
+// flagged, failed or refused call costs nothing. Clips use the v2
+// renderer, so an account without v2 access gets
+// `403 v2_access_required`. A render can take
+// minutes when the renderer starts cold: past about 45 seconds the
+// request answers `409 request_in_progress`, and a retry with the same
+// `Idempotency-Key` after `Retry-After` returns the clip once it is
+// done, charged once. An image or audio the renderer cannot use (no
+// face, an unreadable file) is `400 invalid_input` naming
+// `input_failure image` or `input_failure audio`. Where clips are not
+// offered the route answers `503 generation_unavailable`. A size this
+// deployment offers but its render pool does not serve is `400
+// invalid_input` naming `input_failure resolution` ("the render pool
+// does not serve WxH"), not an image error. Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
+func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error) {
+	rsp, err := c.GenerateClip(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGenerateClipResponse(rsp)
+}
+
+// EnhancePortraitWithBodyWithResponse Enhance or restyle a portrait photo
+//
+// Crops the caller's own photo to a square and returns up to four square
+// portraits, one per image provider. Without `prompt` they are enhanced
+// versions that keep the subject's identity. With `prompt` they restyle
+// the photo as the prompt asks ("this person as a 1920s detective"): the
+// person is kept unless the prompt asks otherwise. The prompt and the
+// photo are each moderated before any provider is called. `image` is
+// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+// stays usable afterwards) or a public https link to a jpg, png or webp of
+// at most 10 MB. If the photo shows a real person other than the creator,
+// have that person's permission first.
+//
+// The outputs, price, charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+func (c *ClientWithResponses) EnhancePortraitWithBodyWithResponse(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error) {
+	rsp, err := c.EnhancePortraitWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEnhancePortraitResponse(rsp)
+}
+
+// EnhancePortraitWithResponse Enhance or restyle a portrait photo
+//
+// Crops the caller's own photo to a square and returns up to four square
+// portraits, one per image provider. Without `prompt` they are enhanced
+// versions that keep the subject's identity. With `prompt` they restyle
+// the photo as the prompt asks ("this person as a 1920s detective"): the
+// person is kept unless the prompt asks otherwise. The prompt and the
+// photo are each moderated before any provider is called. `image` is
+// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
+// stays usable afterwards) or a public https link to a jpg, png or webp of
+// at most 10 MB. If the photo shows a real person other than the creator,
+// have that person's permission first.
+//
+// The outputs, price, charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
+func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error) {
+	rsp, err := c.EnhancePortrait(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEnhancePortraitResponse(rsp)
+}
+
+// GeneratePortraitsWithBodyWithResponse Generate portraits from a description
+//
+// Generates up to four square portraits from a text description, one from
+// each configured image provider, with Atmee Studio's portrait prompt. For
+// an invented character only: never use it to depict a real person from a
+// description. For a real person, enhance their own photo with
+// `POST /v1/generation/enhancements`, with their permission.
+//
+// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+// take as they are (an upload works once and expires 24 hours after it was
+// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+//
+// Costs the operation's price (`GET /v1/account`), charged only when at least
+// one portrait comes back; a flagged, failed or refused call costs nothing.
+// The `Idempotency-Key` is required: a retry with the same key never charges
+// twice and returns the first result (`replayed: true`). Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error) {
+	rsp, err := c.GeneratePortraitsWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGeneratePortraitsResponse(rsp)
+}
+
+// GeneratePortraitsWithResponse Generate portraits from a description
+//
+// Generates up to four square portraits from a text description, one from
+// each configured image provider, with Atmee Studio's portrait prompt. For
+// an invented character only: never use it to depict a real person from a
+// description. For a real person, enhance their own photo with
+// `POST /v1/generation/enhancements`, with their permission.
+//
+// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
+// take as they are (an upload works once and expires 24 hours after it was
+// made), plus a short-lived `url` to view it and a small JPEG `preview`.
+//
+// Costs the operation's price (`GET /v1/account`), charged only when at least
+// one portrait comes back; a flagged, failed or refused call costs nothing.
+// The `Idempotency-Key` is required: a retry with the same key never charges
+// twice and returns the first result (`replayed: true`). Requires
+// `generation:write` and `avatars:write`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
+func (c *ClientWithResponses) GeneratePortraitsWithResponse(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error) {
+	rsp, err := c.GeneratePortraits(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGeneratePortraitsResponse(rsp)
+}
+
+// DesignVoiceWithBodyWithResponse Design a voice from a description
+//
+// Designs voice previews from a description of how the voice should sound.
+// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+// sample needs: a preview under 10 seconds is made once more with a longer
+// read and dropped if it is still short, and one over 60 seconds is
+// dropped. A preview whose length the provider did not report has
+// `durationSeconds: null`.
+//
+// `sampleText`, when given, is what every preview says, in `language`:
+// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+// greeting from the description, long enough for 10 seconds. Each preview
+// reports the text it actually speaks (`spokenText`).
+//
+// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+// take as they are, plus a short-lived `url` to play it. The price,
+// charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+func (c *ClientWithResponses) DesignVoiceWithBodyWithResponse(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error) {
+	rsp, err := c.DesignVoiceWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDesignVoiceResponse(rsp)
+}
+
+// DesignVoiceWithResponse Design a voice from a description
+//
+// Designs voice previews from a description of how the voice should sound.
+// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
+// sample needs: a preview under 10 seconds is made once more with a longer
+// read and dropped if it is still short, and one over 60 seconds is
+// dropped. A preview whose length the provider did not report has
+// `durationSeconds: null`.
+//
+// `sampleText`, when given, is what every preview says, in `language`:
+// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
+// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
+// greeting from the description, long enough for 10 seconds. Each preview
+// reports the text it actually speaks (`spokenText`).
+//
+// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
+// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
+// take as they are, plus a short-lived `url` to play it. The price,
+// charging and `Idempotency-Key` work as for
+// `POST /v1/generation/portraits`. Requires `generation:write` and
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
+func (c *ClientWithResponses) DesignVoiceWithResponse(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error) {
+	rsp, err := c.DesignVoice(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDesignVoiceResponse(rsp)
 }
 
 // StartEmbedSessionWithBodyWithResponse Start an embed avatar session (API-key authenticated, LiveKit only)
@@ -14789,6 +18288,96 @@ func (c *ClientWithResponses) EndSpeechSessionWithResponse(ctx context.Context, 
 	return ParseEndSpeechSessionResponse(rsp)
 }
 
+// CreateUploadWithBodyWithResponse Start a file upload
+//
+// Gets a file to the Avatar API ahead of the create or replace that uses it,
+// for clients that cannot send a file in the same request (an MCP tool, a
+// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+//
+// Send the file one of two ways:
+//
+//   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+//     `allowedTypes` when none was declared), at most `maxBytes`:
+//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
+//     uploaded and how it will be used, takes the file (or, for a voice, records
+//     one in the browser) and sends it. The link works for 15 minutes
+//     (`uploadPageExpiresAt`) and until the file has arrived.
+//
+// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+// upload works once and expires an hour after it was created. Requires
+// `avatars:write`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error) {
+	rsp, err := c.CreateUploadWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUploadResponse(rsp)
+}
+
+// CreateUploadWithResponse Start a file upload
+//
+// Gets a file to the Avatar API ahead of the create or replace that uses it,
+// for clients that cannot send a file in the same request (an MCP tool, a
+// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
+// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
+// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
+// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+//
+// Send the file one of two ways:
+//
+//   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
+//     `allowedTypes` when none was declared), at most `maxBytes`:
+//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
+//     uploaded and how it will be used, takes the file (or, for a voice, records
+//     one in the browser) and sends it. The link works for 15 minutes
+//     (`uploadPageExpiresAt`) and until the file has arrived.
+//
+// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
+// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
+// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
+// upload works once and expires an hour after it was created. Requires
+// `avatars:write`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
+func (c *ClientWithResponses) CreateUploadWithResponse(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error) {
+	rsp, err := c.CreateUpload(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUploadResponse(rsp)
+}
+
+// GetUploadWithResponse Upload status
+//
+// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
+// once a create or replace used it, or `expired` an hour after it was
+// created. Only the account that created it sees it. Requires
+// `avatars:read` or `avatars:write`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
+func (c *ClientWithResponses) GetUploadWithResponse(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*GetUploadResponse, error) {
+	rsp, err := c.GetUpload(ctx, uploadId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUploadResponse(rsp)
+}
+
 // ParseGetAccountResponse parses an HTTP response from a GetAccountWithResponse call
 func ParseGetAccountResponse(rsp *http.Response) (*GetAccountResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14848,6 +18437,49 @@ func ParseGetAccountBalanceResponse(rsp *http.Response) (*GetAccountBalanceRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AccountBalance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAccountEarningsResponse parses an HTTP response from a GetAccountEarningsWithResponse call
+func ParseGetAccountEarningsResponse(rsp *http.Response) (*GetAccountEarningsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountEarningsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountEarnings
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -15129,6 +18761,63 @@ func ParseRevokeApiKeyResponse(rsp *http.Response) (*RevokeApiKeyResponse, error
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateApiKeyResponse parses an HTTP response from a UpdateApiKeyWithResponse call
+func ParseUpdateApiKeyResponse(rsp *http.Response) (*UpdateApiKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateApiKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ApiErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -16270,6 +19959,9 @@ func ParseUpdateAvatarSponsorResponse(rsp *http.Response) (*UpdateAvatarSponsorR
 	case rsp.StatusCode == 404:
 		break // No content-type
 
+	case rsp.StatusCode == 409:
+		break // No content-type
+
 	}
 
 	return response, nil
@@ -16452,6 +20144,47 @@ func ParseReplaceAvatarThumbnailResponse(rsp *http.Response) (*ReplaceAvatarThum
 	return response, nil
 }
 
+// ParseDeleteAvatarVersionResponse parses an HTTP response from a DeleteAvatarVersionWithResponse call
+func ParseDeleteAvatarVersionResponse(rsp *http.Response) (*DeleteAvatarVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAvatarVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest VersionDeleteResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case rsp.StatusCode == 403:
+		break // No content-type
+
+	case rsp.StatusCode == 404:
+		break // No content-type
+
+	case rsp.StatusCode == 409:
+		break // No content-type
+
+	case rsp.StatusCode == 503:
+		break // No content-type
+
+	}
+
+	return response, nil
+}
+
 // ParseGetAvatarVoiceResponse parses an HTTP response from a GetAvatarVoiceWithResponse call
 func ParseGetAvatarVoiceResponse(rsp *http.Response) (*GetAvatarVoiceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -16533,6 +20266,429 @@ func ParseReplaceAvatarVoiceResponse(rsp *http.Response) (*ReplaceAvatarVoiceRes
 	case rsp.StatusCode == 413:
 		break // No content-type
 
+	}
+
+	return response, nil
+}
+
+// ParseGenerateClipResponse parses an HTTP response from a GenerateClipWithResponse call
+func ParseGenerateClipResponse(rsp *http.Response) (*GenerateClipResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GenerateClipResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GeneratedClipResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest GenerationBadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest GenerationPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest GenerationForbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest GenerationConflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest GenerationRateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest GenerationProviderFailed
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 409:
+		var headers GenerateClipResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GenerateClipResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseEnhancePortraitResponse parses an HTTP response from a EnhancePortraitWithResponse call
+func ParseEnhancePortraitResponse(rsp *http.Response) (*EnhancePortraitResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EnhancePortraitResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GeneratedPortraitsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest GenerationBadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest GenerationPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest GenerationConflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest GenerationRateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest GenerationProviderFailed
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 409:
+		var headers EnhancePortraitResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers EnhancePortraitResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGeneratePortraitsResponse parses an HTTP response from a GeneratePortraitsWithResponse call
+func ParseGeneratePortraitsResponse(rsp *http.Response) (*GeneratePortraitsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GeneratePortraitsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GeneratedPortraitsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest GenerationBadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest GenerationPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest GenerationForbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest GenerationConflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest GenerationRateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest GenerationProviderFailed
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 409:
+		var headers GeneratePortraitsResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers GeneratePortraitsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDesignVoiceResponse parses an HTTP response from a DesignVoiceWithResponse call
+func ParseDesignVoiceResponse(rsp *http.Response) (*DesignVoiceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DesignVoiceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DesignedVoicesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest GenerationBadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest GenerationPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest GenerationForbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest GenerationConflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest GenerationRateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest GenerationProviderFailed
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 409:
+		var headers DesignVoiceResponse409Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers409 = &headers
+	case rsp.StatusCode == 429:
+		var headers DesignVoiceResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil
@@ -16802,6 +20958,130 @@ func ParseEndSpeechSessionResponse(rsp *http.Response) (*EndSpeechSessionRespons
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateUploadResponse parses an HTTP response from a CreateUploadWithResponse call
+func ParseCreateUploadResponse(rsp *http.Response) (*CreateUploadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateUploadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest UploadCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUploadResponse parses an HTTP response from a GetUploadWithResponse call
+func ParseGetUploadResponse(rsp *http.Response) (*GetUploadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUploadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Upload
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
 		var dest ApiErrorResponse

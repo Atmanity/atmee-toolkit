@@ -81,24 +81,35 @@ instead. The API is at `https://api.atmanity.us`.
   answer.
 - **Render path** (`POST /v1/avatars/{id}/avatar_sessions`): the avatar joins
   the developer's own LiveKit room and gives their agent a face.
-  `livekit-plugins-atmee` wraps it for LiveKit Agents.
+  `livekit-plugins-atmee` wraps it for LiveKit Agents, and targets v1 avatars.
+- **Speech sessions** (`POST /v1/speech_sessions`, `start_speech_session`,
+  `atmee speech start`): speech-to-speech over a WebSocket, with no video.
+  The avatar needs a voice; a client connects with the token within 60
+  seconds.
 - **Avatars:** create from a portrait, a voice sample, a persona and
   knowledge files (local files through uploads, or https links); list, read,
   update the persona and settings, replace the portrait, voice or knowledge,
   delete. v2 seeds: list, capture more, select, remove an older version. An
-  agenda (conductor) per v2 avatar.
+  agenda (conductor) per v2 avatar. A v2 avatar's video is square (512×512)
+  by default, or portrait (384×672) or landscape (672×384) where the account
+  offers it (`get_account` `pricing.generation.clipResolutions`); a new
+  shape makes new seeds.
 - **Account:** the balance, the plan with its limits, per-minute prices and
   generation prices, and who the caller is.
 - **Generation:** portraits from a description, an enhanced or restyled
   version of a photo, voice previews from a description, each paid per call; the outputs
   go straight into an avatar's create or replace (a key needs
-  `generation:write` with `avatars:write`).
+  `generation:write` with `avatars:write`). Where offered, a **clip**: an
+  mp4 of up to 15 seconds of a portrait moving as a prompt says, silent, or
+  with sound from an audio file, in the same shapes; no avatar is made, it
+  needs v2 access, runs 1 to 15 seconds, and is paid by the second at the
+  price `get_account` reports.
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest
   session, sessions at once, visitor memory.
 - **Sponsoring:** the avatar's pool and its settings, moving credits in and
-  out (a key with `billing:write`).
+  out (signed in, or a key with `billing:write`).
 - **Languages:** an avatar takes one of the codes `update_avatar` accepts; a
   session may name another. The API reference lists which are spoken end to
   end.
@@ -116,7 +127,8 @@ instead. The API is at `https://api.atmanity.us`.
 - **The avatars server** (`atmee-avatars`, the Avatar API's own MCP server):
   avatars, seeds, uploads, test conversations, keys, agendas, sponsoring, the
   account, balance and prices, and generation: portraits from a description,
-  portrait enhancement or restyling and voice design (each paid per call).
+  portrait enhancement or restyling and voice design (each paid per call),
+  and clips (`generate_clip` or `atmee generate clip`, priced per second, with v2 access, where offered).
 - **The `atmee` CLI:** every Avatar API task from a terminal or CI, as a
   signed-in user or with a key (`docs/cli.md` in the GitHub repo
   `Atmanity/toolkit`).

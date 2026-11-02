@@ -80,3 +80,27 @@ func TestKeyAndSignInReplaceEachOther(t *testing.T) {
 		t.Fatalf("a key replaces the sign-in: %v %+v", err, s.Session())
 	}
 }
+
+func TestInUsesItsFolderAndKeyVariable(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("ATMEE_HOME", "/default")
+	t.Setenv("ATMEE_OTHER_HOME", "")
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_default")
+	t.Setenv("ATMEE_OTHER_KEY", "")
+	s := In(".other", "ATMEE_OTHER_HOME", "ATMEE_OTHER_KEY")
+	if s.Dir != filepath.Join(home, ".other") {
+		t.Fatal(s.Dir)
+	}
+	if s.APIKey() != "" {
+		t.Fatalf("read another variable: %q", s.APIKey())
+	}
+	t.Setenv("ATMEE_OTHER_KEY", "sk_atmee_other")
+	if s.APIKey() != "sk_atmee_other" {
+		t.Fatal(s.APIKey())
+	}
+	t.Setenv("ATMEE_OTHER_HOME", "/elsewhere")
+	if d := In(".other", "ATMEE_OTHER_HOME", "ATMEE_OTHER_KEY").Dir; d != "/elsewhere" {
+		t.Fatal(d)
+	}
+}

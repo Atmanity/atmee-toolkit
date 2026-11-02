@@ -48,7 +48,10 @@ it (the starter's `agentIn`).
    `onVideo(on)`). A session can have no video at all, from a voice-only
    runtime, and still talks, calls tools and answers `state`. An app that must
    not start without the face passes `waitForVideo: true`, which goes live
-   only once the video plays.
+   only once the video plays. The video has the avatar's own shape, square
+   (512×512) by default or portrait or landscape: size its box from the
+   video (`aspect-ratio: auto 1 / 1` with `object-fit: contain`, as the
+   starter's `try.html` does), never a fixed square that crops it.
 4. **Wait about 2.5 seconds more before the first `atmee.app` message or
    file drop.** The agent hears `atmee.app` only from the participant it has
    linked, and messages sent before that are dropped without a word. Queue

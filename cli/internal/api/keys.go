@@ -15,7 +15,6 @@ import (
 type (
 	Key       = avatarapi.ApiKey
 	KeySecret = avatarapi.ApiKeySecret
-	NewKey    = avatarapi.ApiKeyCreateRequest
 )
 
 // ParseKeyID validates a key id before any request.
@@ -41,13 +40,29 @@ func (c *Client) APIKeys(ctx context.Context) ([]Key, error) {
 }
 
 // CreateAPIKey makes a key; its secret is in the answer, and only there.
-func (c *Client) CreateAPIKey(ctx context.Context, k NewKey) (*KeySecret, error) {
-	r, err := c.gen.CreateApiKeyWithResponse(ctx, k)
+func (c *Client) CreateAPIKey(ctx context.Context, fields map[string]any) (*KeySecret, error) {
+	r, err := c.gen.CreateApiKeyWithBodyWithResponse(ctx, "application/json", jsonBody(fields))
 	if r == nil {
 		// The key may exist with a secret nobody saw: look before making another.
 		return nil, sentOnce(err, "check `atmee keys list` (and revoke a key you cannot use)")
 	}
 	return decode[KeySecret](r.HTTPResponse, r.Body, err)
+}
+
+// UpdateAPIKey changes the fields given (API names; a nil avatarId widens the
+// key to the whole account) and answers the key as saved, whose limits may be
+// below what was sent: the plan's ceilings apply on every edit. A failed edit
+// is safe to send again.
+func (c *Client) UpdateAPIKey(ctx context.Context, keyID string, fields map[string]any) (*Key, error) {
+	id, err := ParseKeyID(keyID)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.gen.UpdateApiKeyWithBodyWithResponse(ctx, id, "application/json", jsonBody(fields))
+	if r == nil {
+		return nil, err
+	}
+	return decode[Key](r.HTTPResponse, r.Body, err)
 }
 
 // RotateAPIKey issues a new secret for the key; the old one stops working.

@@ -33,7 +33,7 @@
       "group": "framing",
       "problem": "The face sits near the edge of a wide photo",
       "look_for": "A landscape photo with the face off-centre",
-      "why_it_fails": "The engine scales the short side to 512 and keeps only the centre square, so a face near the edge is cut or lost",
+      "why_it_fails": "The engine scales the photo to the avatar's frame (512×512 unless another resolution was chosen) and keeps only the centre crop of that shape, so a face near the edge is cut or lost",
       "severity": "blocks",
       "detect": {
         "by": "measure",
@@ -41,7 +41,7 @@
         "value": 1.3,
         "then": "look"
       },
-      "ask_creator": "Use a square photo, or one with the face in the middle",
+      "ask_creator": "Use a photo shaped like the avatar (square by default), or one with the face in the middle",
       "crop_result": "off-centre-landscape-cropped.jpg",
       "made_by": "transform",
       "source": "scripts/negative-examples/build.sh: base at the left edge of a 1600x900 landscape"
@@ -51,8 +51,8 @@
       "file": "person-too-small.jpg",
       "group": "framing",
       "problem": "The person is small in a large frame",
-      "look_for": "In the centre square, a face narrower than about a fifth of its width (half-body and full-body shots are fine when the face stays bigger than that)",
-      "why_it_fails": "The engine keeps the centre square at 512 px, so a small face ends up a few dozen pixels wide and loses its detail",
+      "look_for": "In the centre crop, a face narrower than about a fifth of its width (half-body and full-body shots are fine when the face stays bigger than that)",
+      "why_it_fails": "The engine keeps the centre crop at the avatar's frame size (512×512 by default), so a small face ends up a few dozen pixels wide and loses its detail",
       "severity": "likely-fails",
       "detect": {
         "by": "look"
@@ -97,15 +97,16 @@
       "file": "low-resolution.jpg",
       "group": "quality",
       "problem": "The photo is too small or upscaled",
-      "look_for": "Fewer than 512 px on the short side, or visible blocks",
-      "why_it_fails": "The engine works at 512×512; a smaller or upscaled photo animates soft and smeared",
+      "look_for": "Smaller than the avatar's frame on either side (512 px on the short side by default), or visible blocks",
+      "why_it_fails": "The engine works at the avatar's frame size (512×512 by default, never more than 512×512 pixels in all); a smaller or upscaled photo animates soft and smeared",
       "severity": "likely-fails",
       "detect": {
         "by": "measure",
         "check": "min_side",
-        "value": 512
+        "value": 512,
+        "note": "For a chosen non-square frame, compare width and height with that frame's instead"
       },
-      "ask_creator": "Use the original photo file, at least 512×512",
+      "ask_creator": "Use the original photo file, at least the avatar's frame size (512×512 by default)",
       "made_by": "transform",
       "source": "scripts/negative-examples/build.sh: base downscaled to 96 px and back up"
     },

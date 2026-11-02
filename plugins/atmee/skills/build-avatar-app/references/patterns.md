@@ -59,7 +59,8 @@ partner, a shopping assistant.
 - **`event`:** only the noteworthy changes (an error, a finished task),
   `ttl_s` about 15, with "react briefly if it deserves a word".
 - **Expect:** the check-in on quiet stretches; a `state` that says "speak
-  only when something noteworthy happens" keeps it brief.
+  only when something noteworthy happens" keeps it brief, and `checkInAfterS`
+  (`server.md`) sets it or turns it off.
 
 ## 4. Narrator driven by events
 
@@ -73,7 +74,7 @@ A game, a sports or market commentary, a guided story.
   talk now and how to answer, an `event` that invites them; `mute` and a new
   `state` when they leave.
 - **Expect:** the check-in ("Still there?") between events; keep events
-  frequent or accept it.
+  frequent, or start the session with `checkInAfterS: 0` (`server.md`).
 
 ## 5. Broadcast host
 

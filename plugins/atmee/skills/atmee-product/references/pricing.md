@@ -55,6 +55,8 @@ the date you read them.
 | Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` |
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
 | Generating portraits, enhancing a portrait, designing a voice through the avatars server | per call, only when results come back | `get_account` `pricing.generation` |
+| A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |
+| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | per second, only when it comes back; needs v2 access | `pricing.generation.clipPerSecondMicrocredits` (absent: clips aren't offered) |
 | Generating a portrait in Studio | per generation | shown in Studio |
 | A minute with a Signature (monetized) avatar on atmee.ai | per minute, at a higher rate; API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` |
 
@@ -94,15 +96,33 @@ into the avatar so that visitors talk on them instead of their own. Its
 settings: the most one session may spend, what happens when the pool runs
 out (pause, or spend the account's balance), automatic top-up, and whether
 visitors with no Atmee account may talk (with a daily allowance per
-visitor). Credits that no session holds can be withdrawn back. Sponsoring
-needs an API key with `billing:write` (a sign-in cannot sponsor), or Studio
-→ Billing.
+visitor). Credits that no session holds can be withdrawn back.
+
+A signed-in agent or user can sponsor directly, as can Studio → Billing or an
+API key with `billing:write`. To let anyone talk free without an account:
+
+1. Make the avatar public or unlisted (`update_avatar`, or `atmee avatars
+   update ID --visibility unlisted`).
+2. Fund it (`grant_sponsor`, or `atmee avatars sponsor grant ID MICROCREDITS`).
+3. Turn on anonymous access (`update_sponsor`, or `atmee avatars sponsor
+   update ID --anonymous --anonymous-daily-seconds N`).
+
+The money tools (`grant_sponsor`, `update_sponsor`, `withdraw_sponsor`) need
+`confirm: true`: ask the user first. Refusals name the next step:
+
+- `avatar_not_budget_managed`: nothing was funded yet; grant credits or turn
+  on auto top-up first.
+- `avatar_not_shared`: the avatar is private; make it public or unlisted.
+- `auto_topup_incomplete`: `autoTopupEnabled` needs a threshold and an amount;
+  send both with it.
+- `monetized_avatar_cannot_be_sponsored`: turn monetization off first, or
+  leave it unsponsored.
 
 ## Earnings
 
 Verified creators on atmee.ai turn avatars into Signature avatars and earn a
-share of the credits visitors pay for to talk to them: a paid plan's
-credits and pack credits (coupon credits earn nothing). The creator must be 18 or older, verified
+share of the credits visitors pay to talk to them, whether plan, pack or
+coupon credits. The creator must be 18 or older, verified
 (or hold documented authorisation for the person the avatar represents) and
 selected by Atmee: `https://www.atmee.ai/creator-monetization-terms`.
 
@@ -111,6 +131,7 @@ selected by Atmee: `https://www.atmee.ai/creator-monetization-terms`.
   plan allows a limited number of earning avatars.
 - Payouts go to the creator's Stripe Connect account, on request, above a
   minimum.
-- Sponsored minutes earn nothing, and a sponsored avatar can't also earn.
+- Sponsored sessions and the owner's own sessions earn nothing, and a
+  sponsored avatar can't also earn.
 - Sessions started through an API key never earn: the account is talking to
   its own avatar.

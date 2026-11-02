@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -37,6 +38,7 @@ type (
 	SourceFile      = avatarapi.AvatarSourceFile
 	VoiceFile       = avatarapi.AvatarVoice
 	Monetization    = avatarapi.AvatarMonetization
+	VersionDeleted  = avatarapi.VersionDeleteResponse
 )
 
 // decode checks the status and unmarshals any 2xx body into T.
@@ -234,9 +236,25 @@ func (c *Client) Delete(ctx context.Context, avatarID string) error {
 	return err
 }
 
-// ReplaceAppearance uploads a new portrait (v2: new candidates are captured).
+// DeleteVersion deletes an older version of a v2 avatar: every take of it and
+// the files only it used. pendingFiles counts what storage could not delete
+// yet; repeating the call retries them.
+func (c *Client) DeleteVersion(ctx context.Context, avatarID, versionID string) (*VersionDeleted, error) {
+	id, err := ParseID(avatarID)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.gen.DeleteAvatarVersionWithResponse(ctx, id, versionID)
+	if r == nil {
+		return nil, err
+	}
+	return decode[VersionDeleted](r.HTTPResponse, r.Body, err)
+}
+
+// ReplaceAppearance sets a new portrait from a local file, an https URL or
+// upload:<uploadId> (v2: new candidates are captured).
 func (c *Client) ReplaceAppearance(ctx context.Context, avatarID, path string) error {
-	return c.putFile(avatarID, path, func(id uuid.UUID, ct string, body io.Reader) (*http.Response, []byte, error) {
+	return c.putFile(avatarID, path, "image", func(id uuid.UUID, ct string, body io.Reader) (*http.Response, []byte, error) {
 		r, err := c.gen.ReplaceAvatarAppearanceWithBodyWithResponse(ctx, id, ct, body)
 		if r == nil {
 			return nil, nil, err
@@ -245,9 +263,10 @@ func (c *Client) ReplaceAppearance(ctx context.Context, avatarID, path string) e
 	})
 }
 
-// ReplaceVoice uploads a new voice sample (v2: re-cloned, new candidates).
+// ReplaceVoice sets a new voice sample from a local file, an https URL or
+// upload:<uploadId> (v2: re-cloned, new candidates).
 func (c *Client) ReplaceVoice(ctx context.Context, avatarID, path string) error {
-	return c.putFile(avatarID, path, func(id uuid.UUID, ct string, body io.Reader) (*http.Response, []byte, error) {
+	return c.putFile(avatarID, path, "voice", func(id uuid.UUID, ct string, body io.Reader) (*http.Response, []byte, error) {
 		r, err := c.gen.ReplaceAvatarVoiceWithBodyWithResponse(ctx, id, ct, body)
 		if r == nil {
 			return nil, nil, err
@@ -256,9 +275,19 @@ func (c *Client) ReplaceVoice(ctx context.Context, avatarID, path string) error 
 	})
 }
 
-func (c *Client) putFile(avatarID, path string, send func(uuid.UUID, string, io.Reader) (*http.Response, []byte, error)) error {
+// putFile sends a local path as a file, or a remote one as the JSON form's
+// field.
+func (c *Client) putFile(avatarID, path, field string, send func(uuid.UUID, string, io.Reader) (*http.Response, []byte, error)) error {
 	id, err := ParseID(avatarID)
 	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(path, "http://") {
+		return fmt.Errorf("asset URLs must be https:// (%s)", path)
+	}
+	if isURL(path) {
+		resp, b, err := send(id, "application/json", replaceFromRef(field, path))
+		_, err = decode[struct{}](resp, b, err)
 		return err
 	}
 	ct, body, err := multipartFiles("file", []string{path}, nil)
@@ -549,6 +578,12 @@ type EmbedSessionInput struct {
 	// avatar uses them (and any app persona or rules), sent as
 	// appTools.instructions; nil leaves it out. It needs Tools.
 	Instructions *string
+	// NoWelcome starts without the avatar's self-introduction or welcome
+	// back, sent as welcome: false; it then waits for the user to speak.
+	NoWelcome bool
+	// CheckInAfterS is the seconds of silence before the avatar checks in, 0
+	// to 3600, 0 for no check-in; nil keeps the default.
+	CheckInAfterS *float64
 }
 
 // StartSession waits for the avatar to join, which can take minutes on a cold pool.
@@ -578,6 +613,16 @@ func (c *Client) StartSession(ctx context.Context, avatarID string, in EmbedSess
 			appTools["instructions"] = *in.Instructions
 		}
 		body["appTools"] = appTools
+	}
+	if in.NoWelcome {
+		body["welcome"] = false
+	}
+	if in.CheckInAfterS != nil {
+		seconds := *in.CheckInAfterS
+		if !(seconds >= 0 && seconds <= 3600) {
+			return nil, fmt.Errorf("check-in must be 0 to 3600 seconds, 0 for none (got %v)", seconds)
+		}
+		body["checkInAfterS"] = seconds
 	}
 	ctx, cancel := context.WithTimeout(ctx, JoinWaitTimeout)
 	defer cancel()

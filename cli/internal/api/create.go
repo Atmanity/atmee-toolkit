@@ -12,13 +12,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
 )
 
 // CreateInput is a create request. Image, Voice and Knowledge are https URLs
-// or local paths (all of one kind). Image and Voice are optional: an avatar
+// or upload:<uploadId> (what generation returns), or local paths (all of one
+// kind). Image and Voice are optional: an avatar
 // created without one is a draft, completed later by ReplaceAppearance and
 // ReplaceVoice (a v1 avatar with only a portrait is render-only instead).
 type CreateInput struct {
@@ -41,6 +45,48 @@ type CreateInput struct {
 	SponsorMicrocredits, SponsorMaxPerSession *int
 	// RuntimeSeed is the v2 renderer's runtime seed (nil: the default, 42).
 	RuntimeSeed *int
+	// Resolution is the v2 frame size (nil: the default, 512x512).
+	Resolution *Resolution
+}
+
+// Resolution is a v2 frame size in pixels.
+type Resolution = avatarapi.RenderResolution
+
+// The v2 renderer's frame rule: each side a multiple of ResolutionStep from
+// MinResolutionSide to MaxResolutionSide, at most MaxResolutionPixels in all.
+const (
+	ResolutionStep      = 32
+	MinResolutionSide   = 256
+	MaxResolutionSide   = 1024
+	MaxResolutionPixels = 512 * 512
+)
+
+// ParseResolution reads WxH (e.g. 384x672) and checks it against the
+// renderer's rule. Which sizes a deployment offers is the API's to say.
+func ParseResolution(s string) (Resolution, error) {
+	w, h, ok := strings.Cut(strings.ToLower(strings.TrimSpace(s)), "x")
+	wi, werr := strconv.Atoi(strings.TrimSpace(w))
+	hi, herr := strconv.Atoi(strings.TrimSpace(h))
+	if !ok || werr != nil || herr != nil {
+		return Resolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 512x512, 384x672 (portrait) or 672x384 (landscape); got %q", s)
+	}
+	r := Resolution{Width: wi, Height: hi}
+	return r, CheckResolution(r)
+}
+
+// CheckResolution refuses a frame size the renderer cannot take.
+func CheckResolution(r Resolution) error {
+	side := func(n int) bool {
+		return n >= MinResolutionSide && n <= MaxResolutionSide && n%ResolutionStep == 0
+	}
+	if !side(r.Width) || !side(r.Height) {
+		return fmt.Errorf("resolution %dx%d: width and height must each be a multiple of %d from %d to %d",
+			r.Width, r.Height, ResolutionStep, MinResolutionSide, MaxResolutionSide)
+	}
+	if r.Width*r.Height > MaxResolutionPixels {
+		return fmt.Errorf("resolution %dx%d: at most %d pixels (512x512), e.g. 384x672 or 672x384", r.Width, r.Height, MaxResolutionPixels)
+	}
+	return nil
 }
 
 // MaxRuntimeSeed is the largest runtime seed the API takes.
@@ -71,7 +117,13 @@ func engineOf(a *Avatar) string {
 	return string(*a.Engine)
 }
 
-func isURL(s string) bool { return strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") }
+func isURL(s string) bool {
+	return strings.HasPrefix(s, "https://") || strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "upload:")
+}
+
+// IsRemote says s names a file the API already can reach (an https URL or
+// upload:<uploadId>) rather than a local path.
+func IsRemote(s string) bool { return isURL(s) }
 
 func expandHome(p string) string {
 	if strings.HasPrefix(p, "~/") {
@@ -117,6 +169,15 @@ func (in CreateInput) Manifest() (map[string]any, error) {
 			return nil, err
 		}
 		m["runtimeSeed"] = *in.RuntimeSeed
+	}
+	if r := in.Resolution; r != nil {
+		if engine == "v1" {
+			return nil, errors.New("--resolution is only for v2 avatars")
+		}
+		if err := CheckResolution(*r); err != nil {
+			return nil, err
+		}
+		m["resolution"] = map[string]int{"width": r.Width, "height": r.Height}
 	}
 	if engine != "v1" {
 		m["engine"] = engine
@@ -208,7 +269,7 @@ func (c *Client) Create(ctx context.Context, in CreateInput) (*CreateResult, *Qu
 			return nil, nil, err
 		}
 	default:
-		return nil, nil, errors.New("give image, voice and knowledge either all as https URLs or all as local files")
+		return nil, nil, errors.New("give image, voice and knowledge either all as https URLs or upload: references, or all as local files")
 	}
 	r, err := c.gen.CreateAvatarWithBodyWithResponse(ctx, contentType, bytes.NewReader(payload))
 	if r == nil {

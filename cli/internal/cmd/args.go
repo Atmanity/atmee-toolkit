@@ -15,6 +15,8 @@ var argHints = map[string]string{
 	"PATH":         "a local file",
 	"MICROCREDITS": "an amount; 100 microcredits = 1 credit",
 	"KEY_ID":       "find it with `atmee keys list`",
+	"VERSION_ID":   "find it with `atmee avatars candidates list AVATAR_ID --all`",
+	"MESSAGE":      "what to say, or - to read it from stdin",
 }
 
 // argNames are the positional arguments a command's Use line names, in order

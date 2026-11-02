@@ -34,6 +34,15 @@ avatars server with:
   (`SKILL.md`, Files and uploads) or a generated portrait or voice as it came
   back (the credits-and-generation reference), or a public https link the
   creator gave.
+- **`resolution`:** leave it out (512×512, square) unless the creator wants
+  a tall or wide video, then `{"width": 384, "height": 672}` (portrait) or
+  `{"width": 672, "height": 384}` (landscape). When `get_account` has
+  `pricing.generation.clipResolutions`, only those sizes are offered; without
+  `clipPerSecondMicrocredits` stay square. An `invalid_input` names the sizes
+  on offer. The portrait is cropped to that
+  shape at its centre, so check the face against it. A later change on
+  `update_avatar` makes new seeds, like a new portrait. v1 refuses it: leave
+  it out of a v1 create, and tell the creator the video stays square.
 
 The avatars server's create tool may default to manual selection or several
 seeds: pass the selection and count above every time.

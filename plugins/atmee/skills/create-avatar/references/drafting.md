@@ -39,12 +39,13 @@ The language is one of `en`, `zh-TW`, `zh-CN`, `ja`, `ko`, `fr`, `vi`, `es`,
 Check what the creator has against these rules. Warn, don't block.
 
 - **Portrait:** run the portrait checks (the portrait-checks reference). In
-  short: at least 512×512 (the engine keeps the centre square), one person
+  short: at least the avatar's frame on each side (the engine keeps the centre
+  crop of that frame, 512×512 unless another resolution is chosen), one person
   facing the camera, the mouth and jaw visible and uncovered, lips slightly
   parted or a relaxed smile; jpg, png or webp up to 10 MB. A v2 avatar takes a
   wide range of shots and styles: a close-up with the shoulders, a half-body
   or a full-body photo, a photo, a painting or a cartoon. Only the face has to
-  stay big enough in the centre square: narrower than about a fifth of it,
+  stay big enough in the centre crop: narrower than about a fifth of it,
   the server refuses the portrait (`portrait_face_too_small`). Use whatever
   framing the creator gives you.
 - **Voice sample:**

@@ -10,7 +10,8 @@
 <style>
   body { font: 15px/1.4 system-ui, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 16px; }
   #stage { position: relative; border-radius: 12px; }
-  video { display: block; width: 100%; aspect-ratio: 1; background: #111; border-radius: 12px; object-fit: cover; }
+  /* The avatar's own shape (square, portrait or landscape): the frame's size once it plays, a square until then. */
+  video { display: block; width: 100%; height: auto; max-height: 75vh; aspect-ratio: auto 1 / 1; background: #111; border-radius: 12px; object-fit: contain; }
   /* Over the video, not instead of it: a hidden video may not play, and its playing is what reveals it. */
   #novideo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #bbb; background: #111; border-radius: 12px; }
   #novideo[hidden] { display: none; }

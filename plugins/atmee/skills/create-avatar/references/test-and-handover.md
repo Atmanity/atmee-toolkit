@@ -3,8 +3,8 @@
 Once the character is live on the avatar (Apply the character in the drafting
 reference), the creator checks it stays in character (step 4), then you hand
 it over (step 5). Never start the test before the character is live: until
-then the avatar answers without it. The creator runs the test, not you: the
-avatars server has no text session, and you can't hear a live call.
+then the avatar answers without it. The creator runs the test, not you: you
+can't hear a live call.
 
 ## The avatar's links
 

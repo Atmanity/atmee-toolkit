@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -22,8 +23,9 @@ import (
 
 func (a *app) avatarsCmd() *cobra.Command {
 	c := group("avatars", "Create, build, pick and talk to your avatars", a.createCmd(), a.listCmd(), a.getCmd(), a.waitCmd(), a.updateCmd(), a.deleteCmd(),
-		a.replaceCmd("replace-voice", "Replace the voice sample (a local file). v2: builds a new candidate; the current one keeps serving until it is finished (with manual selection, until you pick a new one).", (*api.Client).ReplaceVoice),
-		a.replaceCmd("replace-appearance", "Replace the portrait (a local file: front-facing, face at least a third of the frame, lips slightly parted). v2: builds new candidates from it.", (*api.Client).ReplaceAppearance),
+		a.deleteVersionCmd(),
+		a.replaceCmd("replace-voice", "Replace the voice sample (a local file, an https URL or upload:ID). v2: builds a new candidate; the current one keeps serving until it is finished (with manual selection, until you pick a new one).", (*api.Client).ReplaceVoice),
+		a.replaceCmd("replace-appearance", "Replace the portrait (a local file, an https URL or upload:ID: front-facing, face at least a third of the frame, lips slightly parted). v2: builds new candidates from it.", (*api.Client).ReplaceAppearance),
 		a.replaceKnowledgeCmd(), a.getKnowledgeCmd(), a.questionnaireCmd(), a.thumbnailCmd(), a.monetizationCmd(), a.getFileCmd("get-appearance"), a.getFileCmd("get-voice"), a.candidatesCmd(), a.conductorCmd(), a.sponsorCmd(), a.sessionCmd())
 	// The local mock's failure injection on any avatar command (X-Mock-Scenario).
 	c.PersistentFlags().StringVar(&a.mockScenario, "mock-scenario", "", "Local mock only")
@@ -59,7 +61,35 @@ type configFile struct {
 	SponsorMicro     *int           `json:"sponsor_microcredits"`
 	SponsorCap       *int           `json:"sponsor_max_per_session"`
 	RuntimeSeed      *int           `json:"runtime_seed"`
+	Resolution       *configRes     `json:"resolution"`
 	Name             *string        `json:"name"` // ignored: --name wins
+}
+
+// configRes is --config's resolution: "WxH" as --resolution takes it, or
+// {"width": W, "height": H} as the API does.
+type configRes api.Resolution
+
+func (r *configRes) UnmarshalJSON(b []byte) error {
+	var s string
+	if json.Unmarshal(b, &s) == nil {
+		v, err := api.ParseResolution(s)
+		if err != nil {
+			return err
+		}
+		*r = configRes(v)
+		return nil
+	}
+	var o struct {
+		Width  *int `json:"width"`
+		Height *int `json:"height"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&o); err != nil || o.Width == nil || o.Height == nil {
+		return errors.New(`resolution takes "WxH" (e.g. "384x672") or {"width": W, "height": H}`)
+	}
+	*r = configRes{Width: *o.Width, Height: *o.Height}
+	return nil
 }
 
 func readConfig(path string, in io.Reader) (configFile, error) {
@@ -94,7 +124,7 @@ func readConfig(path string, in io.Reader) (configFile, error) {
 func (a *app) createCmd() *cobra.Command {
 	var (
 		name, image, voice, eng, selection, previewMsg, whoPrompt, whatPrompt, greeting, selfIntro string
-		facts, factsFile, alias, spokenName, language, visibility, configPath                      string
+		facts, factsFile, alias, spokenName, language, visibility, configPath, resolution          string
 		candidates, sponsorMicro, sponsorCap, runtimeSeed                                          int
 		guardrails, knowledge, knownAliases, habits                                                []string
 		previews, noPreviews, wait, jsonOut                                                        bool
@@ -130,6 +160,10 @@ func (a *app) createCmd() *cobra.Command {
 				in.Previews, in.Facts, in.Knowledge = cfg.Previews, deref(cfg.Facts), cfg.Knowledge
 				in.SponsorMicrocredits, in.SponsorMaxPerSession = cfg.SponsorMicro, cfg.SponsorCap
 				in.RuntimeSeed = cfg.RuntimeSeed
+				if cfg.Resolution != nil {
+					r := api.Resolution(*cfg.Resolution)
+					in.Resolution = &r
+				}
 				if cfg.WhoPrompt != nil && cfg.Personality != nil {
 					return usagef("--config: who_prompt and personality are the same field (personality is its older name): give one")
 				}
@@ -183,6 +217,13 @@ func (a *app) createCmd() *cobra.Command {
 			}
 			if f.Changed("runtime-seed") {
 				in.RuntimeSeed = &runtimeSeed
+			}
+			if f.Changed("resolution") {
+				r, err := api.ParseResolution(resolution)
+				if err != nil {
+					return usagef("%v", err)
+				}
+				in.Resolution = &r
 			}
 			if factsFile != "" {
 				b, err := os.ReadFile(factsFile)
@@ -281,8 +322,8 @@ func (a *app) createCmd() *cobra.Command {
 	f := c.Flags()
 	f.StringVar(&name, "name", "", "Avatar name (required)")
 	_ = c.MarkFlagRequired("name")
-	f.StringVar(&image, "image", "", "Portrait: local file or https URL. Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
-	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file or https URL (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
+	f.StringVar(&image, "image", "", "Portrait: local file, https URL or upload:ID (from atmee generate). Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
+	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file, https URL or upload:ID (from atmee generate) (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
 	f.StringVar(&eng, "engine", "", "v2 (default) or v1")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
@@ -305,9 +346,10 @@ func (a *app) createCmd() *cobra.Command {
 	f.BoolVar(&noPreviews, "no-previews", false, "v1: no preview clips")
 	f.StringVar(&configPath, "config", "", "Read these options from a JSON file, keys in snake_case (- reads stdin)")
 	f.BoolVar(&wait, "wait", false, "Wait until it is ready (with --seed-selection manual, until you need to pick a candidate)")
-	f.IntVar(&sponsorMicro, "sponsor-microcredits", 0, "Put credits in its sponsor pool so visitors talk for free (100 = 1 credit; API key with billing:write)")
+	f.IntVar(&sponsorMicro, "sponsor-microcredits", 0, "Put credits in its sponsor pool so visitors talk for free (100 = 1 credit; a signed-in user, or an API key with billing:write)")
 	f.IntVar(&sponsorCap, "sponsor-max-per-session", 0, "Most the sponsor pool pays for one conversation, in microcredits")
 	f.IntVar(&runtimeSeed, "runtime-seed", 0, runtimeSeedHelp)
+	f.StringVar(&resolution, "resolution", "", resolutionHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	promptAliases(c)
 	return c
@@ -526,6 +568,55 @@ func (a *app) deleteCmd() *cobra.Command {
 	return c
 }
 
+func (a *app) deleteVersionCmd() *cobra.Command {
+	var confirm, jsonOut bool
+	c := &cobra.Command{
+		Use:   "delete-version AVATAR_ID VERSION_ID",
+		Short: "Delete an older version of a v2 avatar, for good (asks first; --yes skips the question).",
+		Long: "Delete every take of an older version of a v2 avatar and the files only that version uses; it cannot be restored. " +
+			"The current version, and one holding the serving or selected take, answer 409 version_in_use; one whose capture is still " +
+			"running answers 409 version_busy. If storage could not delete everything, the answer counts what is left: run it again.",
+		Example: `  atmee avatars candidates list AVATAR_ID --all
+  atmee avatars delete-version AVATAR_ID 1a2b3c4d`,
+		Args: exactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if _, err := api.ParseID(args[0]); err != nil {
+				return usagef("%v", err)
+			}
+			if !versionID.MatchString(args[1]) {
+				return usagef("%q is not a version id (8 hex characters; find it with `atmee avatars candidates list %s --all`)", args[1], args[0])
+			}
+			if !confirm {
+				if err := a.confirm(fmt.Sprintf("Delete version %s of avatar %s and its takes for good? [y/N]", args[1], args[0])); err != nil {
+					return err
+				}
+			}
+			cl, err := a.api()
+			if err != nil {
+				return err
+			}
+			d, err := cl.DeleteVersion(ctx(), args[0], args[1])
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				return a.printJSON(d)
+			}
+			a.printf("Deleted version %s: %s, %s.\n", d.VersionId, plural(len(d.DeletedCandidateIds), "take"), plural(d.DeletedFiles, "file"))
+			if d.PendingFiles > 0 {
+				a.printf("%s could not be deleted yet: run it again to retry.\n", plural(d.PendingFiles, "file"))
+			}
+			return nil
+		},
+	}
+	c.Flags().BoolVar(&confirm, "yes", false, "Delete without asking")
+	c.Flags().BoolVar(&jsonOut, "json", false, jsonHelp)
+	return c
+}
+
+// versionID is a version id's shape (see the API's versionId parameter).
+var versionID = regexp.MustCompile(`^[0-9a-f]{8}$`)
+
 func (a *app) replaceCmd(use, short string, call func(*api.Client, context.Context, string, string) error) *cobra.Command {
 	return &cobra.Command{
 		Use:   use + " AVATAR_ID PATH",
@@ -686,6 +777,11 @@ func (a *app) reportSponsor(sp *api.SponsorGrant) {
 const runtimeSeedHelp = "v2: the renderer's runtime seed, 0-2147483647 (default 42): another seed gives different motion " +
 	"during conversations; the take and its preview stay the same. Applies from the next session; nothing rebuilds"
 
+// resolutionHelp is the --resolution flag's help on create and update.
+const resolutionHelp = "v2: the frame size as `WxH`, e.g. 512x512 (default, square), 384x672 (portrait) or 672x384 (landscape): " +
+	"each side a multiple of 32 from 256 to 1024, at most 512x512 pixels in all; atmee account lists the sizes offered. " +
+	"The portrait is framed at that size, so a new size builds new candidates"
+
 // spokenNameHelp and knownAliasHelp describe the persona's name flags
 // (Studio's "Pronunciation" and "Known aliases").
 const (
@@ -761,6 +857,8 @@ func download(link, path string) error {
 	return os.Rename(f.Name(), path)
 }
 
+const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
+
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
 // or the account could not be read (the create then says so itself).
 func noV2Reason(acct *api.Account, err error) string {
@@ -769,8 +867,7 @@ func noV2Reason(acct *api.Account, err error) string {
 	}
 	switch string(*acct.V2Access) {
 	case "invite_required":
-		return "v2 avatars are invite-only for now and this account has not been let in; " +
-			"redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page) to make v2"
+		return "v2 avatars are invite-only for now and this account has not been let in; " + redeemV2Hint + " to make v2"
 	case "unavailable":
 		return "v2 avatars are not offered on this server"
 	}

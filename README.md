@@ -54,9 +54,7 @@ go install github.com/Atmanity/toolkit/cli/cmd/atmee@latest
 atmee login
 ```
 
-While this repo is members-only, run `gh auth setup-git` once and put
-`GOPRIVATE=github.com/Atmanity/toolkit` in front of `go install`. The binary
-lands in `$(go env GOPATH)/bin` (usually `~/go/bin`), which must be on your
+The binary lands in `$(go env GOPATH)/bin` (usually `~/go/bin`), which must be on your
 `PATH`. Run `go install` again to upgrade.
 Every command and flag: [docs/cli.md](docs/cli.md).
 

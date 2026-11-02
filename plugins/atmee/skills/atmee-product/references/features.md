@@ -102,7 +102,7 @@ instead. The API is at `https://api.atmanity.us`.
   `generation:write` with `avatars:write`). Where offered, a **clip**: an
   mp4 of up to 15 seconds of a portrait moving as a prompt says, silent, or
   with sound from an audio file, in the same shapes; no avatar is made, it
-  needs v2 access, runs 1 to 15 seconds, and is paid by the second at the
+  needs v2 access, runs 1 to 15 seconds, and is paid by its length at the
   price `get_account` reports.
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
@@ -128,7 +128,7 @@ instead. The API is at `https://api.atmanity.us`.
   avatars, seeds, uploads, test conversations, keys, agendas, sponsoring, the
   account, balance and prices, and generation: portraits from a description,
   portrait enhancement or restyling and voice design (each paid per call),
-  and clips (`generate_clip` or `atmee generate clip`, priced per second, with v2 access, where offered).
+  and clips (`generate_clip` or `atmee generate clip`, priced by its length, with v2 access, where offered).
 - **The `atmee` CLI:** every Avatar API task from a terminal or CI, as a
   signed-in user or with a key (`docs/cli.md` in the GitHub repo
   `Atmanity/toolkit`).

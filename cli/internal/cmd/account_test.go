@@ -16,8 +16,9 @@ func TestCredits(t *testing.T) {
 	}
 }
 
-// accountAPI answers the account reads as the Avatar API does.
-func accountAPI(t *testing.T) *httptest.Server {
+// accountAPI answers the account reads as the Avatar API does; account, if
+// given, replaces the GET /v1/account body.
+func accountAPI(t *testing.T, account ...string) *httptest.Server {
 	t.Helper()
 	routes := map[string]string{
 		"/v1/account/balance": `{"wallet":"direct","spendableMicrocredits":4998500,"planMicrocredits":98500,"topupMicrocredits":4900000,
@@ -36,6 +37,9 @@ func accountAPI(t *testing.T) *httptest.Server {
 			"scopes":["sessions","avatars:read"],"billingMode":"metered","active":true,"maxSessionSeconds":600,
 			"spendCap":{"limitMicrocredits":50000,"window":"monthly","spentMicrocredits":1250,"remainingMicrocredits":48750,
 				"windowResetsAt":"2026-11-01T12:00:00Z","enforced":true}}`,
+	}
+	if len(account) > 0 {
+		routes["/v1/account"] = account[0]
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Api-Key") != "sk_atmee_x" {
@@ -91,7 +95,54 @@ func TestAccount(t *testing.T) {
 		}
 	}
 	out, _, _ = run(t, "", "account", "--json")
-	if !strings.Contains(out, `"renderV2PerMinuteMicrocredits": 100`) || !strings.Contains(out, `"status": "verified"`) {
+	if !strings.Contains(out, `"renderV2PerMinuteMicrocredits": 100`) || !strings.Contains(out, `"status": "verified"`) ||
+		strings.Contains(out, "V2PerMinuteMicrocredits\": 0") {
+		t.Fatalf("--json: %s", out)
+	}
+}
+
+// The 2026 prices: a conversation rate per engine and the clip per 15
+// seconds; the deprecated per-second clip price is not shown beside it.
+func TestAccountPerEnginePrices(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},
+		"limits":{"apiAccess":true},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"sessionV2PerMinuteMicrocredits":200,"monetizedPerMinuteMicrocredits":200,
+			"monetizedV2PerMinuteMicrocredits":400,"renderV1PerMinuteMicrocredits":50,"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0,
+			"generation":{"portraitsMicrocredits":100,"enhancementsMicrocredits":100,"voicesMicrocredits":100,
+				"clipPer15SecondsMicrocredits":100,"clipPerSecondMicrocredits":7}},
+		"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
+	out, errOut, code := run(t, "", "account")
+	if code != 0 {
+		t.Fatalf("%d %s", code, errOut)
+	}
+	for _, want := range []string{"conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min",
+		"voice 1.00 · clip 1.00 per 15 s credits"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "/s ") {
+		t.Errorf("per-second clip price shown:\n%s", out)
+	}
+}
+
+// A reported v2 rate of 0 is shown as 0, not taken for an older server.
+func TestAccountFreeV2Conversation(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},
+		"limits":{"apiAccess":true},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"sessionV2PerMinuteMicrocredits":0,"monetizedPerMinuteMicrocredits":200,
+			"monetizedV2PerMinuteMicrocredits":300,"renderV1PerMinuteMicrocredits":50,"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},
+		"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
+	out, errOut, code := run(t, "", "account")
+	if code != 0 || !strings.Contains(out, "conversation v1 1.00/min, v2 0.00/min") {
+		t.Fatalf("%d %s\n%s", code, errOut, out)
+	}
+	out, _, _ = run(t, "", "account", "--json")
+	if !strings.Contains(out, `"sessionV2PerMinuteMicrocredits": 0`) || strings.Contains(out, "SessionV2Reported") {
 		t.Fatalf("--json: %s", out)
 	}
 }

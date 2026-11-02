@@ -21,20 +21,18 @@ What gets installed:
 
 ## 0. Before you start
 
-- **Repository access.** `Atmanity/toolkit` is members-only until it goes
-  public. Check that this machine can read it:
+- **Repository.** Everything installs from the public GitHub repo
+  `Atmanity/toolkit`; no GitHub account or sign-in is needed. Check that this
+  machine can reach it:
 
   ```
   git ls-remote https://github.com/Atmanity/toolkit.git HEAD
   ```
 
-  If that fails and `gh` is installed, run `gh auth status`; when it is
-  signed in, run `gh auth setup-git` (so git uses that sign-in) and try the
-  check again. If it still fails, stop and tell the person: "atmee is
-  invite-only for now. Ask the Atmanity team for access to the GitHub repo
-  Atmanity/toolkit. Then sign in to GitHub on this machine with
-  `gh auth login` and `gh auth setup-git`, approve single sign-on for the
-  Atmanity organisation if GitHub asks, and ask me again."
+  If that fails, the machine can't reach GitHub (no network, a proxy or a
+  firewall). Stop and tell the person: "This machine can't reach
+  github.com/Atmanity/toolkit. Check the network or proxy settings and ask me
+  again."
 - **Already installed?** Skip to [step 4](#4-verify) only when you have all
   five skills (`create-avatar`, `plan-avatar-app`, `build-avatar-app`,
   `atmee-setup` and `atmee-product`) and you
@@ -263,7 +261,7 @@ Tell the person, in one or two lines, for example:
 
 | What you see | What to do |
 |---|---|
-| `git ls-remote` or the marketplace add fails with "not found" or an auth error | The machine can't read the private repo. Give the access message from step 0. |
+| `git ls-remote` or the marketplace add fails | The machine can't reach GitHub. Check the network or proxy, as in step 0. The repo is public, so no GitHub sign-in is needed. |
 | Claude Code lists the plugin but no atmee tools | Ask the person to type `/reload-plugins --force`, or to restart Claude Code if that doesn't help; if the tools are still missing, `/mcp` shows each server's status. |
 | Codex shows no atmee tools after a restart | Run `codex mcp list`. If `atmee-avatars` is missing, add it with the plugin's own address: `codex mcp add atmee-avatars --url https://api.atmanity.us/mcp`. Then sign in as in step 3. |
 | `npx skills` says Node.js is too old | Ask the person to install Node.js 22.20 or newer, or use the plugin route if their agent has one. |

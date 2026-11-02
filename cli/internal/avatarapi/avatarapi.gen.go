@@ -1729,20 +1729,26 @@ type AccountPricing struct {
 	// Generation The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
 	Generation *GenerationPricing `json:"generation,omitempty"`
 
-	// MonetizedPerMinuteMicrocredits A minute with a monetized avatar on atmee.ai; API sessions are never charged it.
+	// MonetizedPerMinuteMicrocredits What a viewer pays per minute with a monetized v1 avatar on atmee.ai (its owner pays `sessionPerMinuteMicrocredits`); API sessions are never charged it.
 	MonetizedPerMinuteMicrocredits int `json:"monetizedPerMinuteMicrocredits"`
+
+	// MonetizedV2PerMinuteMicrocredits What a viewer pays per minute with a monetized v2 avatar on atmee.ai (its owner pays `sessionV2PerMinuteMicrocredits`); API sessions are never charged it.
+	MonetizedV2PerMinuteMicrocredits int `json:"monetizedV2PerMinuteMicrocredits"`
 
 	// PreviewClipMicrocredits One preview clip.
 	PreviewClipMicrocredits int `json:"previewClipMicrocredits"`
 
-	// RenderV1PerMinuteMicrocredits An avatar session of a v1 avatar per minute.
+	// RenderV1PerMinuteMicrocredits An avatar session (render only, your own agent) of a v1 avatar per minute.
 	RenderV1PerMinuteMicrocredits int `json:"renderV1PerMinuteMicrocredits"`
 
-	// RenderV2PerMinuteMicrocredits An avatar session of a v2 avatar per minute.
+	// RenderV2PerMinuteMicrocredits An avatar session (render only, your own agent) of a v2 avatar per minute.
 	RenderV2PerMinuteMicrocredits int `json:"renderV2PerMinuteMicrocredits"`
 
-	// SessionPerMinuteMicrocredits A conversation (`POST /v1/session`) per minute.
+	// SessionPerMinuteMicrocredits A conversation (`POST /v1/session`) with a v1 avatar per minute, the full stack (speech, language model, voice and render).
 	SessionPerMinuteMicrocredits int `json:"sessionPerMinuteMicrocredits"`
+
+	// SessionV2PerMinuteMicrocredits A conversation (`POST /v1/session`) with a v2 avatar per minute, the full stack.
+	SessionV2PerMinuteMicrocredits int `json:"sessionV2PerMinuteMicrocredits"`
 
 	// SpeechPerMinuteMicrocredits A speech session (`POST /v1/speech_sessions`) per minute; null on a deployment that does not report it.
 	SpeechPerMinuteMicrocredits *int `json:"speechPerMinuteMicrocredits,omitempty"`
@@ -3767,7 +3773,7 @@ type GeneratedClip struct {
 type GeneratedClipResponse struct {
 	Clip GeneratedClip `json:"clip"`
 
-	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit), the price per second times `durationSeconds`; 0 on a replay.
+	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit), the price per 15 seconds times `durationSeconds` / 15, rounded up; 0 on a replay.
 	MicrocreditsCharged int `json:"microcreditsCharged"`
 
 	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
@@ -3812,7 +3818,11 @@ type GeneratedPortraitsResponse struct {
 
 // GenerationPricing The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
 type GenerationPricing struct {
-	// ClipPerSecondMicrocredits One second of a `POST /v1/generation/clips` clip (a clip costs this times its `durationSeconds`). Absent where clips are not offered.
+	// ClipPer15SecondsMicrocredits Fifteen seconds of a `POST /v1/generation/clips` clip; a clip costs this times its `durationSeconds` / 15, rounded up (8 seconds at 100 cost 54). Absent where clips are not offered.
+	ClipPer15SecondsMicrocredits *int `json:"clipPer15SecondsMicrocredits,omitempty"`
+
+	// ClipPerSecondMicrocredits Use `clipPer15SecondsMicrocredits`. One second of a clip, rounded up, so this times `durationSeconds` is never below a clip's price. Absent where clips are not offered.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPerSecondMicrocredits *int `json:"clipPerSecondMicrocredits,omitempty"`
 
 	// ClipResolutions The frame sizes offered, for clips and v2 avatars alike, 512 x 512 first; another is `400 invalid_input`. Absent where clips are not offered, or where every size the rule allows is offered.
@@ -4605,8 +4615,10 @@ type ClientInterface interface {
 	// `pricing.generation`) one generation call cost, and how many v2 captures are
 	// queued or running against the pending cap. Prices are in
 	// microcredits (100 microcredits = 1 credit). A conversation
-	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits`; an
-	// avatar session the avatar engine's render rate. A limit, or a plan
+	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
+	// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
+	// avatar session (render only) the avatar engine's render rate
+	// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
 	// field, that is absent is not set (a limit absent is not capped by the
 	// plan). `payouts` says whether the account can be paid out, which
 	// monetizing an avatar needs.
@@ -5976,9 +5988,10 @@ type ClientInterface interface {
 	// creator, have that person's permission first.
 	//
 	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per second
-	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-	// times `durationSeconds`, charged only when the clip comes back; a
+	// short-lived `url` to download it. It costs the price per 15 seconds
+	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+	// credit for a 15-second clip), charged only when the clip comes back; a
 	// flagged, failed or refused call costs nothing. Clips use the v2
 	// renderer, so an account without v2 access gets
 	// `403 v2_access_required`. A render can take
@@ -6020,9 +6033,10 @@ type ClientInterface interface {
 	// creator, have that person's permission first.
 	//
 	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per second
-	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-	// times `durationSeconds`, charged only when the clip comes back; a
+	// short-lived `url` to download it. It costs the price per 15 seconds
+	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+	// credit for a 15-second clip), charged only when the clip comes back; a
 	// flagged, failed or refused call costs nothing. Clips use the v2
 	// renderer, so an account without v2 access gets
 	// `403 v2_access_required`. A render can take
@@ -6504,8 +6518,10 @@ type ClientInterface interface {
 // `pricing.generation`) one generation call cost, and how many v2 captures are
 // queued or running against the pending cap. Prices are in
 // microcredits (100 microcredits = 1 credit). A conversation
-// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits`; an
-// avatar session the avatar engine's render rate. A limit, or a plan
+// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
+// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
+// avatar session (render only) the avatar engine's render rate
+// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
 // field, that is absent is not set (a limit absent is not capped by the
 // plan). `payouts` says whether the account can be paid out, which
 // monetizing an avatar needs.
@@ -8413,9 +8429,10 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 // creator, have that person's permission first.
 //
 // The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per second
-// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-// times `durationSeconds`, charged only when the clip comes back; a
+// short-lived `url` to download it. It costs the price per 15 seconds
+// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+// credit for a 15-second clip), charged only when the clip comes back; a
 // flagged, failed or refused call costs nothing. Clips use the v2
 // renderer, so an account without v2 access gets
 // `403 v2_access_required`. A render can take
@@ -8467,9 +8484,10 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 // creator, have that person's permission first.
 //
 // The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per second
-// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-// times `durationSeconds`, charged only when the clip comes back; a
+// short-lived `url` to download it. It costs the price per 15 seconds
+// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+// credit for a 15-second clip), charged only when the clip comes back; a
 // flagged, failed or refused call costs nothing. Clips use the v2
 // renderer, so an account without v2 access gets
 // `403 v2_access_required`. A render can take
@@ -11138,8 +11156,10 @@ type ClientWithResponsesInterface interface {
 	// `pricing.generation`) one generation call cost, and how many v2 captures are
 	// queued or running against the pending cap. Prices are in
 	// microcredits (100 microcredits = 1 credit). A conversation
-	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits`; an
-	// avatar session the avatar engine's render rate. A limit, or a plan
+	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
+	// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
+	// avatar session (render only) the avatar engine's render rate
+	// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
 	// field, that is absent is not set (a limit absent is not capped by the
 	// plan). `payouts` says whether the account can be paid out, which
 	// monetizing an avatar needs.
@@ -12553,9 +12573,10 @@ type ClientWithResponsesInterface interface {
 	// creator, have that person's permission first.
 	//
 	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per second
-	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-	// times `durationSeconds`, charged only when the clip comes back; a
+	// short-lived `url` to download it. It costs the price per 15 seconds
+	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+	// credit for a 15-second clip), charged only when the clip comes back; a
 	// flagged, failed or refused call costs nothing. Clips use the v2
 	// renderer, so an account without v2 access gets
 	// `403 v2_access_required`. A render can take
@@ -12597,9 +12618,10 @@ type ClientWithResponsesInterface interface {
 	// creator, have that person's permission first.
 	//
 	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per second
-	// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-	// times `durationSeconds`, charged only when the clip comes back; a
+	// short-lived `url` to download it. It costs the price per 15 seconds
+	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+	// credit for a 15-second clip), charged only when the clip comes back; a
 	// flagged, failed or refused call costs nothing. Clips use the v2
 	// renderer, so an account without v2 access gets
 	// `403 v2_access_required`. A render can take
@@ -16014,8 +16036,10 @@ func (r GetUploadResponse) ContentType() string {
 // `pricing.generation`) one generation call cost, and how many v2 captures are
 // queued or running against the pending cap. Prices are in
 // microcredits (100 microcredits = 1 credit). A conversation
-// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits`; an
-// avatar session the avatar engine's render rate. A limit, or a plan
+// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
+// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
+// avatar session (render only) the avatar engine's render rate
+// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
 // field, that is absent is not set (a limit absent is not capped by the
 // plan). `payouts` says whether the account can be paid out, which
 // monetizing an avatar needs.
@@ -17752,9 +17776,10 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 // creator, have that person's permission first.
 //
 // The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per second
-// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-// times `durationSeconds`, charged only when the clip comes back; a
+// short-lived `url` to download it. It costs the price per 15 seconds
+// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+// credit for a 15-second clip), charged only when the clip comes back; a
 // flagged, failed or refused call costs nothing. Clips use the v2
 // renderer, so an account without v2 access gets
 // `403 v2_access_required`. A render can take
@@ -17802,9 +17827,10 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 // creator, have that person's permission first.
 //
 // The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per second
-// (`GET /v1/account`, `pricing.generation.clipPerSecondMicrocredits`)
-// times `durationSeconds`, charged only when the clip comes back; a
+// short-lived `url` to download it. It costs the price per 15 seconds
+// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
+// times `durationSeconds` / 15, rounded up to a whole microcredit (1
+// credit for a 15-second clip), charged only when the clip comes back; a
 // flagged, failed or refused call costs nothing. Clips use the v2
 // renderer, so an account without v2 access gets
 // `403 v2_access_required`. A render can take

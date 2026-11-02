@@ -30,9 +30,10 @@ likeness from a description, ever (the people-and-publishing reference).
 
 1. Read the price from `get_account`: `pricing.generation` has
    `portraitsMicrocredits`, `enhancementsMicrocredits` and
-   `voicesMicrocredits` per call, and `clipPerSecondMicrocredits` per second
-   of clip (where clips are offered), each divided by 100 for credits; never
-   assume 1.
+   `voicesMicrocredits` per call, and `clipPer15SecondsMicrocredits` per 15
+   seconds of clip (where clips are offered; an older server reports only
+   `clipPerSecondMicrocredits`, per second), each divided by 100 for credits;
+   never assume 1.
    Read the balance from `get_balance`: `spendableMicrocredits` / 100.
 2. Ask once for the whole round: every paid call the step needs (portraits
    and a voice together, for example), each with its price, then the total
@@ -234,10 +235,13 @@ running it.
   384×672 (portrait) or 672×384 (landscape); when `clipResolutions` is listed,
   pick from it. `seed` defaults to 0; another seed gives other motion, as a
   new request.
-- **Price:** `clipPerSecondMicrocredits` times `durationSeconds`, with or
-  without sound. Ask with the price `get_account` gives for the chosen length. If
-  `get_account` has no `clipPerSecondMicrocredits`, clips aren't offered here:
-  say so and stop.
+- **Price:** with or without sound, `clipPer15SecondsMicrocredits` pro rata
+  to `durationSeconds`, rounded up to a whole microcredit:
+  `ceil(durationSeconds × clipPer15SecondsMicrocredits / 15)`. An older server
+  without that field reports `clipPerSecondMicrocredits`: then it is that
+  times `durationSeconds`. Ask with the price for the chosen length. Only if
+  `get_account` has neither field are clips not offered here: say so and
+  stop.
 - **Retry:** a cold render takes minutes, and past about 45 seconds the call
   answers `request_in_progress`: wait `retryAfter` and send the same call
   again, as step 4 above says. It charges once.

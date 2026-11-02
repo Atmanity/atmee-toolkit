@@ -75,7 +75,7 @@ Account 11111111-1111-4111-8111-111111111111
 Plan         Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-01
 API access   on
 Limits       session length no plan cap · 7 at once · 50 API avatars
-Per minute   conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min
+Per minute   conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min
 Preview clip 0.00 credits
 Captures     0 of 10 queued or running
 Payouts      verified since 2026-09-01
@@ -86,7 +86,8 @@ credits only, so its coupon line says it is not spent. Credits held by running s
 are already out of the buckets; what a session does not use comes back when it ends.
 **Payouts** is the status of the account's payout account (`not started`, `unverified`,
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
-are set up in Creator Studio. **v2 sizes** (shown only when the deployment offers some
+are set up in Creator Studio. **Per minute** shows a conversation rate for each engine; a server
+that doesn't report the v2 rate shows one `conversation` rate, which then applies to both. **v2 sizes** (shown only when the deployment offers some
 of the sizes the rule allows) are the frame sizes `--resolution` takes.
 
 ## API keys
@@ -364,8 +365,9 @@ files). A reference works once and lasts 24 hours.
   `--audio`; no avatar is made or needed. `--duration` is required with `--audio`, set to the
   audio's length, because it is not read from the file, and defaults to 8 for a silent clip.
   `--resolution` defaults to 512x512. Local files go up through `POST /v1/uploads` first. A
-  clip costs 10 microcredits a second (`atmee account` shows the current price), so a
-  15-second clip costs 1.5 credits, with or without audio. It needs v2 access (otherwise `403
+  clip is priced by its length, with or without audio: `atmee account` shows the current
+  price, per second (`clip 0.10/s`) or, where the server prices clips per 15 seconds, pro
+  rata to `--duration` and rounded up to a whole microcredit (`clip 1.00 per 15 s`). It needs v2 access (otherwise `403
   v2_access_required`) and comes back as an `upload:<uploadId>` with a download link for 24
   hours.
 

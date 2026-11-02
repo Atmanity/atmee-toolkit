@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.9 (2026-11-02)
+
+
+### Features
+
+* follow the 2026 pricing fields in the cli and skills
+
+
+### Documentation
+
+* **plugin:** describe packs, earnings and clip prices as prod has them today
+
 ## 0.10.8 (2026-11-02)
 
 

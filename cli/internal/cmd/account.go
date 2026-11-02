@@ -183,15 +183,23 @@ func (a *app) printAccount(x *api.Account) {
 	a.printf("Limits       session length %s · %s at once · %s API avatars\n", length, limit(l.MaxConcurrentSessions), limit(l.MaxApiAvatars))
 
 	pr := x.Pricing
+	// A server older than the v2 conversation rate leaves it out: its one
+	// conversation rate then covers both engines.
+	conversation := creditsPerMinute(pr.SessionPerMinuteMicrocredits)
+	if x.SessionV2Reported {
+		conversation = "v1 " + conversation + ", v2 " + creditsPerMinute(pr.SessionV2PerMinuteMicrocredits)
+	}
 	a.printf("Per minute   conversation %s · avatar session v1 %s, v2 %s\n",
-		creditsPerMinute(pr.SessionPerMinuteMicrocredits), creditsPerMinute(pr.RenderV1PerMinuteMicrocredits), creditsPerMinute(pr.RenderV2PerMinuteMicrocredits))
+		conversation, creditsPerMinute(pr.RenderV1PerMinuteMicrocredits), creditsPerMinute(pr.RenderV2PerMinuteMicrocredits))
 	if pr.SpeechPerMinuteMicrocredits != nil {
 		a.printf("             speech session %s\n", creditsPerMinute(*pr.SpeechPerMinuteMicrocredits))
 	}
 	a.printf("Preview clip %s credits\n", credits(int64(pr.PreviewClipMicrocredits)))
 	if g := pr.Generation; g != nil {
 		clip := ""
-		if g.ClipPerSecondMicrocredits != nil {
+		if g.ClipPer15SecondsMicrocredits != nil {
+			clip = " · clip " + credits(int64(*g.ClipPer15SecondsMicrocredits)) + " per 15 s"
+		} else if g.ClipPerSecondMicrocredits != nil {
 			clip = " · clip " + credits(int64(*g.ClipPerSecondMicrocredits)) + "/s"
 		}
 		a.printf("Generation   portraits %s · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),

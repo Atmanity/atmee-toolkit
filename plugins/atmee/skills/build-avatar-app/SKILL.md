@@ -52,7 +52,10 @@ They were proven in live sessions, including the timing rules in
    avatar_busy`. End every session (`POST /v1/session/{id}/end`, also when
    the page closes); several users at once need several avatars.
 4. **Test sessions cost credits.** Before the first one, read the price per
-   minute (`get_account`: `pricing.sessionPerMinuteMicrocredits`) and the
+   minute for the avatar's engine (`get_account`:
+   `pricing.sessionPerMinuteMicrocredits` for v1,
+   `pricing.sessionV2PerMinuteMicrocredits` for v2, the first where the second
+   is absent) and the
    balance (`get_balance`: `spendableMicrocredits`), each divided by 100 for
    credits, say both, and ask. One yes covers the short tests of this piece
    of work, since building an app takes many; ask again before a long test or

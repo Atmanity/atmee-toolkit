@@ -187,7 +187,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 		Long: "Render an mp4 of 1 to 15 seconds of the person or character in the image, moving as the prompt says, silent or speaking " +
 			"--audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
 			"seconds for a silent clip. If the image shows a real person other than you, have their permission first. A clip is " +
-			"priced per second (`atmee account`), the same with or without audio, charged only when it comes back; a flagged, failed or refused call costs nothing. " +
+			"priced per 15 seconds of video, prorated (`atmee account`), the same with or without audio, charged only when it comes back; a flagged, failed or refused call costs nothing. " +
 			"The result lasts 24 hours. Needs v2 access. A signed-in user, or an API key with generation:write and avatars:write.",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
   atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 384x672`,

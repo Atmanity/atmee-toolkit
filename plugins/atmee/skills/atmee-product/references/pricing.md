@@ -39,9 +39,10 @@ the date you read them.
   credits it grants each cycle, when the cycle ends, a plan change scheduled
   for the cycle's end) and `limits` (longest session, sessions at once, how
   many API-created avatars, whether the API is on at all).
-- Add-on credit packs top up without changing the plan. What a credit costs
-  depends on how it was bought: plan credits come cheaper than packs (the
-  public costs page has the figures).
+- Add-on credit packs top up without changing the plan. Which packs the
+  account's plan sells, and what each grants: Studio → Billing.
+  What a credit costs depends on how it was bought: plan credits come cheaper
+  than packs (the public costs page has the figures).
 - The Free plan works with the API, within the Free plan's own limits; pack
   and coupon credits are not held to its daily limit, so a top-up lifts it.
 - **Signature avatars** on atmee.ai (the monetized ones) take a paid plan's
@@ -51,14 +52,14 @@ the date you read them.
 
 | What | Charged | Live price |
 |---|---|---|
-| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room | `get_account` `pricing.sessionPerMinuteMicrocredits` |
-| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` |
+| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room; a v2 avatar can cost more than a v1 one | `get_account` `pricing.sessionPerMinuteMicrocredits` for a v1 avatar, `pricing.sessionV2PerMinuteMicrocredits` for a v2 one (an older server without it charges the first for both) |
+| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts, less than a conversation on the same engine | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` |
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
 | Generating portraits, enhancing a portrait, designing a voice through the avatars server | per call, only when results come back | `get_account` `pricing.generation` |
 | A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |
-| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | per second, only when it comes back; needs v2 access | `pricing.generation.clipPerSecondMicrocredits` (absent: clips aren't offered) |
+| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | by its length, only when it comes back; needs v2 access. Per 15 seconds, pro rata and rounded up to a whole microcredit (`ceil(seconds × price / 15)`), where the server reports that price | `pricing.generation.clipPer15SecondsMicrocredits`; an older server reports only `clipPerSecondMicrocredits` (times the seconds). Neither field: clips aren't offered |
 | Generating a portrait in Studio | per generation | shown in Studio |
-| A minute with a Signature (monetized) avatar on atmee.ai | per minute, at a higher rate; API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` |
+| A minute with a Signature (monetized) avatar on atmee.ai | per minute, paid by a visitor at more than the avatar's standard rate; its owner pays the standard rate, and API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` for a v1 avatar, `pricing.monetizedV2PerMinuteMicrocredits` for a v2 one |
 
 Nothing is charged for a session nobody joined (`no_user_joined`), a start
 refused for capacity (`503 no_capacity`) or a v2 avatar not ready yet (`409
@@ -120,9 +121,11 @@ The money tools (`grant_sponsor`, `update_sponsor`, `withdraw_sponsor`) need
 
 ## Earnings
 
-Verified creators on atmee.ai turn avatars into Signature avatars and earn a
-share of the credits visitors pay to talk to them, whether plan, pack or
-coupon credits. The creator must be 18 or older, verified
+Verified creators on atmee.ai turn avatars into Signature avatars and earn
+for the minutes visitors pay for with plan, pack or coupon credits.
+`get_account` doesn't report what they earn a minute:
+quote no figure, and point to the Help Center through the docs
+(`get_account`'s `links.docs`). The creator must be 18 or older, verified
 (or hold documented authorisation for the person the avatar represents) and
 selected by Atmee: `https://www.atmee.ai/creator-monetization-terms`.
 

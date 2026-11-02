@@ -38,7 +38,8 @@ avatars server with:
   a tall or wide video, then `{"width": 384, "height": 672}` (portrait) or
   `{"width": 672, "height": 384}` (landscape). When `get_account` has
   `pricing.generation.clipResolutions`, only those sizes are offered; without
-  `clipPerSecondMicrocredits` stay square. An `invalid_input` names the sizes
+  a clip price (`clipPer15SecondsMicrocredits`, or `clipPerSecondMicrocredits`
+  on an older server) stay square. An `invalid_input` names the sizes
   on offer. The portrait is cropped to that
   shape at its centre, so check the face against it. A later change on
   `update_avatar` makes new seeds, like a new portrait. v1 refuses it: leave

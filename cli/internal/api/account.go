@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
 )
@@ -9,11 +10,69 @@ import (
 // The account reads, as the API answers them (camelCase, microcredits).
 type (
 	Balance     = avatarapi.AccountBalance
-	Account     = avatarapi.Account
 	CurrentUser = avatarapi.CurrentCaller
 	Redemption  = avatarapi.CodeRedemption
 	Earnings    = avatarapi.AccountEarnings
 )
+
+// Account is the plan, limits, prices and capture quota, as the API
+// answers it.
+type Account struct {
+	avatarapi.Account
+	// SessionV2Reported is whether pricing carried
+	// sessionV2PerMinuteMicrocredits: a server older than the v2 rates leaves
+	// it out, and its one conversation rate covers both engines. It tells
+	// that apart from a reported rate of 0.
+	SessionV2Reported bool `json:"-"`
+	// missing are the v2 rates the server left out, kept out of the JSON
+	// again rather than written as 0.
+	missing []string
+}
+
+// v2Rates are the pricing fields an older server leaves out.
+var v2Rates = []string{"sessionV2PerMinuteMicrocredits", "monetizedV2PerMinuteMicrocredits"}
+
+func (a *Account) UnmarshalJSON(b []byte) error {
+	if err := json.Unmarshal(b, &a.Account); err != nil {
+		return err
+	}
+	var p struct {
+		Pricing map[string]json.RawMessage `json:"pricing"`
+	}
+	if err := json.Unmarshal(b, &p); err != nil {
+		return err
+	}
+	a.missing = nil
+	for _, f := range v2Rates {
+		if _, ok := p.Pricing[f]; !ok {
+			a.missing = append(a.missing, f)
+		}
+	}
+	_, a.SessionV2Reported = p.Pricing["sessionV2PerMinuteMicrocredits"]
+	return nil
+}
+
+func (a Account) MarshalJSON() ([]byte, error) {
+	b, err := json.Marshal(a.Account)
+	if err != nil || len(a.missing) == 0 {
+		return b, err
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	var pricing map[string]json.RawMessage
+	if err := json.Unmarshal(m["pricing"], &pricing); err != nil {
+		return nil, err
+	}
+	for _, f := range a.missing {
+		delete(pricing, f)
+	}
+	if m["pricing"], err = json.Marshal(pricing); err != nil {
+		return nil, err
+	}
+	return json.Marshal(m)
+}
 
 // Balance is the account's credits: what a session can spend now, the
 // buckets, what live sessions hold and what expires when.

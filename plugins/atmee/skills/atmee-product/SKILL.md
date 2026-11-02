@@ -100,7 +100,7 @@ always its chat page: never start a session for it (`start_session`,
   per call. The API counts microcredits: divide by 100 for credits.
 - **Monetized and sponsored are opposites,** never one setting. A
   **monetized** (Signature) avatar charges the visitor a higher per-minute
-  rate on atmee.ai and the creator earns a share. A **sponsored** avatar lets
+  rate on atmee.ai and the creator earns from those minutes. A **sponsored** avatar lets
   visitors talk on the creator's credits from its sponsor pool, and earns
   nothing. An avatar can't be both. Rates come from `get_account`, never
   from memory (`references/pricing.md`).
@@ -132,7 +132,7 @@ last column.
 | Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
-| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is paid by the second, with or without sound, and needs v2 access | `create-avatar` |
+| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is paid by its length, with or without sound, and needs v2 access | `create-avatar` |
 | A voice conversation over a WebSocket, with no video | **Speech session** (`start_speech_session`, `atmee speech start`); the avatar needs a voice | `build-avatar-app` |
 | To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/toolkit` |
 

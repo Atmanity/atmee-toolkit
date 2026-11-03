@@ -54,7 +54,7 @@ They were proven in live sessions, including the timing rules in
 4. **Test sessions cost credits.** Before the first one, read the price per
    minute for the avatar's engine (`get_account`:
    `pricing.sessionPerMinuteMicrocredits` for v1,
-   `pricing.sessionV2PerMinuteMicrocredits` for v2, the first where the second
+   `pricing.sessionV2PerMinuteMicrocredits` for v2 and V2 Pro, the first where the second
    is absent) and the
    balance (`get_balance`: `spendableMicrocredits`), each divided by 100 for
    credits, say both, and ask. One yes covers the short tests of this piece
@@ -62,7 +62,9 @@ They were proven in live sessions, including the timing rules in
    when the balance runs low. Keep tests short with `maxDurationSeconds`.
    A link for someone who only wants to talk to the avatar is not a test of
    the app: give its chat page, `links.chat` from `get_avatar` (the API's
-   response, `GET /v1/avatars/{id}`), which costs no session here. Start a
+   response, `GET /v1/avatars/{id}`), which costs no session here (that page
+   shows a portrait or landscape avatar cropped to a square; the app's own
+   LiveKit video is the full frame). Start a
    session for a link only when they ask for a LiveKit room by name. Other
    website pages (Studio, API keys, billing, …) are `links` on the avatar
    and on `get_account`: the `atmee-product` skill's Website pages.
@@ -106,7 +108,9 @@ step 0), and go on whatever it says.
 ### 1. Pick the avatar
 
 Call `list_avatars` (the atmee avatars server; run `atmee-setup` if its tools
-are missing). The app needs one that is `ready`, `readyToChat`, engine `v2`.
+are missing). The app needs one that is `ready`, `readyToChat`, engine `v2`
+or `v2pro` (Atmee V2 Pro, a larger v2 model: everything in this skill works
+the same for it, at its own frame size).
 None fits: make one with the `create-avatar` skill first. v2 is invite-only for
 now: when `get_account`'s `v2Access` is `invite_required`, the account needs an
 invite code before it can make one: ask the user for it and redeem it with

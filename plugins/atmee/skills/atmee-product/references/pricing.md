@@ -23,7 +23,8 @@ the date you read them.
   credits (promotions). `get_balance` shows each bucket, what running
   sessions hold, and the next expiry (`nextExpiry`, soonest first).
 - Plan credits are spent first and expire at the end of each billing period.
-  Pack credits never expire, even after a downgrade to the Free plan.
+  Pack credits expire one year after they were bought (`nextExpiry` shows
+  the soonest); a downgrade doesn't cancel them.
 - `spendableMicrocredits` is what a new session can start on. It is the only
   balance to report; ignore any balance another tool returns.
 - A session **reserves** credits when it starts and gives back the unused
@@ -43,8 +44,14 @@ the date you read them.
   account's plan sells, and what each grants: Studio → Billing.
   What a credit costs depends on how it was bought: plan credits come cheaper
   than packs (the public costs page has the figures).
-- The Free plan works with the API, within the Free plan's own limits; pack
-  and coupon credits are not held to its daily limit, so a top-up lifts it.
+- The API needs a paid plan. On the Free plan a key can't be created (`403
+  api_access_not_in_plan`) and sessions answer `403 api_access_disabled`;
+  `get_account` `limits.apiAccess` says whether the account has it. Coupon
+  credits are not held to the Free plan's daily limit.
+- Atmee V2 Pro avatars, where `get_account` reports `limits.v2Pro` (a
+  server without it doesn't offer them: say nothing about them), need the
+  Growth plan or higher and v2 access. `limits.v2Pro` false means this plan
+  lacks them, and a create answers `403 v2_pro_not_in_plan`.
 - **Signature avatars** on atmee.ai (the monetized ones) take a paid plan's
   credits, pack credits or coupon credits, never the Free plan's.
 
@@ -52,13 +59,13 @@ the date you read them.
 
 | What | Charged | Live price |
 |---|---|---|
-| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room; a v2 avatar can cost more than a v1 one | `get_account` `pricing.sessionPerMinuteMicrocredits` for a v1 avatar, `pricing.sessionV2PerMinuteMicrocredits` for a v2 one (an older server without it charges the first for both) |
-| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts, less than a conversation on the same engine | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` |
+| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room; a v2 avatar can cost more than a v1 one, and an Atmee V2 Pro avatar (where `get_account` reports `limits.v2Pro`) costs what a v2 one does for now | `get_account` `pricing.sessionPerMinuteMicrocredits` for a v1 avatar, `pricing.sessionV2PerMinuteMicrocredits` for a v2 or V2 Pro one (an older server without it charges the first for both) |
+| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts, less than a conversation on the same engine | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` (v2 and V2 Pro) |
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
-| Generating portraits, enhancing a portrait, designing a voice through the avatars server | per call, only when results come back | `get_account` `pricing.generation` |
+| Generating portraits, enhancing a portrait, designing a voice through the avatars server | portraits **per portrait**: `count` (1 to 4, default 4) is how many to make, and only the ones that come back are charged; an enhancement or a voice design per call. A paid plan's **free generation allowance** pays first and credits pay the rest; each answer splits it into `microcreditsFree` and `microcreditsCharged` | `get_account` `pricing.generation` (`portraitsMicrocredits` is one portrait); what is left of the allowance this cycle: `pricing.generation.freeAllowance.remainingMicrocredits` |
 | A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |
-| A clip (`generate_clip`, `atmee generate clip`, an mp4 of up to 30 seconds (15 where `clipAnySize` is false), with or without sound) | by its length, only when it comes back; needs v2 access. Per 15 seconds, pro rata and rounded up to a whole microcredit (`ceil(seconds × price / 15)`), where the server reports that price | `pricing.generation.clipPer15SecondsMicrocredits`; an older server reports only `clipPerSecondMicrocredits` (times the seconds). Neither field: clips aren't offered |
-| Generating a portrait in Studio | per generation | shown in Studio |
+| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | a fixed price per clip for its size (a larger size costs more), whatever its length, only when it comes back; the free generation allowance never pays for clips; needs v2 access and a plan with video generation (Growth and up; `limits.videoGeneration` false answers `403 video_generation_not_in_plan`) | `pricing.generation.clipSizes`: each size's `microcredits`. An older server without it reports `clipPer15SecondsMicrocredits` (pro rata per 15 seconds) or `clipPerSecondMicrocredits` (times the seconds). None of them: clips aren't offered |
+| Generating in Studio (portraits, enhancement, voice design, thumbnails, covers) | the same prices and free allowance as the avatars server: Studio calls the same API | shown on each button |
 | A minute with a Signature (monetized) avatar on atmee.ai | per minute, paid by a visitor at more than the avatar's standard rate; its owner pays the standard rate, and API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` for a v1 avatar, `pricing.monetizedV2PerMinuteMicrocredits` for a v2 one |
 
 Nothing is charged for a session nobody joined (`no_user_joined`), a start

@@ -133,6 +133,8 @@ Read these before anything else, and keep them for the whole conversation.
    From the other tools:
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
    - `v2_access_required`: v2 is invite-only for now and this account has not been let in. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
+   - `v2_pro_not_in_plan`: the plan doesn't include Atmee V2 Pro (Growth and up do). Say so, give the billing link (`get_account` `links.billing`), and offer Atmee V2 instead; never switch without asking.
+   - `engine_unavailable` on a V2 Pro call: this server doesn't offer V2 Pro right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
    - `preview_message_too_long`: shorten the preview line to 300 characters (code points) or fewer.
@@ -174,14 +176,14 @@ every call (setup saves it for a sign-in that belongs to several accounts).
 - **Avatars:** create, get, list and update avatars, replace the portrait,
   voice or knowledge, upload the creator's own files (`create_upload`,
   `get_upload`, `wait_for_upload`), list, capture and select v2 candidates.
-- **Generation**, each paid per call (`references/credits-and-generation.md`):
+- **Generation**, portraits paid per portrait and the rest per call (`references/credits-and-generation.md`):
 
   | Tool | Use |
   |---|---|
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
-  | `generate_clip` | a short video (up to 30 s, up to 1920×1080) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
+  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, a fixed price per size; 1080p coming soon) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
 
   If the server lists none of them, or `get_account` has no
   `pricing.generation`, say generation isn't available and work with the
@@ -272,9 +274,13 @@ voice as soon as they give them; they are uploaded at the create ("Files and
 uploads" below). Check each portrait as it arrives
 (`references/portrait-checks.md`) and tell the creator about any problem.
 When a portrait or voice is missing, offer to generate it, asking before each
-paid call (`references/credits-and-generation.md`).
+paid call (`references/credits-and-generation.md`). Before the first paid
+portrait call, generated or enhanced, settle the engine from `get_account`'s
+`v2Access` and pass it on the call (the same reference, The engine a
+portrait is for).
 
-With a usable portrait and voice, create the avatar as v2 with one seed that
+With a usable portrait and voice, create the avatar as v2 (or V2 Pro, when the
+creator chose it: `references/candidates.md`, Model) with one seed that
 goes live by itself, private, with no persona yet (`references/candidates.md`,
 Create). Save the `create` iteration (`references/iterations.md`). Building
 takes minutes: keep the creator posted in plain words
@@ -325,8 +331,9 @@ open the link yourself or say you'll test it
 
 Hand over the chat link and the Studio link
 (`references/test-and-handover.md`, Hand over). When the account has v2
-access and `get_account`'s `pricing.generation` has a clip price
-(`clipPer15SecondsMicrocredits`, or the older `clipPerSecondMicrocredits`),
+access, `get_account`'s `limits.videoGeneration` is not false (absent
+counts as allowed) and its `pricing.generation` has clip prices (`clipSizes`;
+an older server: `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`),
 add one line that Atmee can also make a short video clip from the same photo,
 with sound when they give an audio file to play (a recording, or the voice
 sample they gave) (Clips in

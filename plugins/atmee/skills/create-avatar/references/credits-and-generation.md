@@ -5,6 +5,7 @@
 - When to offer generation
 - Before each round of paid calls
 - How much to spend
+- The engine a portrait is for
 - Portraits
 - Enhancing or restyling the creator's photo
 - Voices
@@ -29,15 +30,24 @@ likeness from a description, ever (the people-and-publishing reference).
 ## Before each round of paid calls
 
 1. Read the price from `get_account`: `pricing.generation` has
-   `portraitsMicrocredits`, `enhancementsMicrocredits` and
-   `voicesMicrocredits` per call, and `clipPer15SecondsMicrocredits` per 15
-   seconds of clip (where clips are offered; an older server reports only
-   `clipPerSecondMicrocredits`, per second), each divided by 100 for credits;
-   never assume 1.
+   `portraitsMicrocredits` **per portrait** (a call costs it for each
+   portrait that comes back: four by default, so four times it),
+   `enhancementsMicrocredits` and `voicesMicrocredits` per call, and
+   `clipSizes` a fixed price per clip for each size (where clips are
+   offered; an older server reports `clipPer15SecondsMicrocredits` instead,
+   see Clips), each divided by 100 for credits; never assume 1.
+   A paid plan's free generation comes first: where `pricing.generation`
+   has `freeAllowance`, its `remainingMicrocredits` (what is left this
+   cycle) pays for portraits, enhancements and voices before credits do
+   (never for clips). Quote what the round costs in credits after it: the
+   prices of those calls, less what is left of it (never below 0), and say
+   the free part ("covered by your plan's free generation"). A result's
+   `microcreditsCharged` is what credits paid, `microcreditsFree` what the
+   allowance did.
    Read the balance from `get_balance`: `spendableMicrocredits` / 100.
 2. Ask once for the whole round: every paid call the step needs (portraits
    and a voice together, for example), each with its price, then the total
-   and the balance: "Make four portraits (<price>) and voice previews
+   and the balance: "Make four portraits (4 × <portrait price>) and voice previews
    (<price>), <total> in all? You have <balance> left." With one call, give its
    price and the balance. Wait for a clear yes in the creator's next message;
    it covers only the calls you named. Never split a round into one question
@@ -88,6 +98,43 @@ message (or the billing page on atmee.ai), and stop. Don't retry, and don't
 loop asking. **On `api_key_spend_cap_reached`:** the API key's spend cap is
 used up; say so and stop the same way.
 
+## The engine a portrait is for
+
+A portrait is made for one engine, and the two want different pictures. v1
+needs a frontal head-and-shoulders face, so for v1 enhancing turns the face
+to the camera, frames it from the shoulders up and blurs the background, and
+a generated portrait is framed from the shoulders up. v2 animates whatever
+the portrait shows, so for v2 enhancing keeps the photo's pose, gaze, hands,
+framing and background and only improves its quality, and a generated
+portrait is framed half-body, from the waist up with both hands visible,
+unless the description sets another framing. An Atmee V2 Pro portrait
+(`engine: v2pro`, the candidates reference, Model) is made as for v2.
+
+- **Settle the engine before the first paid portrait call,** in step 1:
+  read `v2Access` from `get_account`. `granted` means v2. Otherwise ask for
+  an invite code as the candidates reference's Create says, and use v1 only
+  when the creator has none and agrees. Use v1 too when the creator asks for
+  it.
+- **Pass it as `engine`** on every `generate_portraits` and
+  `enhance_portrait` call for a new avatar, and write it into the pending
+  `paid_calls` entry's `inputs`. Left out, the server makes a v1 portrait.
+  Create the avatar with the same engine.
+- **A new portrait for an existing avatar** (for `replace_appearance`):
+  `enhance_portrait` takes its `avatarId`; leave `engine` out, so the server
+  uses the avatar's own engine (an `engine` that disagrees with it is
+  `invalid_input`). `generate_portraits` takes no `avatarId`: pass `engine`
+  as the avatar's own, from `get_avatar`.
+- **A restyle** (`enhance_portrait` with `prompt`) is the same for both
+  engines; pass `engine` anyway.
+
+**Falling back to v1 after a v2 portrait.** When the portrait was made for
+v2 but the avatar is now made as v1 (no invite code), that portrait may keep
+a pose, hands or a background v1 animates badly. Ask before going on, as a
+choice: for an enhanced photo, offer the creator's original photo first (it
+costs nothing), then a v1 enhancement at its price; for a generated
+portrait, offer to use it as it is, then a v1 portrait at its price. A v1
+call is a new paid request: a new `requestId`, asked first like any round.
+
 ## Portraits
 
 `generate_portraits` takes a `description` and returns up to four
@@ -103,10 +150,12 @@ the free-text hint in the question, not in an option: "What should <name>
 look like? Pick a style, or type age, gender, look and style" with the styles
 as options (SKILL.md, How to ask the creator).
 
-Don't ask about framing and don't add one of your own: "head and shoulders"
-is not required. When the creator asks for a half-body or full-body shot,
-or for gestures or movement, write that framing into the description; a v2
-avatar moves what the portrait shows.
+Don't ask about framing and don't add one of your own: the server frames a
+v2 portrait half-body and a v1 portrait from the shoulders up when the
+description sets no framing (The engine a portrait is for, above). When the
+creator asks for another framing, a close-up or a full-body shot, or for
+gestures or movement, write it into the description; a v2 avatar moves what
+the portrait shows.
 
 - Be specific: age, gender, expression, clothing, style, and the framing
   when the creator gave one.
@@ -211,14 +260,19 @@ make the sample longer.
 
 ## Clips
 
-`generate_clip` renders an mp4 of up to 30 seconds (25 fps) of the person in
+`generate_clip` renders an mp4 of 1 to 15 seconds (25 fps) of the person in
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
 for a clip (a teaser, a post), not as part of the five steps. Clips need v2
 access: without it the call answers `v2_access_required`, so ask for an invite
-code (`redeem_code`); there is no v1 clip. In a shell, `atmee generate clip`
-does the same (`--image`, `--prompt`, `--audio`, `--duration`, `--resolution` or
-`--aspect-ratio`, `--seed`), and uploads local files first. Like the other `atmee generate`
+code (`redeem_code`); there is no v1 clip. They also need a plan with video
+generation, Growth and up: where `get_account` `limits.videoGeneration` is
+false (absent counts as allowed) the call answers
+`video_generation_not_in_plan`, so say the plan doesn't include video clips
+and point to Studio → Billing (`links.billing`) to change plans; don't call
+it. In a shell, `atmee generate clip` does the same (`--image`, `--prompt`,
+`--audio`, `--duration`, `--resolution`, `--seed`), and uploads local files
+first. Like the other `atmee generate`
 commands it does not ask first, so confirm the price with the creator before
 running it.
 
@@ -231,25 +285,25 @@ running it.
   https link. Then `durationSeconds` is required: set it to the audio's
   length; the server doesn't read it from the file. A silent clip defaults
   to 8.
-- **Size:** 512×512 unless the creator wants another. `resolution` is the
-  clip's size: each side even, from 256 to 1920, e.g. 1920×1080, 1080×1920
-  or 1280×720. Or `aspectRatio` names an avatar shape instead: `square`
-  512×512, `portrait` 384×640, `landscape` 640×384; send one, not both.
-- **Length:** where `get_account` has `pricing.generation.clipAnySize`
-  true, any size up to 30 seconds, a larger size allowing less: render
-  width × height × seconds at most 1920×1088×10 (each side rounded up to a
-  multiple of 32), so 1920×1080 runs at most 10 seconds and 1280×720 22.
-  Where it is false, pick a size from `clipResolutions` (or an aspect ratio
-  whose size is listed), for at most 15 seconds. Pick the size and length
-  before stating the price.
+- **Size:** `resolution` `{width, height}`, one of the clip sizes
+  `get_account` lists in `pricing.generation.clipSizes`: 480×480 (the
+  default), 640×480 and 480×640 (4:3), 832×468 and 468×832 (16:9), 720×720,
+  960×720, 720×960, 1280×720, 720×1280. Match the shape the creator wants
+  (square, standard or wide; tall for a phone). 1080p (1080×1080,
+  1920×1080, 1080×1920, 1440×1080, 1080×1440) is coming soon, with no price
+  yet: say so, and offer 720×720 (square) or 1280×720 / 720×1280 (wide or
+  tall) instead. Any other size answers `invalid_input` with the list.
+- **Length:** `durationSeconds` 1 to 15, at any size. It doesn't change the
+  price. Pick the size before stating the price.
 - **`seed`:** defaults to 0; another seed gives other motion, as a
   new request.
-- **Price:** with or without sound, `clipPer15SecondsMicrocredits` pro rata
-  to `durationSeconds`, rounded up to a whole microcredit:
-  `ceil(durationSeconds × clipPer15SecondsMicrocredits / 15)`. An older server
-  without that field reports `clipPerSecondMicrocredits`: then it is that
-  times `durationSeconds`. Ask with the price for the chosen length. Only if
-  `get_account` has neither field are clips not offered here: say so and
+- **Price:** with or without sound, a fixed price per clip for its size,
+  whatever its length: the `microcredits` of that size in `clipSizes`
+  (divide by 100 for credits). Ask with the price for the chosen size. Only
+  on an older server without `clipSizes`: `clipPer15SecondsMicrocredits` pro
+  rata to `durationSeconds`, rounded up (`ceil(durationSeconds × price /
+  15)`), or `clipPerSecondMicrocredits` times `durationSeconds`. Only if
+  `get_account` has none of these are clips not offered here: say so and
   stop.
 - **Retry:** a cold render takes minutes, and past about 45 seconds the call
   answers `request_in_progress`: wait `retryAfter` and send the same call

@@ -57,6 +57,38 @@ func TestGenerateWaitsWithTheSameKey(t *testing.T) {
 	}
 }
 
+// What the plan's free generation allowance paid shows beside the credits
+// charged: all of a call, part of it, or none (then nothing is added).
+func TestGenerateShowsTheFreeAllowance(t *testing.T) {
+	for _, c := range []struct {
+		args          []string
+		body          string
+		want, notWant string
+	}{
+		{[]string{"generate", "portraits", "--description", "a lighthouse keeper"},
+			`{"portraits":[{"upload":"upload:abc","expiresAt":"2026-11-02T00:00:00Z","preview":"","provider":"p1","unavailable":false}],` +
+				`"microcreditsCharged":0,"microcreditsFree":100,"replayed":false,"failedProviders":[]}`,
+			"0.00 credits charged · 1.00 from free generation", ""},
+		{[]string{"generate", "voice", "--description", "a calm warm alto, unhurried"},
+			`{"voices":[{"upload":"upload:v1","expiresAt":"2026-11-02T00:00:00Z","preview":"","provider":"p1","unavailable":false}],` +
+				`"language":"en","microcreditsCharged":40,"microcreditsFree":60,"replayed":false,"failedProviders":[]}`,
+			"0.40 credits charged · 0.60 from free generation", ""},
+		{[]string{"generate", "portraits", "--description", "a lighthouse keeper"},
+			`{"portraits":[{"upload":"upload:abc","expiresAt":"2026-11-02T00:00:00Z","preview":"","provider":"p1","unavailable":false}],` +
+				`"microcreditsCharged":100,"microcreditsFree":0,"replayed":false,"failedProviders":[]}`,
+			"1.00 credits charged", "free generation"},
+	} {
+		signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, c.body)
+		})
+		out, errOut, code := run(t, "", c.args...)
+		if code != 0 || !strings.Contains(out, c.want) || (c.notWant != "" && strings.Contains(out, c.notWant)) {
+			t.Errorf("%v: %d %q %q", c.args, code, out, errOut)
+		}
+	}
+}
+
 // A lost answer is never sent again: the error hands back the key.
 func TestGenerateTransportFailureGivesTheKey(t *testing.T) {
 	var calls atomic.Int32
@@ -99,12 +131,46 @@ func TestGenerateServerFailureGivesTheKeyOnlyWhenUncoded(t *testing.T) {
 	}
 }
 
+// --engine and --avatar reach the request only when given.
+func TestGeneratePassesEngineAndAvatarOnlyWhenGiven(t *testing.T) {
+	const avatar = "3f2b6c1e-8a4d-4e5f-9b7a-1c2d3e4f5a6b"
+	for _, c := range []struct {
+		args []string
+		want map[string]any
+	}{
+		{[]string{"generate", "enhance", "--image", "upload:a", "--engine", "v2"}, map[string]any{"image": "upload:a", "engine": "v2"}},
+		{[]string{"generate", "enhance", "--image", "upload:a"}, map[string]any{"image": "upload:a"}},
+		{[]string{"generate", "enhance", "--image", "upload:a", "--avatar", avatar}, map[string]any{"image": "upload:a", "avatarId": avatar}},
+		{[]string{"generate", "portraits", "--description", "a lighthouse keeper", "--engine", "v2"},
+			map[string]any{"description": "a lighthouse keeper", "engine": "v2"}},
+		{[]string{"generate", "portraits", "--description", "a lighthouse keeper"}, map[string]any{"description": "a lighthouse keeper"}},
+	} {
+		t.Run(strings.Join(c.args, " "), func(t *testing.T) {
+			var got map[string]any
+			signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+				_ = json.NewDecoder(r.Body).Decode(&got)
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"portraits":[],"microcreditsCharged":0,"replayed":false,"failedProviders":[]}`)
+			})
+			if _, errOut, code := run(t, "", c.args...); code != 0 {
+				t.Fatalf("%d %s", code, errOut)
+			}
+			if !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("sent %v, want %v", got, c.want)
+			}
+		})
+	}
+}
+
 func TestGenerateRefusesBadInputBeforeSending(t *testing.T) {
 	signedIn(t, func(http.ResponseWriter, *http.Request) { t.Error("sent") })
 	for _, args := range [][]string{
 		{"generate", "portraits"},
 		{"generate", "enhance"},
 		{"generate", "enhance", "--image", "http://x/y.png"},
+		{"generate", "enhance", "--image", "upload:a", "--engine", "v3"},
+		{"generate", "enhance", "--image", "upload:a", "--avatar", "not-an-id"},
+		{"generate", "portraits", "--description", "a lighthouse keeper", "--engine", "v3"},
 		{"generate", "voice", "--description", "too short"},
 		{"generate", "voice", "--description", "a calm warm alto, unhurried", "--language", "xx"},
 		{"generate", "clip", "--prompt", "waves"},
@@ -112,12 +178,10 @@ func TestGenerateRefusesBadInputBeforeSending(t *testing.T) {
 		{"generate", "clip", "--image", "http://x/y.png", "--prompt", "waves"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--audio", "http://x/y.wav", "--duration", "6"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--audio", "upload:b"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "31"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1920x1080", "--duration", "11"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "-1"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "0x512"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1281x720"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1920x1920"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--aspect-ratio", "wide"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--aspect-ratio", "portrait", "--resolution", "512x512"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "512"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "0"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "wide"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--seed", "-1"},
@@ -206,36 +270,69 @@ func TestGenerateClipDefaults(t *testing.T) {
 	}
 }
 
-// --aspect-ratio sends the shape's name, and a clip may run 30 seconds, or
-// as long as a large size's budget allows.
-func TestGenerateClipAspectRatioAndLength(t *testing.T) {
+// A clip's size and length go to the server as given: it decides which
+// sizes it serves and how long a clip may be. A current server (clipSizes)
+// takes 1280x720 for 15 s; an older one 384x672 for 30 s. Only a length
+// under 1 second or a malformed size is refused before a call.
+func TestGenerateClipSizesAndLength(t *testing.T) {
 	var bodies []string
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		bodies = append(bodies, string(b))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"clip":{"upload":"upload:clip","expiresAt":"2026-11-02T00:00:00Z","durationSeconds":30,"width":384,"height":640,"unavailable":true},`+
-			`"microcreditsCharged":0,"replayed":false}`)
+		_, _ = io.WriteString(w, `{"clip":{"upload":"upload:clip","expiresAt":"2026-11-02T00:00:00Z","durationSeconds":15,"width":1280,"height":720,"unavailable":true},`+
+			`"microcreditsCharged":150,"replayed":false}`)
 	})
 	for _, args := range [][]string{
-		{"--aspect-ratio", "Portrait", "--duration", "30"},
-		{"--resolution", "1920x1080", "--duration", "10"},
-		{"--resolution", "1280x720", "--duration", "22"},
+		{"--resolution", "1280x720", "--duration", "15"},
+		{"--resolution", "468x832", "--duration", "1"},
+		{"--resolution", "384x672", "--duration", "30"},
+		{},
 	} {
 		if _, errOut, code := run(t, "", append([]string{"generate", "clip", "--image", "upload:a", "--prompt", "a slow nod"}, args...)...); code != 0 {
 			t.Fatalf("%v: %d %s", args, code, errOut)
 		}
 	}
 	want := []string{
-		`{"aspectRatio":"portrait","durationSeconds":30,"image":"upload:a","prompt":"a slow nod"}`,
-		`{"durationSeconds":10,"image":"upload:a","prompt":"a slow nod","resolution":{"height":1080,"width":1920}}`,
-		`{"durationSeconds":22,"image":"upload:a","prompt":"a slow nod","resolution":{"height":720,"width":1280}}`,
+		`{"durationSeconds":15,"image":"upload:a","prompt":"a slow nod","resolution":{"height":720,"width":1280}}`,
+		`{"durationSeconds":1,"image":"upload:a","prompt":"a slow nod","resolution":{"height":832,"width":468}}`,
+		`{"durationSeconds":30,"image":"upload:a","prompt":"a slow nod","resolution":{"height":672,"width":384}}`,
+		`{"image":"upload:a","prompt":"a slow nod"}`, // no size: the server's default
 	}
 	if !reflect.DeepEqual(bodies, want) {
 		t.Fatalf("sent %q", bodies)
 	}
-	if _, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod", "--resolution", "1280x720", "--duration", "23"); code != 2 || !strings.Contains(errOut, "at most 22 seconds") {
-		t.Fatalf("23 s at 1280x720: %d %s", code, errOut)
+	for _, bad := range [][]string{{"--duration", "0"}, {"--resolution", "481x480"}, {"--resolution", "1080"}} {
+		if _, errOut, code := run(t, "", append([]string{"generate", "clip", "--image", "upload:a", "--prompt", "a slow nod"}, bad...)...); code != 2 || len(bodies) != 4 {
+			t.Fatalf("%v: %d %s", bad, code, errOut)
+		}
+	}
+}
+
+// A size or length the server refuses comes back with its own message,
+// which names its sizes or its limit.
+func TestGenerateClipServerRefusesTheSize(t *testing.T) {
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.WriteString(w, `{"error":"invalid_input","message":"resolution 1920x1080 is not offered; offered: 480x480, 1280x720"}`)
+	})
+	_, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod", "--resolution", "1920x1080")
+	if code == 0 || !strings.Contains(errOut, "offered: 480x480, 1280x720") {
+		t.Fatalf("%d %s", code, errOut)
+	}
+}
+
+// A plan without video generation is told which plans have it.
+func TestGenerateClipNotInPlan(t *testing.T) {
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = io.WriteString(w, `{"error":"video_generation_not_in_plan","message":"video generation is not in this plan"}`)
+	})
+	_, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod")
+	if code == 0 || !strings.Contains(errOut, "Growth plan and up") {
+		t.Fatalf("%d %s", code, errOut)
 	}
 }
 

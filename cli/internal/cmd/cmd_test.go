@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -586,56 +587,156 @@ func TestResolutionFlag(t *testing.T) {
 	}
 }
 
-// --aspect-ratio names a v2 shape on create and update, shown beside the
-// size; it does not go with --resolution.
-func TestAspectRatioFlags(t *testing.T) {
+// A V2 Pro size on v2: a create can choose V2 Pro, so it says --engine
+// v2pro; an update can't change the avatar's engine, so it says what can be
+// done instead. Neither is sent.
+func TestV2ProSizeOnV2IsCommandAware(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	id := "11111111-2222-4333-8444-555555555555"
-	var got []map[string]any
+	sent := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/avatars/"+id:
+			_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
+				`"engine":"v2","createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
+		case r.Method == http.MethodGet:
 			_, _ = w.Write([]byte(`{}`))
+		default:
+			sent++
+			w.WriteHeader(http.StatusTeapot)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	_, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "640x640")
+	if code != 2 || sent != 0 || !strings.Contains(errOut, "engine can't change") || !strings.Contains(errOut, "pick a v2 size") ||
+		strings.Contains(errOut, "make one with --engine v2pro") {
+		t.Fatalf("update: %d %s", code, errOut)
+	}
+	_, errOut, code = run(t, "", "avatars", "create", "--name", "M", "--resolution", "640x640")
+	if code != 2 || sent != 0 || !strings.Contains(errOut, "make one with --engine v2pro") || strings.Contains(errOut, "can't change") {
+		t.Fatalf("create: %d %s", code, errOut)
+	}
+}
+
+// v2proAPI is a server whose account offers V2 Pro at two sizes and whose
+// avatar is a V2 Pro one; it records the bodies sent.
+func v2proAPI(t *testing.T, id string, got *[]map[string]any) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/account":
+			_, _ = w.Write([]byte(`{"v2Access":"granted","limits":{"apiAccess":true,"v2Pro":true,` +
+				`"v2Resolutions":[{"width":512,"height":512}],"v2ProResolutions":[{"width":640,"height":640},{"width":864,"height":480}]}}`))
+			return
+		case r.Method == http.MethodGet:
+			_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
+				`"engine":"v2pro","resolution":{"width":640,"height":640},"createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
 			return
 		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		got = append(got, body)
+		*got = append(*got, body)
 		if r.Method == http.MethodPost {
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"avatarId":"` + id + `","kind":"conversational","status":"building","statusUrl":"/v1/avatars/` + id + `"}`))
+			_, _ = w.Write([]byte(`{"avatarId":"` + id + `","engine":"v2pro","kind":"conversational","status":"building","statusUrl":"/v1/avatars/` + id + `"}`))
 			return
 		}
 		_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
-			`"engine":"v2","resolution":{"width":640,"height":384},"aspectRatio":"landscape","createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
+			`"engine":"v2pro","resolution":{"width":864,"height":480},"createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
-	if _, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--aspect-ratio", "portrait", "--json"); code != 0 {
+}
+
+// --engine v2pro creates like v2 (one candidate, auto selection) and its
+// sizes are V2 Pro's: the account's list, checked before anything is sent.
+func TestV2ProEngine(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	id := "11111111-2222-4333-8444-555555555555"
+	var got []map[string]any
+	v2proAPI(t, id, &got)
+	out, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", "v2pro", "--image", "https://x.example/a.png",
+		"--voice", "https://x.example/a.m4a", "--resolution", "864x480")
+	if code != 0 {
 		t.Fatalf("create: %d %s", code, errOut)
 	}
-	if _, errOut, code := run(t, `{"aspect_ratio": "square"}`, "avatars", "create", "--name", "M", "--config", "-", "--json"); code != 0 {
-		t.Fatalf("create --config: %d %s", code, errOut)
+	if len(got) != 1 || got[0]["engine"] != "v2pro" || got[0]["seedSelection"] != "auto" ||
+		!reflect.DeepEqual(got[0]["seedPreviews"], map[string]any{"count": float64(1)}) ||
+		!reflect.DeepEqual(got[0]["resolution"], map[string]any{"width": float64(864), "height": float64(480)}) {
+		t.Fatalf("create body: %v", got)
 	}
-	out, errOut, code := run(t, "", "avatars", "update", id, "--aspect-ratio", "landscape")
-	if code != 0 {
-		t.Fatalf("update: %d %s", code, errOut)
+	if !strings.Contains(out, "(v2pro, building)") {
+		t.Errorf("create output: %s", out)
 	}
-	if len(got) != 3 || got[0]["aspectRatio"] != "portrait" || got[1]["aspectRatio"] != "square" || got[2]["aspectRatio"] != "landscape" ||
-		got[0]["resolution"] != nil || got[2]["resolution"] != nil {
-		t.Fatalf("bodies: %v", got)
+	out, errOut, code = run(t, "", "avatars", "update", id, "--resolution", "864x480")
+	if code != 0 || len(got) != 2 || !strings.Contains(out, "Serving candidate") || !strings.Contains(out, "Resolution: 864x480") {
+		t.Fatalf("update: %d %s %s %v", code, out, errOut, got)
 	}
-	if !strings.Contains(out, "Resolution: 640x384 (landscape)") {
-		t.Errorf("update output has no aspect ratio:\n%s", out)
-	}
-	for _, bad := range [][]string{
-		{"avatars", "update", id, "--aspect-ratio", "wide"},
-		{"avatars", "update", id, "--aspect-ratio", "portrait", "--resolution", "384x640"},
-		{"avatars", "create", "--name", "M", "--aspect-ratio", "portrait", "--resolution", "384x640"},
-		{"avatars", "create", "--name", "M", "--engine", "v1", "--aspect-ratio", "portrait"},
+	for _, c := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"avatars", "update", id, "--resolution", "512x512"}, "not a V2 Pro size on this server; offered: 640x640, 864x480"},
+		{[]string{"avatars", "update", id, "--resolution", "896x480"}, "V2 Pro frames are at most"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2pro", "--resolution", "512x512"}, "not a V2 Pro size"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "make one with --engine v2pro"},
 	} {
-		if _, errOut, code := run(t, "", bad...); code == 0 || len(got) != 3 || errOut == "" {
-			t.Fatalf("%v was sent: %d %v", bad, code, got)
+		if _, errOut, code := run(t, "", c.args...); code == 0 || len(got) != 2 || !strings.Contains(errOut, c.want) {
+			t.Errorf("%v: %d %q, sent %v", c.args, code, errOut, got)
+		}
+	}
+}
+
+// The V2 Pro refusals say what to do.
+func TestV2ProRefusalHints(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	for body, want := range map[string]string{
+		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 Pro (Growth and up); upgrade the plan, or use engine v2"}`: "Creator Studio (Billing)",
+		`503 {"error":"engine_unavailable","message":"V2 Pro avatars are not enabled on this server; use engine v2"}`:                                   "a V2 Pro line only where V2 Pro is offered",
+		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                    "`atmee redeem CODE`",
+	} {
+		status, payload, _ := strings.Cut(body, " ")
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(`{}`))
+				return
+			}
+			code, _ := strconv.Atoi(status)
+			w.WriteHeader(code)
+			_, _ = io.WriteString(w, payload)
+		}))
+		t.Setenv("ATMEE_BASE_URL", srv.URL)
+		_, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", "v2pro", "--image", "https://x.example/a.png",
+			"--voice", "https://x.example/a.m4a")
+		if code == 0 || !strings.Contains(errOut, want) {
+			t.Errorf("%s: %d %s", status, code, errOut)
+		}
+		// A command without --engine (an update, a capture) never
+		// suggests it.
+		_, errOut, code = run(t, "", "avatars", "update", "11111111-2222-4333-8444-555555555555", "--greeting", "Hi")
+		srv.Close()
+		if code == 0 || !strings.Contains(errOut, payload[strings.Index(payload, `"error":"`)+9:strings.Index(payload, `","message`)]) ||
+			strings.Contains(errOut, "--engine") {
+			t.Errorf("update, %s: %d %s", status, code, errOut)
+		}
+	}
+}
+
+// --aspect-ratio is gone: --resolution is the only way to set a v2 size.
+func TestNoAspectRatioFlag(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	for _, args := range [][]string{
+		{"avatars", "create", "--name", "M", "--aspect-ratio", "portrait"},
+		{"avatars", "update", "11111111-2222-4333-8444-555555555555", "--aspect-ratio", "portrait"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--aspect-ratio", "portrait"},
+	} {
+		if _, errOut, code := run(t, "", args...); code == 0 || !strings.Contains(errOut, "unknown flag: --aspect-ratio") {
+			t.Errorf("%v: %d %s", args, code, errOut)
 		}
 	}
 }
@@ -793,7 +894,6 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		{access: "invite_required", want: "", note: "invite-only"}, // v1, the API's default, is not sent
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
-		{access: "invite_required", args: []string{"--aspect-ratio", "portrait"}, fails: "drop them to make a v1 avatar"},
 		{access: "unavailable", args: []string{"--resolution", "384x640"}, fails: "drop them to make a v1 avatar"},
 		{access: "granted", want: "v2"},
 		{access: "", want: "v2"},

@@ -70,8 +70,8 @@ Keep the key narrow:
 | `visitorId` | 16 to 256 characters, only with a visitor-memory key: it unlocks that visitor's earlier conversations, so derive it on the server (for example an HMAC of the app's user id) and never take it from the page |
 | `metadata` | up to 50 properties, stored with the session (the app's name, its own user or order id) |
 | `appTools` | `{ "instructions": "...", "tools": [...] }`: functions the avatar may call in this session (App tools, below) |
-| `welcome` | `false` starts without the avatar's self-introduction or welcome back, for an app that has already met the user: it waits for them to speak, though a long silence still gets its check-in (`checkInAfterS`, next). v2 avatars on the default runtime only. A speech session pins it instead: `"settings": {"welcome": false}` |
-| `checkInAfterS` | seconds of silence before the avatar speaks up, 0 to 3600; `0` for no check-in, for an app that drives the talk itself; a second check-in waits twice as long, then it stays quiet until the user speaks. Absent, the default, about 10 seconds. v2 avatars on the default runtime only. A speech session pins it instead: `"settings": {"checkin_after_s": 0}` |
+| `welcome` | `false` starts without the avatar's self-introduction or welcome back, for an app that has already met the user: it waits for them to speak, though a long silence still gets its check-in (`checkInAfterS`, next). Honoured by a v2 avatar on the default runtime; any other (v1, or one with its own launch URL) ignores it and speaks first, with no error. A speech session pins it instead: `"settings": {"welcome": false}` |
+| `checkInAfterS` | seconds of silence before the avatar speaks up, 0 to 3600; `0` for no check-in, for an app that drives the talk itself; a second check-in waits twice as long, then it stays quiet until the user speaks. Absent, the default, about 10 seconds. Honoured by a v2 avatar on the default runtime; any other ignores it and keeps its usual check-in, with no error, billed the same. A speech session pins it instead: `"settings": {"checkin_after_s": 0}` |
 
 `201` answers once the avatar is in the room: about 15 to 20 seconds in
 our tests. The page should show that it is connecting meanwhile.
@@ -97,8 +97,6 @@ Errors (`{"error": "<code>", "message": "..."}`):
 | `403` | | the avatar is not on the key's allow-list |
 | `401` | | a wrong or revoked key |
 | `400` | `invalid_tools` | a tool breaks a rule (App tools, below); the message names it: fix the declaration, don't retry |
-| `400` | `welcome_not_supported` | `welcome: false` on an avatar that cannot start without it (a v1 avatar, or one with its own launch URL): nothing is billed; use a v2 avatar on the default runtime or leave the welcome on |
-| `400` | `check_in_not_supported` | `checkInAfterS` on an avatar that cannot set it (a v1 avatar, or one with its own launch URL), `0` included: nothing is billed; use a v2 avatar on the default runtime or leave it out |
 | `422` | | a field is out of range, or `appTools` has a field other than `instructions` and `tools`; the body names it |
 
 A seed is one captured talking clip of a v2 avatar; the server's "candidate" and "take" mean a seed, and the API's `seed` field is an informational number, not the clip.
@@ -179,8 +177,14 @@ in their own LiveKit room and wants only the avatar's face, the call is
 `POST /v1/avatars/{avatarId}/avatar_sessions` with their room's URL and a
 token they mint, not `/v1/session`. Nothing in `references/room.md` applies
 then: their agent does the talking. `atmee avatars session render --help`
-shows the fields. `livekit-plugins-atmee` wraps this for LiveKit Agents and
-targets v1 avatars; for a v2 avatar, call the route directly.
+shows the fields. `livekit-plugins-atmee` wraps this for LiveKit Agents:
+from 0.2.0 it renders v1 and v2 avatars (`avatar_version="v2"` for a v2
+one). It does not take V2 Pro: for a V2 Pro avatar, call the route directly.
+A render-only
+session with an Atmee V2 Pro avatar (engine `v2pro`) is the same call and
+the same fields, billed at the v2 render rate (`renderV2PerMinuteMicrocredits`);
+its video comes at the avatar's own size (640×640 unless it was given
+another).
 
 ## Speech sessions
 

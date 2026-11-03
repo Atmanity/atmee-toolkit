@@ -21,7 +21,7 @@ func deref[T any](p *T) T {
 func engine(e any) string {
 	s := fmt.Sprint(e)
 	if s == "" || s == "<nil>" {
-		return "v1"
+		return api.EngineV1
 	}
 	return s
 }
@@ -61,7 +61,7 @@ func (a *app) printAvatar(x *api.Avatar) {
 	if x.MissingInputs != nil {
 		a.noteMissing(x.Id.String(), missingNames(*x.MissingInputs))
 	}
-	if engine(deref(x.Engine)) == "v2" {
+	if api.IsV2Family(engine(deref(x.Engine))) {
 		serving := "-"
 		if x.ServingCandidateId != nil {
 			serving = x.ServingCandidateId.String()
@@ -82,13 +82,7 @@ func (a *app) printAvatar(x *api.Avatar) {
 			a.printf("Runtime seed: %d\n", *x.RuntimeSeed)
 		}
 		if r := x.Resolution; r != nil {
-			shape := ""
-			if x.AspectRatio != nil {
-				shape = " (" + string(*x.AspectRatio) + ")"
-			}
-			a.printf("Resolution: %dx%d%s\n", r.Width, r.Height, shape)
-		} else if x.AspectRatio != nil {
-			a.printf("Aspect ratio: %s\n", *x.AspectRatio)
+			a.printf("Resolution: %dx%d\n", r.Width, r.Height)
 		}
 		if cd := x.Conductor; cd != nil {
 			if cd.Configured {

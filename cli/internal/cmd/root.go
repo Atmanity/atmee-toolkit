@@ -182,12 +182,18 @@ func ExecuteAs(v Variant, args []string, out, errOut io.Writer, in io.Reader) in
 	a := newApp(v, out, errOut, in)
 	root := a.root()
 	root.SetArgs(args)
-	err := root.Execute()
+	cmd, err := root.ExecuteC()
 	if err == nil {
 		return 0
 	}
 	// Errors arrive whole, and their hints are built with the ids in them.
-	fmt.Fprintf(errOut, "Error: %s\n", a.rename(err.Error()))
+	// An engine or plan refusal gets what to do about it here, wherever it
+	// came from (a create, an update, a capture).
+	msg := err.Error()
+	if h := engineHint(cmd, err); h != "" {
+		msg += "; " + h
+	}
+	fmt.Fprintf(errOut, "Error: %s\n", a.rename(msg))
 	var u usageError
 	if errors.As(err, &u) || strings.HasPrefix(err.Error(), "unknown ") || strings.Contains(err.Error(), "required flag") ||
 		strings.Contains(err.Error(), "accepts ") || strings.Contains(err.Error(), "invalid argument") {

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.10.11 (2026-11-03)
+
+
+### Features
+
+* make portraits for the avatar's engine in the cli and skill
+* price portraits per portrait and offer count in the skills
+* resolution-only sizes and per-clip prices for video clips
+
+
+### Bug Fixes
+
+* show 1080p clips as coming soon
+
+
+### Documentation
+
+* **atmee-product:** pricing facts for the 2026 lineup
+* use the atmee v2 size table in examples
+
 ## 0.10.10 (2026-11-03)
 
 

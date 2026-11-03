@@ -30,7 +30,7 @@ block in `negative-examples/manifest.json`:
   take it
 - `aspect` above `aspect_borderline`: the engine keeps only the centre crop of
   the avatar's frame (a square unless the creator chose a portrait or
-  landscape aspect ratio), so look at where the face sits (step 2, framing). A
+  landscape resolution), so look at where the face sits (step 2, framing). A
   tall photo for a portrait frame, or a wide one for landscape, is fine
 
 `bytes_per_pixel` is for your information only: a clean photo with a plain

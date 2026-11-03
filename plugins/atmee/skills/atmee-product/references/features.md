@@ -81,7 +81,8 @@ instead. The API is at `https://api.atmanity.us`.
   answer.
 - **Render path** (`POST /v1/avatars/{id}/avatar_sessions`): the avatar joins
   the developer's own LiveKit room and gives their agent a face.
-  `livekit-plugins-atmee` wraps it for LiveKit Agents, and targets v1 avatars.
+  `livekit-plugins-atmee` wraps it for LiveKit Agents, for v1 and v2 avatars
+  (0.2.0 and later; not V2 Pro, which takes the route directly).
 - **Speech sessions** (`POST /v1/speech_sessions`, `start_speech_session`,
   `atmee speech start`): speech-to-speech over a WebSocket, with no video.
   The avatar needs a voice; a client connects with the token within 60
@@ -91,21 +92,27 @@ instead. The API is at `https://api.atmanity.us`.
   update the persona and settings, replace the portrait, voice or knowledge,
   delete. v2 seeds: list, capture more, select, remove an older version. An
   agenda (conductor) per v2 avatar. A v2 avatar's video is square (512×512)
-  by default, or portrait (384×640) or landscape (640×384), set with
-  `aspectRatio`; a new shape makes new seeds.
+  by default, or another size the server offers (`get_account`
+  `limits.v2Resolutions`): 672×384 (16:9), 384×672 (9:16), 576×448 (4:3)
+  or 448×576 (3:4), set with `resolution`; a new size makes new seeds. An Atmee V2 Pro avatar
+  (engine `v2pro`, where `get_account` reports `limits.v2Pro`; Growth and up)
+  is a v2 avatar on a larger model: the same seeds, agenda and sessions, at
+  640×640 by default or another of `limits.v2ProResolutions` (for example
+  864×480).
 - **Account:** the balance, the plan with its limits, per-minute prices and
   generation prices, and who the caller is.
 - **Generation:** portraits from a description, an enhanced or restyled
-  version of a photo, voice previews from a description, each paid per call; the outputs
+  version of a photo, voice previews from a description (portraits paid per portrait, the rest per call); the outputs
   go straight into an avatar's create or replace (a key needs
   `generation:write` with `avatars:write`). Where offered, a **clip**: an
   mp4 of a portrait moving as a prompt says, silent, or with sound from an
-  audio file, in an avatar's shapes or any size up to 1920×1080; no avatar is
-  made, it needs v2 access, and it is paid by its length at the price
-  `get_account` reports. Where `pricing.generation.clipAnySize` is true it
-  runs up to 30 seconds, a larger size allowing less (1920×1080: 10 seconds,
-  1280×720: 22); otherwise it renders at an offered size for up to 15
-  seconds.
+  audio file, 1 to 15 seconds at one of the clip sizes: 480×480 (the
+  default), 640×480, 480×640, 832×468, 468×832, 720×720, 960×720, 720×960,
+  1280×720 or 720×1280. 1080p (1080×1080, 1920×1080, 1080×1920, 1440×1080,
+  1080×1440) is coming soon. No avatar is made; it
+  needs v2 access and a plan with video generation (Growth and up;
+  `get_account` `limits.videoGeneration`), and each size has a fixed price
+  per clip, whatever its length (`pricing.generation.clipSizes`).
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest
@@ -129,8 +136,8 @@ instead. The API is at `https://api.atmanity.us`.
 - **The avatars server** (`atmee-avatars`, the Avatar API's own MCP server):
   avatars, seeds, uploads, test conversations, keys, agendas, sponsoring, the
   account, balance and prices, and generation: portraits from a description,
-  portrait enhancement or restyling and voice design (each paid per call),
-  and clips (`generate_clip` or `atmee generate clip`, priced by its length, with v2 access, where offered).
+  portrait enhancement or restyling and voice design (portraits per portrait, the others per call),
+  and clips (`generate_clip` or `atmee generate clip`, a fixed price per clip for its size, with v2 access and a plan with video generation, where offered).
 - **The `atmee` CLI:** every Avatar API task from a terminal or CI, as a
   signed-in user or with a key (`docs/cli.md` in the GitHub repo
   `Atmanity/atmee-toolkit`).

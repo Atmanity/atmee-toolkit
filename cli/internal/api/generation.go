@@ -37,68 +37,26 @@ type DesignVoiceInput struct {
 type ClipInput struct {
 	Image, Prompt, Audio string
 	Duration             int
-	// Resolution is the clip's size; AspectRatio names an avatar shape
-	// instead. Send one or neither (the default, 512x512).
-	Resolution  *ClipResolution
-	AspectRatio string
-	Seed        *int64
+	// Resolution is the clip's size, one the server offers (nil: the
+	// server's default, 480x480 on a server that lists clipSizes).
+	Resolution *ClipResolution
+	Seed       *int64
 }
 
 // ClipResolution is a clip's output size in pixels.
 type ClipResolution = avatarapi.ClipResolution
 
-// The clip size rule: each side even, from MinClipSide to MaxClipSide. The
-// renderer works at each side rounded up to a multiple of ResolutionStep and
-// crops the centre; that render size is at most MaxClipRenderPixels.
-const (
-	MinClipSide         = 256
-	MaxClipSide         = 1920
-	MaxClipRenderPixels = 1920 * 1088
-	// MaxClipSeconds is the longest clip where clips render on their own
-	// pool (`clipAnySize`); on the sessions' pool it is MaxPoolClipSeconds.
-	MaxClipSeconds     = 30
-	MaxPoolClipSeconds = 15
-	// clipBudget bounds render width x height x seconds.
-	clipBudget = MaxClipRenderPixels * 10
-)
-
-// ParseClipResolution reads a clip size as WxH (e.g. 1920x1080) and checks
-// it against the clip rule.
+// ParseClipResolution reads a clip size as WxH (e.g. 1280x720): two
+// positive even numbers. Which sizes a server serves is its own to say
+// (`GET /v1/account` pricing.generation.clipSizes, or clipResolutions on an
+// older server); a size it doesn't serve is refused with its list.
 func ParseClipResolution(s string) (ClipResolution, error) {
 	w, h, ok := parseWxH(s)
-	if !ok {
-		return ClipResolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 1920x1080, 1080x1920 or 1280x720; got %q", s)
+	if !ok || w <= 0 || h <= 0 || w%2 != 0 || h%2 != 0 {
+		return ClipResolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, two even numbers, e.g. 480x480 or 1280x720 "+
+			"(`atmee account` lists the sizes this server serves); got %q", s)
 	}
-	r := ClipResolution{Width: w, Height: h}
-	return r, CheckClipResolution(r)
-}
-
-// CheckClipResolution refuses a clip size the renderer cannot take.
-func CheckClipResolution(r ClipResolution) error {
-	side := func(n int) bool { return n >= MinClipSide && n <= MaxClipSide && n%2 == 0 }
-	if !side(r.Width) || !side(r.Height) {
-		return fmt.Errorf("clip size %dx%d: width and height must each be even, from %d to %d", r.Width, r.Height, MinClipSide, MaxClipSide)
-	}
-	if w, h := ClipRenderSize(r); w*h > MaxClipRenderPixels {
-		return fmt.Errorf("clip size %dx%d renders at %dx%d: at most 1920x1088 pixels in all, e.g. 1920x1080 or 1080x1920",
-			r.Width, r.Height, w, h)
-	}
-	return nil
-}
-
-// ClipRenderSize is the size a clip renders at: each side rounded up to a
-// multiple of ResolutionStep, then cropped at the centre to r.
-func ClipRenderSize(r ClipResolution) (w, h int) {
-	up := func(n int) int { return (n + ResolutionStep - 1) / ResolutionStep * ResolutionStep }
-	return up(r.Width), up(r.Height)
-}
-
-// MaxClipSecondsAt is the longest clip of size r where clips render on their
-// own pool: the render size times the seconds stays within the budget of
-// 1920x1088 for 10 seconds, and at most MaxClipSeconds.
-func MaxClipSecondsAt(r ClipResolution) int {
-	w, h := ClipRenderSize(r)
-	return min(MaxClipSeconds, clipBudget/(w*h))
+	return ClipResolution{Width: w, Height: h}, nil
 }
 
 const (
@@ -150,11 +108,23 @@ func generating[T any](ctx context.Context, c *Client, key string, call func(ctx
 	}
 }
 
-// GeneratePortraits makes portraits of an invented character from a description.
-func (c *Client) GeneratePortraits(ctx context.Context, description, key string) (*GeneratedPortraits, error) {
+// EnhanceInput is a photo to enhance; Image is required. Engine and AvatarID
+// are left out of the request when empty.
+type EnhanceInput struct {
+	Image, Prompt, Engine string
+	AvatarID              *uuid.UUID
+}
+
+// GeneratePortraits makes portraits of an invented character from a
+// description, for engine (v1, v2 or v2pro; empty leaves the API's default).
+func (c *Client) GeneratePortraits(ctx context.Context, description, engine, key string) (*GeneratedPortraits, error) {
+	req := avatarapi.GeneratePortraitsRequest{Description: description}
+	if engine != "" {
+		e := avatarapi.GeneratePortraitsRequestEngine(engine)
+		req.Engine = &e
+	}
 	return generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedPortraits, error) {
-		r, err := c.gen.GeneratePortraitsWithResponse(ctx, &avatarapi.GeneratePortraitsParams{IdempotencyKey: key},
-			avatarapi.GeneratePortraitsRequest{Description: description})
+		r, err := c.gen.GeneratePortraitsWithResponse(ctx, &avatarapi.GeneratePortraitsParams{IdempotencyKey: key}, req)
 		if r == nil {
 			return nil, err
 		}
@@ -162,12 +132,16 @@ func (c *Client) GeneratePortraits(ctx context.Context, description, key string)
 	})
 }
 
-// EnhancePortrait enhances a photo, or restyles it when prompt is given.
-// image is an https URL or upload:<uploadId>.
-func (c *Client) EnhancePortrait(ctx context.Context, image, prompt, key string) (*GeneratedPortraits, error) {
-	req := avatarapi.EnhancePortraitRequest{Image: image}
-	if prompt != "" {
-		req.Prompt = &prompt
+// EnhancePortrait enhances a photo, or restyles it when a prompt is given.
+// The image is an https URL or upload:<uploadId>.
+func (c *Client) EnhancePortrait(ctx context.Context, in EnhanceInput, key string) (*GeneratedPortraits, error) {
+	req := avatarapi.EnhancePortraitRequest{Image: in.Image, AvatarId: in.AvatarID}
+	if in.Prompt != "" {
+		req.Prompt = &in.Prompt
+	}
+	if in.Engine != "" {
+		e := avatarapi.EnhancePortraitRequestEngine(in.Engine)
+		req.Engine = &e
 	}
 	return generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedPortraits, error) {
 		r, err := c.gen.EnhancePortraitWithResponse(ctx, &avatarapi.EnhancePortraitParams{IdempotencyKey: key}, req)
@@ -203,10 +177,6 @@ func (c *Client) DesignVoice(ctx context.Context, in DesignVoiceInput, key strin
 // GenerateClip renders a clip from an image and a prompt.
 func (c *Client) GenerateClip(ctx context.Context, in ClipInput, key string) (*GeneratedClip, error) {
 	req := avatarapi.GenerateClipRequest{Image: in.Image, Prompt: in.Prompt, Resolution: in.Resolution, Seed: in.Seed}
-	if in.AspectRatio != "" {
-		r := AspectRatio(in.AspectRatio)
-		req.AspectRatio = &r
-	}
 	if in.Audio != "" {
 		req.Audio = &in.Audio
 	}

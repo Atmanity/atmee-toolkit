@@ -840,64 +840,109 @@ func TestCreateDraftBodies(t *testing.T) {
 	}
 }
 
-func TestParseAspectRatio(t *testing.T) {
-	for in, want := range map[string]AspectRatio{"square": "square", " Portrait ": "portrait", "LANDSCAPE": "landscape", "wide": "", "": ""} {
-		got, err := ParseAspectRatio(in)
-		if got != want || (err == nil) != (want != "") {
-			t.Errorf("ParseAspectRatio(%q) = %q, %v; want %q", in, got, err, want)
-		}
-	}
-	for r, size := range AspectRatioSizes {
-		if err := CheckResolution(size); err != nil {
-			t.Errorf("%s: %v", r, err)
-		}
-	}
-}
-
+// Only the shape of a clip size is checked locally: which sizes a server
+// serves (an older one: 512x512, 384x672, ...) is the server's to say.
 func TestParseClipResolution(t *testing.T) {
 	for in, ok := range map[string]bool{
-		"1920x1080": true, "1080x1920": true, "1280x720": true, "512x512": true, "256x256": true, "1920x1088": true, "1000x1000": true,
-		"1920x1920": false, "1922x1080": false, "254x512": false, "1281x720": false, "1920": false, "": false,
+		"480x480": true, "480 x 640": true, "468X832": true, "1080x1080": true, "512x512": true, "384x672": true, "1920x1080": true,
+		"481x480": false, "0x480": false, "-480x480": false, "1920": false, "x480": false, "": false,
 	} {
 		r, err := ParseClipResolution(in)
 		if (err == nil) != ok {
 			t.Errorf("ParseClipResolution(%q) = %v, %v; want ok=%v", in, r, err, ok)
 		}
 	}
-	for size, want := range map[ClipResolution]int{
-		{Width: 1920, Height: 1080}: 10, {Width: 1080, Height: 1920}: 10, {Width: 1280, Height: 720}: 22,
-		{Width: 512, Height: 512}: 30, {Width: 384, Height: 640}: 30,
-	} {
-		if got := MaxClipSecondsAt(size); got != want {
-			t.Errorf("MaxClipSecondsAt(%v) = %d, want %d", size, got, want)
-		}
-	}
 }
 
-func TestManifestAspectRatio(t *testing.T) {
-	m, err := (CreateInput{Name: "x", AspectRatio: "portrait"}).Manifest()
-	if err != nil || m["aspectRatio"] != "portrait" || m["resolution"] != nil {
+func TestManifestResolution(t *testing.T) {
+	m, err := (CreateInput{Name: "x", Resolution: &Resolution{Width: 384, Height: 640}}).Manifest()
+	if err != nil || m["aspectRatio"] != nil || m["resolution"] == nil {
 		t.Fatalf("%v %v", m, err)
 	}
-	for _, in := range []CreateInput{
-		{Name: "x", AspectRatio: "portrait", Resolution: &Resolution{Width: 512, Height: 512}},
-		{Name: "x", AspectRatio: "portrait", Engine: "v1"},
-		{Name: "x", AspectRatio: "wide"},
-	} {
-		if _, err := in.Manifest(); err == nil {
-			t.Errorf("%+v: no error", in)
-		}
+	if _, err := (CreateInput{Name: "x", Engine: "v1", Resolution: &Resolution{Width: 384, Height: 640}}).Manifest(); err == nil {
+		t.Error("v1 with a resolution: no error")
 	}
 }
 
 func TestParseResolution(t *testing.T) {
 	for in, ok := range map[string]bool{
 		"512x512": true, "384x640": true, "640 x 384": true, "256x1024": true, "1024X256": true, "256x256": true,
-		"544x512": false, "1024x1024": false, "224x512": false, "500x500": false, "512": false, "x512": false, "512x512x1": false, "": false,
+		"640x640": true, "864x480": true, "544x512": true, // V2 Pro's rule; each engine's is checked later
+		"896x480": false, "1024x1024": false, "224x512": false, "500x500": false, "512": false, "x512": false, "512x512x1": false, "": false,
 	} {
 		r, err := ParseResolution(in)
 		if (err == nil) != ok {
 			t.Errorf("ParseResolution(%q) = %v, %v; want ok=%v", in, r, err, ok)
 		}
+	}
+}
+
+// Each engine has its own frame rule: v2 at most 512x512 pixels, V2 Pro at
+// most 864x480.
+func TestCheckResolutionFor(t *testing.T) {
+	for _, c := range []struct {
+		engine string
+		w, h   int
+		ok     bool
+	}{
+		{"v2", 512, 512, true}, {"v2", 384, 640, true}, {"v2", 544, 512, false}, {"v2", 640, 640, false},
+		{"v2pro", 640, 640, true}, {"v2pro", 864, 480, true}, {"v2pro", 480, 864, true}, {"v2pro", 736, 544, true},
+		{"v2pro", 896, 480, false}, {"v2pro", 1024, 1024, false},
+	} {
+		err := CheckResolutionFor(c.engine, Resolution{Width: c.w, Height: c.h})
+		if (err == nil) != c.ok {
+			t.Errorf("%s %dx%d: %v, want ok=%v", c.engine, c.w, c.h, err, c.ok)
+		}
+	}
+	var pro *V2ProSizeError
+	if err := CheckResolutionFor("v2", Resolution{Width: 640, Height: 640}); !errors.As(err, &pro) || !strings.Contains(err.Error(), "for V2 Pro avatars") {
+		t.Errorf("a V2 Pro size on v2 does not say it is one: %v", err)
+	}
+	if err := CheckResolutionFor("v2", Resolution{Width: 1024, Height: 1024}); errors.As(err, &pro) {
+		t.Errorf("a size too large for V2 Pro too is called a V2 Pro size: %v", err)
+	}
+}
+
+// The sizes a server lists for an engine are checked before sending; a
+// server that lists none decides itself.
+func TestCheckOffered(t *testing.T) {
+	v2 := []Resolution{{Width: 512, Height: 512}}
+	pro := []Resolution{{Width: 640, Height: 640}, {Width: 864, Height: 480}}
+	acct := &Account{}
+	acct.Limits.V2Resolutions, acct.Limits.V2ProResolutions = &v2, &pro
+	if err := CheckOffered(acct, "v2pro", Resolution{Width: 864, Height: 480}); err != nil {
+		t.Error(err)
+	}
+	err := CheckOffered(acct, "v2pro", Resolution{Width: 512, Height: 512})
+	if err == nil || !strings.Contains(err.Error(), "not a V2 Pro size") || !strings.Contains(err.Error(), "640x640, 864x480") {
+		t.Errorf("512x512 for V2 Pro: %v", err)
+	}
+	if err := CheckOffered(acct, "v2", Resolution{Width: 384, Height: 640}); err == nil || !strings.Contains(err.Error(), "offered: 512x512") {
+		t.Errorf("384x640 for v2: %v", err)
+	}
+	if err := CheckOffered(&Account{}, "v2pro", Resolution{Width: 544, Height: 736}); err != nil {
+		t.Errorf("no list: %v", err)
+	}
+}
+
+// A V2 Pro create is a v2 create with engine v2pro: the candidate options
+// and the preview line limit apply as for v2.
+func TestManifestV2Pro(t *testing.T) {
+	m, err := (CreateInput{Name: "x", Engine: "v2pro", Image: "https://x/a.png", Voice: "https://x/a.m4a", Candidates: 2,
+		SeedSelection: "auto", Resolution: &Resolution{Width: 864, Height: 480}}).Manifest()
+	if err != nil || m["engine"] != "v2pro" {
+		t.Fatalf("%v %v", m, err)
+	}
+	if r, _ := m["resolution"].(map[string]int); r["width"] != 864 || r["height"] != 480 {
+		t.Fatalf("resolution %v", m["resolution"])
+	}
+	if _, err := (CreateInput{Name: "x", Engine: "v2pro", Candidates: 2}).Manifest(); err == nil {
+		t.Error("a V2 Pro draft with candidates: no error")
+	}
+	if _, err := (CreateInput{Name: "x", Engine: "v2pro", PreviewMessage: strings.Repeat("a", MaxPrimeTextChars+1)}).Manifest(); err == nil {
+		t.Error("a V2 Pro preview line over the limit: no error")
+	}
+	if _, err := (CreateInput{Name: "x", Engine: "v2", Resolution: &Resolution{Width: 640, Height: 640}}).Manifest(); err == nil {
+		t.Error("a V2 Pro size on v2: no error")
 	}
 }

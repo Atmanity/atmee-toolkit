@@ -33,7 +33,7 @@
       "group": "framing",
       "problem": "The face sits near the edge of a wide photo",
       "look_for": "A landscape photo with the face off-centre",
-      "why_it_fails": "The engine scales the photo to the avatar's frame (square 512×512 unless a portrait 384×640 or landscape 640×384 aspect ratio was chosen) and keeps only the centre crop of that shape, so a face near the edge is cut or lost",
+      "why_it_fails": "The engine scales the photo to the avatar's frame (square 512×512 unless another size such as 672×384 or 384×672 was chosen) and keeps only the centre crop of that shape, so a face near the edge is cut or lost",
       "severity": "blocks",
       "detect": {
         "by": "measure",
@@ -98,7 +98,7 @@
       "group": "quality",
       "problem": "The photo is too small or upscaled",
       "look_for": "Smaller than the avatar's frame on either side (512 px on the short side by default), or visible blocks",
-      "why_it_fails": "The engine works at the avatar's frame size (512×512 by default, never more than 512×512 pixels in all); a smaller or upscaled photo animates soft and smeared",
+      "why_it_fails": "The engine works at the avatar's frame size (512×512 by default); a smaller or upscaled photo animates soft and smeared",
       "severity": "likely-fails",
       "detect": {
         "by": "measure",

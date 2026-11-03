@@ -225,31 +225,11 @@ func (e ApiKeyUpdateRequestSpendCapWindow) Valid() bool {
 	}
 }
 
-// Defines values for AspectRatio.
-const (
-	AspectRatioLandscape AspectRatio = "landscape"
-	AspectRatioPortrait  AspectRatio = "portrait"
-	AspectRatioSquare    AspectRatio = "square"
-)
-
-// Valid indicates whether the value is a known member of the AspectRatio enum.
-func (e AspectRatio) Valid() bool {
-	switch e {
-	case AspectRatioLandscape:
-		return true
-	case AspectRatioPortrait:
-		return true
-	case AspectRatioSquare:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AvatarCreateJsonRequestEngine.
 const (
-	AvatarCreateJsonRequestEngineV1 AvatarCreateJsonRequestEngine = "v1"
-	AvatarCreateJsonRequestEngineV2 AvatarCreateJsonRequestEngine = "v2"
+	AvatarCreateJsonRequestEngineV1    AvatarCreateJsonRequestEngine = "v1"
+	AvatarCreateJsonRequestEngineV2    AvatarCreateJsonRequestEngine = "v2"
+	AvatarCreateJsonRequestEngineV2pro AvatarCreateJsonRequestEngine = "v2pro"
 )
 
 // Valid indicates whether the value is a known member of the AvatarCreateJsonRequestEngine enum.
@@ -258,6 +238,8 @@ func (e AvatarCreateJsonRequestEngine) Valid() bool {
 	case AvatarCreateJsonRequestEngineV1:
 		return true
 	case AvatarCreateJsonRequestEngineV2:
+		return true
+	case AvatarCreateJsonRequestEngineV2pro:
 		return true
 	default:
 		return false
@@ -348,27 +330,6 @@ func (e AvatarCreateResponseStatus) Valid() bool {
 	case AvatarCreateResponseStatusDraft:
 		return true
 	case AvatarCreateResponseStatusReady:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AvatarDetailAspectRatio.
-const (
-	AvatarDetailAspectRatioLandscape AvatarDetailAspectRatio = "landscape"
-	AvatarDetailAspectRatioPortrait  AvatarDetailAspectRatio = "portrait"
-	AvatarDetailAspectRatioSquare    AvatarDetailAspectRatio = "square"
-)
-
-// Valid indicates whether the value is a known member of the AvatarDetailAspectRatio enum.
-func (e AvatarDetailAspectRatio) Valid() bool {
-	switch e {
-	case AvatarDetailAspectRatioLandscape:
-		return true
-	case AvatarDetailAspectRatioPortrait:
-		return true
-	case AvatarDetailAspectRatioSquare:
 		return true
 	default:
 		return false
@@ -494,8 +455,9 @@ func (e AvatarDetailVisibility) Valid() bool {
 
 // Defines values for AvatarEngine.
 const (
-	AvatarEngineV1 AvatarEngine = "v1"
-	AvatarEngineV2 AvatarEngine = "v2"
+	AvatarEngineV1    AvatarEngine = "v1"
+	AvatarEngineV2    AvatarEngine = "v2"
+	AvatarEngineV2pro AvatarEngine = "v2pro"
 )
 
 // Valid indicates whether the value is a known member of the AvatarEngine enum.
@@ -504,6 +466,8 @@ func (e AvatarEngine) Valid() bool {
 	case AvatarEngineV1:
 		return true
 	case AvatarEngineV2:
+		return true
+	case AvatarEngineV2pro:
 		return true
 	default:
 		return false
@@ -1301,8 +1265,9 @@ func (e EmbedSessionStartResponseBillingMode) Valid() bool {
 
 // Defines values for EnhancePortraitRequestEngine.
 const (
-	EnhancePortraitRequestEngineV1 EnhancePortraitRequestEngine = "v1"
-	EnhancePortraitRequestEngineV2 EnhancePortraitRequestEngine = "v2"
+	EnhancePortraitRequestEngineV1    EnhancePortraitRequestEngine = "v1"
+	EnhancePortraitRequestEngineV2    EnhancePortraitRequestEngine = "v2"
+	EnhancePortraitRequestEngineV2pro EnhancePortraitRequestEngine = "v2pro"
 )
 
 // Valid indicates whether the value is a known member of the EnhancePortraitRequestEngine enum.
@@ -1312,6 +1277,8 @@ func (e EnhancePortraitRequestEngine) Valid() bool {
 		return true
 	case EnhancePortraitRequestEngineV2:
 		return true
+	case EnhancePortraitRequestEngineV2pro:
+		return true
 	default:
 		return false
 	}
@@ -1319,8 +1286,9 @@ func (e EnhancePortraitRequestEngine) Valid() bool {
 
 // Defines values for GeneratePortraitsRequestEngine.
 const (
-	GeneratePortraitsRequestEngineV1 GeneratePortraitsRequestEngine = "v1"
-	GeneratePortraitsRequestEngineV2 GeneratePortraitsRequestEngine = "v2"
+	GeneratePortraitsRequestEngineV1    GeneratePortraitsRequestEngine = "v1"
+	GeneratePortraitsRequestEngineV2    GeneratePortraitsRequestEngine = "v2"
+	GeneratePortraitsRequestEngineV2pro GeneratePortraitsRequestEngine = "v2pro"
 )
 
 // Valid indicates whether the value is a known member of the GeneratePortraitsRequestEngine enum.
@@ -1329,6 +1297,8 @@ func (e GeneratePortraitsRequestEngine) Valid() bool {
 	case GeneratePortraitsRequestEngineV1:
 		return true
 	case GeneratePortraitsRequestEngineV2:
+		return true
+	case GeneratePortraitsRequestEngineV2pro:
 		return true
 	default:
 		return false
@@ -1703,6 +1673,18 @@ type AccountLimits struct {
 
 	// MaxSessionSeconds Longest session the plan allows; absent = not capped by the plan.
 	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
+
+	// V2Pro Whether the plan includes V2 Pro avatars (engine `v2pro`), Growth and up; a V2 Pro create, capture or rebuild answers `403 v2_pro_not_in_plan` when false. V2 Pro also needs v2 access (`v2Access`). Absent where V2 Pro is not offered on this server (engine `v2pro` then answers `503 engine_unavailable`).
+	V2Pro *bool `json:"v2Pro,omitempty"`
+
+	// V2ProResolutions The frame sizes V2 Pro avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 Pro is not offered, or every size the V2 Pro rule allows is.
+	V2ProResolutions *[]RenderResolution `json:"v2ProResolutions,omitempty"`
+
+	// V2Resolutions The frame sizes v2 avatars may use here (`resolution`), 512 x 512 first; another is `400 invalid_input`. Absent where every size the rule allows is offered.
+	V2Resolutions *[]RenderResolution `json:"v2Resolutions,omitempty"`
+
+	// VideoGeneration Whether the plan includes generated clips (`POST /v1/generation/clips`), Growth and up; clips answer `403 video_generation_not_in_plan` when false. False where the database does not report it yet, since clips are refused until it does.
+	VideoGeneration *bool `json:"videoGeneration,omitempty"`
 }
 
 // AccountLinks The account's pages on the Atmee website, ready to hand to a person.
@@ -1760,7 +1742,11 @@ type AccountPlan struct {
 
 // AccountPricing defines model for AccountPricing.
 type AccountPricing struct {
-	// Generation The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
+	// Generation The price of each generation operation (per portrait for portraits, per call otherwise), charged only when at
+	// least one output comes back. Portraits, enhancements and voices are paid
+	// from the plan's free generation allowance first (`freeAllowance`), then
+	// from credits; clips are always paid in credits. Absent when this
+	// instance does not offer generation.
 	Generation *GenerationPricing `json:"generation,omitempty"`
 
 	// MonetizedPerMinuteMicrocredits What a viewer pays per minute with a monetized v1 avatar on atmee.ai (its owner pays `sessionPerMinuteMicrocredits`); API sessions are never charged it.
@@ -1971,13 +1957,6 @@ type AppTools struct {
 	Tools []AppTool `json:"tools"`
 }
 
-// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
-// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
-// sizes follow the renderer and may change; the names do not. Send it
-// or `resolution`, not both (`400`). On an avatar it is a build input,
-// like `resolution`: a change on PATCH builds a new version.
-type AspectRatio string
-
 // AssetRef defines model for AssetRef.
 type AssetRef struct {
 	// Url Public https URL the service downloads. Private, loopback and link-local hosts are refused (`invalid_url`).
@@ -2006,13 +1985,6 @@ type AvatarAppearanceJsonRequest struct {
 // manifest and are enforced by the service (400 `invalid_manifest`,
 // naming the field); only the shape is checked here.
 type AvatarCreateJsonRequest struct {
-	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
-	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
-	// sizes follow the renderer and may change; the names do not. Send it
-	// or `resolution`, not both (`400`). On an avatar it is a build input,
-	// like `resolution`: a change on PATCH builds a new version.
-	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
-
 	// Assets The files of a JSON create, by URL. Same limits as the zip folders (image jpg/png/webp <=10 MB, voice 10-60 s <=12 MB, knowledge <=20 files). The image is the portrait; front-facing, face at least about a third of the frame, lips slightly parted (see the operation). With an image and no `voice` a v1 avatar is render-only; without the image (or a v2 one without the voice) it is a draft.
 	Assets *AssetRefs `json:"assets,omitempty"`
 
@@ -2036,21 +2008,24 @@ type AvatarCreateJsonRequest struct {
 	PreviewMessage   *string                        `json:"previewMessage,omitempty"`
 	Previews         *bool                          `json:"previews,omitempty"`
 
-	// Resolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
-	// to pick one by shape: width and height are each
+	// Resolution A v2 avatar's frame size in pixels: width and height are each
 	// a multiple of 32 from 256 to 1024, and width x height is at most
 	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
-	// Default 512 x 512 (square). The aspect ratios' sizes: square
-	// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
-	// offers only some sizes (512 x 512 always;
-	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
-	// where clips are offered): another is `400 invalid_input` ("resolution
-	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
+	// Default 512 x 512 (square). A deployment offers only some sizes
+	// (512 x 512 always; `GET /v1/account` `limits.v2Resolutions` lists
+	// them): another is `400 invalid_input` ("resolution WxH is not
+	// offered; offered: ..."). On an avatar it is a build input of v2 avatars only
 	// (`400 invalid_input` for a v1 avatar): the portrait is preprocessed
 	// at that size, so a change on PATCH builds a new version with new
 	// candidates, like a new portrait; sending the current size again
 	// builds nothing. Absent or null keeps the current size (on create:
-	// the default).
+	// the default).<!-- v2pro -->
+	//
+	// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+	// (864 x 480), default 640 x 640, and only the sizes
+	// `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
+	// 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
+	// are not V2 Pro sizes.<!-- /v2pro -->
 	Resolution *RenderResolution `json:"resolution,omitempty"`
 
 	// RuntimeSeed The v2 renderer's runtime seed: it seeds a session's noise and motion
@@ -2089,7 +2064,15 @@ type AvatarCreateResponse struct {
 	AvatarId openapi_types.UUID `json:"avatarId"`
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
-	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
+	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// builds, previews and serves exactly like `v2` (candidates, versions,
+	// conductor, seeds, same session rates) at larger frame sizes
+	// (`resolution`, 640 x 640 by default; `GET /v1/account`
+	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
+	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// offered only where `limits.v2Pro` is reported (elsewhere `503
+	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
 
 	// Kind `conversational` avatars have a voice and a persona and can run a full
@@ -2115,11 +2098,6 @@ type AvatarCreateResponseStatus string
 
 // AvatarDetail defines model for AvatarDetail.
 type AvatarDetail struct {
-	// AspectRatio v2 only, alongside `resolution`: the shape of the avatar's
-	// frame (`portrait` when taller than wide, `landscape` when
-	// wider, else `square`).
-	AspectRatio *AvatarDetailAspectRatio `json:"aspectRatio,omitempty"`
-
 	// BlackoutRecovery v2 only. The blackout recovery a session started now would use:
 	// each setting as set on the avatar, else from its rendering
 	// config, else the default. A change applies from the next
@@ -2137,7 +2115,15 @@ type AvatarDetail struct {
 	Description    *string `json:"description,omitempty"`
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
-	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
+	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// builds, previews and serves exactly like `v2` (candidates, versions,
+	// conductor, seeds, same session rates) at larger frame sizes
+	// (`resolution`, 640 x 640 by default; `GET /v1/account`
+	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
+	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// offered only where `limits.v2Pro` is reported (elsewhere `503
+	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -2335,11 +2321,6 @@ type AvatarDetail struct {
 	Voice        *AvatarVoiceSettings   `json:"voice,omitempty"`
 }
 
-// AvatarDetailAspectRatio v2 only, alongside `resolution`: the shape of the avatar's
-// frame (`portrait` when taller than wide, `landscape` when
-// wider, else `square`).
-type AvatarDetailAspectRatio string
-
 // AvatarDetailLatestFailureStage defines model for AvatarDetail.LatestFailure.Stage.
 type AvatarDetailLatestFailureStage string
 
@@ -2374,7 +2355,15 @@ type AvatarDetailStatus string
 type AvatarDetailVisibility string
 
 // AvatarEngine Render engine: `v1`, the original renderer, or `v2`, which serves a
-// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
+// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
+// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+// builds, previews and serves exactly like `v2` (candidates, versions,
+// conductor, seeds, same session rates) at larger frame sizes
+// (`resolution`, 640 x 640 by default; `GET /v1/account`
+// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
+// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+// offered only where `limits.v2Pro` is reported (elsewhere `503
+// engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
 
 // AvatarKind `conversational` avatars have a voice and a persona and can run a full
@@ -2897,7 +2886,15 @@ type AvatarSummary struct {
 	CreationSource *string `json:"creationSource,omitempty"`
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
-	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
+	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// builds, previews and serves exactly like `v2` (candidates, versions,
+	// conductor, seeds, same session rates) at larger frame sizes
+	// (`resolution`, 640 x 640 by default; `GET /v1/account`
+	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
+	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// offered only where `limits.v2Pro` is reported (elsewhere `503
+	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -2991,13 +2988,6 @@ type AvatarThumbnailJsonRequest struct {
 
 // AvatarUpdateRequest defines model for AvatarUpdateRequest.
 type AvatarUpdateRequest struct {
-	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
-	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
-	// sizes follow the renderer and may change; the names do not. Send it
-	// or `resolution`, not both (`400`). On an avatar it is a build input,
-	// like `resolution`: a change on PATCH builds a new version.
-	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
-
 	// BlackoutRecovery Blackout recovery of the v2 renderer. While the avatar listens, it
 	// screens each generated chunk for a fade to black (or fully black
 	// frames) and shows a healthy listening clip in place of a failed one,
@@ -3036,21 +3026,24 @@ type AvatarUpdateRequest struct {
 	// rebuilding them. Omit to leave it unchanged.
 	Previews *bool `json:"previews,omitempty"`
 
-	// Resolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
-	// to pick one by shape: width and height are each
+	// Resolution A v2 avatar's frame size in pixels: width and height are each
 	// a multiple of 32 from 256 to 1024, and width x height is at most
 	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
-	// Default 512 x 512 (square). The aspect ratios' sizes: square
-	// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
-	// offers only some sizes (512 x 512 always;
-	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
-	// where clips are offered): another is `400 invalid_input` ("resolution
-	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
+	// Default 512 x 512 (square). A deployment offers only some sizes
+	// (512 x 512 always; `GET /v1/account` `limits.v2Resolutions` lists
+	// them): another is `400 invalid_input` ("resolution WxH is not
+	// offered; offered: ..."). On an avatar it is a build input of v2 avatars only
 	// (`400 invalid_input` for a v1 avatar): the portrait is preprocessed
 	// at that size, so a change on PATCH builds a new version with new
 	// candidates, like a new portrait; sending the current size again
 	// builds nothing. Absent or null keeps the current size (on create:
-	// the default).
+	// the default).<!-- v2pro -->
+	//
+	// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+	// (864 x 480), default 640 x 640, and only the sizes
+	// `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
+	// 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
+	// are not V2 Pro sizes.<!-- /v2pro -->
 	Resolution *RenderResolution `json:"resolution,omitempty"`
 
 	// RuntimeSeed The v2 renderer's runtime seed: it seeds a session's noise and motion
@@ -3304,18 +3297,32 @@ type CaptureQuota struct {
 	PendingLimit int `json:"pendingLimit"`
 }
 
-// ClipResolution A clip's size in pixels: width and height are each even, from 256
-// to 1920, e.g. 1920 x 1080, 1080 x 1920 or 1280 x 720. The renderer
-// works at each side rounded up to a multiple of 32 (1920 x 1080 at
-// 1920 x 1088) and crops the centre to the size asked for, so at most
-// 31 pixels are lost on a side and nothing is resampled. The render
-// size is at most 1920 x 1088 pixels in all. Where clips render on the
-// sessions' pool (`GET /v1/account`
-// `pricing.generation.clipAnySize` false), the render size must also
-// be one of `clipResolutions`. Another size is `400 invalid_input`.
+// ClipResolution A clip's output size in pixels, one of these (credits per clip, any
+// length):
+//
+// | Tier | Square | Standard (4:3, 3:4) | Wide (16:9, 9:16) |
+// |---|---|---|---|
+// | 480p | 480 x 480 (0.5) | 640 x 480, 480 x 640 (0.5) | 832 x 468, 468 x 832 (1) |
+// | 720p | 720 x 720 (1) | 960 x 720, 720 x 960 (1) | 1280 x 720, 720 x 1280 (1.5) |
+// | 1080p | coming soon | coming soon | coming soon |
+//
+// Default 480 x 480. The renderer works at each side rounded up to a
+// multiple of 32 (1280 x 720 at 1280 x 736) and crops the centre to
+// the size asked for. `GET /v1/account` `pricing.generation.clipSizes`
+// lists the sizes served here with their prices; another size is
+// `400 invalid_input`, naming the sizes.
 type ClipResolution struct {
 	Height int `json:"height"`
 	Width  int `json:"width"`
+}
+
+// ClipSize defines model for ClipSize.
+type ClipSize struct {
+	Height int `json:"height"`
+
+	// Microcredits The price of one clip at this size, any length.
+	Microcredits int `json:"microcredits"`
+	Width        int `json:"width"`
 }
 
 // CodeRedemption defines model for CodeRedemption.
@@ -3539,8 +3546,11 @@ type DesignedVoicesResponse struct {
 	FailedProviders []string                       `json:"failedProviders"`
 	Language        DesignedVoicesResponseLanguage `json:"language"`
 
-	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit); 0 on a replay.
+	// MicrocreditsCharged What this call charged to credits (100 microcredits = 1 credit), after the plan's free generation allowance; 0 on a replay. The call's price is `microcreditsCharged` + `microcreditsFree`.
 	MicrocreditsCharged int `json:"microcreditsCharged"`
+
+	// MicrocreditsFree The part of the price the plan's free generation allowance covered (`pricing.generation.freeAllowance` on `GET /v1/account`); 0 on a replay and when none is left.
+	MicrocreditsFree int `json:"microcreditsFree"`
 
 	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
 	Replayed bool            `json:"replayed"`
@@ -3564,11 +3574,11 @@ type EmbedSessionStartRequest struct {
 	// CheckInAfterS Seconds of silence before the avatar speaks up in character, from
 	// 0 to 3600; a second check-in waits twice as long, then it stays
 	// quiet until the visitor speaks. `0` turns the check-in off. Absent
-	// or null keeps the default, about 10 seconds. Needs a v2 avatar
-	// that launches on the default conversation runtime, as every avatar
-	// built through this API does; any other answers `400
-	// check_in_not_supported`, with nothing billed. Billing and session
-	// length are the same either way.
+	// or null keeps the default, about 10 seconds. Honoured by a v2
+	// avatar that launches on the default conversation runtime, as every
+	// avatar built through this API does; any other ignores it and keeps
+	// its usual check-in. Billing and session length are the same either
+	// way.
 	CheckInAfterS *float64 `json:"checkInAfterS,omitempty"`
 
 	// Language Per-session language override (BCP-47), e.g. `en`, `zh-TW`, `ja`.
@@ -3604,11 +3614,10 @@ type EmbedSessionStartRequest struct {
 	// waits for the visitor to speak and answers as usual; a long
 	// silence still gets its check-in, which `checkInAfterS` sets or
 	// turns off. Absent, null or `true`, the
-	// avatar speaks first, as it always has. Needs a v2 avatar that
-	// launches on the default conversation runtime, as every avatar
-	// built through this API does; any other answers `400
-	// welcome_not_supported`, with nothing billed. Billing and session
-	// length are the same either way.
+	// avatar speaks first, as it always has. Honoured by a v2 avatar
+	// that launches on the default conversation runtime, as every avatar
+	// built through this API does; any other ignores it and speaks first.
+	// Billing and session length are the same either way.
 	Welcome *bool `json:"welcome,omitempty"`
 }
 
@@ -3662,6 +3671,14 @@ type EmbedSessionStartResponse struct {
 
 	// UserToken LiveKit access token for the visitor's browser to join with.
 	UserToken string `json:"userToken"`
+
+	// Watermark Whether the atmee.ai player draws its watermark over this avatar.
+	// It follows the plan of the account that owns the avatar, not the
+	// caller's or the visitor's: `false` when that plan waives the
+	// watermark (its `watermark` feature is `false`), `true` otherwise.
+	// It is `true` whenever the plan could not be read. Informational
+	// for API callers: the service draws nothing into the video.
+	Watermark bool `json:"watermark"`
 }
 
 // EmbedSessionStartResponseBillingMode How the session is billed. `reserve` locks the whole granted
@@ -3710,17 +3727,10 @@ type FrameworkErrorResponse struct {
 
 // GenerateClipRequest defines model for GenerateClipRequest.
 type GenerateClipRequest struct {
-	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
-	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
-	// sizes follow the renderer and may change; the names do not. Send it
-	// or `resolution`, not both (`400`). On an avatar it is a build input,
-	// like `resolution`: a change on PATCH builds a new version.
-	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
-
 	// Audio What the clip says or plays, `upload:<uploadId>` (a `voice` upload) or a public https link to an audio file. Absent, the clip is silent.
 	Audio *string `json:"audio,omitempty"`
 
-	// DurationSeconds The clip's length. Required with `audio` (set it to the audio's length; it is not read from the file); default 8 for a silent clip. At most 15 where clips render on the sessions' pool, else 30 and at most the size's budget (render width x height x seconds up to 1920 x 1088 x 10).
+	// DurationSeconds The clip's length, 1 to 15 at every size. Required with `audio` (set it to the audio's length; it is not read from the file); default 8 for a silent clip.
 	DurationSeconds *int `json:"durationSeconds,omitempty"`
 
 	// Image Who or what the clip shows, `upload:<uploadId>` (a `portrait` upload) or a public https link (jpg, png or webp, at most 10 MB).
@@ -3729,15 +3739,20 @@ type GenerateClipRequest struct {
 	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following".
 	Prompt string `json:"prompt"`
 
-	// Resolution A clip's size in pixels: width and height are each even, from 256
-	// to 1920, e.g. 1920 x 1080, 1080 x 1920 or 1280 x 720. The renderer
-	// works at each side rounded up to a multiple of 32 (1920 x 1080 at
-	// 1920 x 1088) and crops the centre to the size asked for, so at most
-	// 31 pixels are lost on a side and nothing is resampled. The render
-	// size is at most 1920 x 1088 pixels in all. Where clips render on the
-	// sessions' pool (`GET /v1/account`
-	// `pricing.generation.clipAnySize` false), the render size must also
-	// be one of `clipResolutions`. Another size is `400 invalid_input`.
+	// Resolution A clip's output size in pixels, one of these (credits per clip, any
+	// length):
+	//
+	// | Tier | Square | Standard (4:3, 3:4) | Wide (16:9, 9:16) |
+	// |---|---|---|---|
+	// | 480p | 480 x 480 (0.5) | 640 x 480, 480 x 640 (0.5) | 832 x 468, 468 x 832 (1) |
+	// | 720p | 720 x 720 (1) | 960 x 720, 720 x 960 (1) | 1280 x 720, 720 x 1280 (1.5) |
+	// | 1080p | coming soon | coming soon | coming soon |
+	//
+	// Default 480 x 480. The renderer works at each side rounded up to a
+	// multiple of 32 (1280 x 720 at 1280 x 736) and crops the centre to
+	// the size asked for. `GET /v1/account` `pricing.generation.clipSizes`
+	// lists the sizes served here with their prices; another size is
+	// `400 invalid_input`, naming the sizes.
 	Resolution *ClipResolution `json:"resolution,omitempty"`
 
 	// Seed The render's seed; another seed gives other motion. Default 0.
@@ -3746,6 +3761,9 @@ type GenerateClipRequest struct {
 
 // GeneratePortraitsRequest defines model for GeneratePortraitsRequest.
 type GeneratePortraitsRequest struct {
+	// Count How many portraits to make, one per image provider in a fixed order (default 4, every provider). Each portrait that comes back is charged.
+	Count *int `json:"count,omitempty"`
+
 	// Description What the portrait shows (an invented character).
 	Description string `json:"description"`
 
@@ -3782,8 +3800,11 @@ type GeneratedClip struct {
 type GeneratedClipResponse struct {
 	Clip GeneratedClip `json:"clip"`
 
-	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit), the price per 15 seconds times `durationSeconds` / 15, rounded up; 0 on a replay.
+	// MicrocreditsCharged What this call charged to credits (100 microcredits = 1 credit), the clip size's price (`pricing.generation.clipSizes`), whatever its length; 0 on a replay.
 	MicrocreditsCharged int `json:"microcreditsCharged"`
+
+	// MicrocreditsFree Always 0. A plan's free generation allowance does not cover clips; the field is here so every generation answer has the same shape.
+	MicrocreditsFree int `json:"microcreditsFree"`
 
 	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
 	Replayed bool `json:"replayed"`
@@ -3817,35 +3838,77 @@ type GeneratedPortraitsResponse struct {
 	// FailedProviders The providers that returned nothing usable.
 	FailedProviders []string `json:"failedProviders"`
 
-	// MicrocreditsCharged What this call charged (100 microcredits = 1 credit); 0 on a replay.
-	MicrocreditsCharged int                 `json:"microcreditsCharged"`
-	Portraits           []GeneratedPortrait `json:"portraits"`
+	// MicrocreditsCharged What this call charged to credits (100 microcredits = 1 credit), after the plan's free generation allowance; 0 on a replay. The call's price is `microcreditsCharged` + `microcreditsFree`.
+	MicrocreditsCharged int `json:"microcreditsCharged"`
+
+	// MicrocreditsFree The part of the price the plan's free generation allowance covered (`pricing.generation.freeAllowance` on `GET /v1/account`); 0 on a replay and when none is left.
+	MicrocreditsFree int                 `json:"microcreditsFree"`
+	Portraits        []GeneratedPortrait `json:"portraits"`
 
 	// Replayed True when an earlier call with the same Idempotency-Key was replayed.
 	Replayed bool `json:"replayed"`
 }
 
-// GenerationPricing The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
+// GenerationFreeAllowance The free generation a paid plan includes each billing cycle, in
+// microcredits (Starter 3 credits, Growth 10, Pro 25, Scale 50; 0 on a
+// plan without one). It pays for `POST /v1/generation/portraits`,
+// `/v1/generation/enhancements` and `/v1/generation/voices` from any
+// caller before credits are spent, and never for clips or avatar
+// previews. A call uses what is left of it and pays the rest in credits.
+// Absent when it could not be read.
+type GenerationFreeAllowance struct {
+	// LimitMicrocredits The allowance for the current cycle.
+	LimitMicrocredits int `json:"limitMicrocredits"`
+
+	// RemainingMicrocredits What is left this cycle.
+	RemainingMicrocredits int `json:"remainingMicrocredits"`
+
+	// ResetsAt When the next cycle starts and the allowance is whole again. Absent
+	// when the account has no billing cycle to reset on, such as a plan
+	// without an allowance.
+	ResetsAt *time.Time `json:"resetsAt,omitempty"`
+
+	// UsedMicrocredits How much of it calls have used this cycle.
+	UsedMicrocredits int `json:"usedMicrocredits"`
+}
+
+// GenerationPricing The price of each generation operation (per portrait for portraits, per call otherwise), charged only when at
+// least one output comes back. Portraits, enhancements and voices are paid
+// from the plan's free generation allowance first (`freeAllowance`), then
+// from credits; clips are always paid in credits. Absent when this
+// instance does not offer generation.
 type GenerationPricing struct {
-	// ClipAnySize True where clips render on a pool kept for them, at any `ClipResolution` and up to 30 seconds within the size's budget; false where they render on the sessions' pool, at a size in `clipResolutions` for up to 15 seconds. Absent where clips are not offered.
+	// ClipAnySize True where clips render on a pool kept for them, which serves every clip size; false where they render on the sessions' pool, which serves only the clip sizes whose render size it offers. Absent where clips are not offered.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipAnySize *bool `json:"clipAnySize,omitempty"`
 
-	// ClipPer15SecondsMicrocredits Fifteen seconds of a `POST /v1/generation/clips` clip. A clip costs
-	// this times its `durationSeconds` / 15, rounded up. Absent where
-	// clips are not offered.
+	// ClipPer15SecondsMicrocredits Use `clipSizes`; a clip is priced by its size, not its length. Fifteen times the dearest clip's price, so the old `ceil(durationSeconds x this / 15)` never quotes below a clip's price. Absent where clips are not offered.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPer15SecondsMicrocredits *int `json:"clipPer15SecondsMicrocredits,omitempty"`
 
-	// ClipPerSecondMicrocredits Use `clipPer15SecondsMicrocredits`. One second of a clip, rounded up, so this times `durationSeconds` is never below a clip's price. Absent where clips are not offered.
+	// ClipPerSecondMicrocredits Use `clipSizes`. The dearest clip's price, so this times any `durationSeconds` is never below a clip's price. Absent where clips are not offered.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPerSecondMicrocredits *int `json:"clipPerSecondMicrocredits,omitempty"`
 
-	// ClipResolutions The frame sizes offered for v2 avatars, 512 x 512 first, and the sizes a clip may render at when `clipAnySize` is false; another is `400 invalid_input`. Absent where clips are not offered, or where every size the rule allows is offered.
-	ClipResolutions *[]RenderResolution `json:"clipResolutions,omitempty"`
+	// ClipResolutions The clip sizes served here, as in `clipSizes` without their prices. Absent where clips are not offered.
+	ClipResolutions *[]ClipResolution `json:"clipResolutions,omitempty"`
+
+	// ClipSizes The clip sizes served here, each with its price per clip, any length (see `ClipResolution`). Absent where clips are not offered.
+	ClipSizes *[]ClipSize `json:"clipSizes,omitempty"`
 
 	// EnhancementsMicrocredits One `POST /v1/generation/enhancements` call.
 	EnhancementsMicrocredits int `json:"enhancementsMicrocredits"`
 
-	// PortraitsMicrocredits One `POST /v1/generation/portraits` call.
+	// FreeAllowance The free generation a paid plan includes each billing cycle, in
+	// microcredits (Starter 3 credits, Growth 10, Pro 25, Scale 50; 0 on a
+	// plan without one). It pays for `POST /v1/generation/portraits`,
+	// `/v1/generation/enhancements` and `/v1/generation/voices` from any
+	// caller before credits are spent, and never for clips or avatar
+	// previews. A call uses what is left of it and pays the rest in credits.
+	// Absent when it could not be read.
+	FreeAllowance *GenerationFreeAllowance `json:"freeAllowance,omitempty"`
+
+	// PortraitsMicrocredits One portrait of a `POST /v1/generation/portraits` call (a call costs this times the portraits that come back).
 	PortraitsMicrocredits int `json:"portraitsMicrocredits"`
 
 	// VoicesMicrocredits One `POST /v1/generation/voices` call.
@@ -3933,21 +3996,24 @@ type RedeemCodeRequest struct {
 	Code string `json:"code"`
 }
 
-// RenderResolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
-// to pick one by shape: width and height are each
+// RenderResolution A v2 avatar's frame size in pixels: width and height are each
 // a multiple of 32 from 256 to 1024, and width x height is at most
 // 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
-// Default 512 x 512 (square). The aspect ratios' sizes: square
-// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
-// offers only some sizes (512 x 512 always;
-// `GET /v1/account` `pricing.generation.clipResolutions` lists them
-// where clips are offered): another is `400 invalid_input` ("resolution
-// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
+// Default 512 x 512 (square). A deployment offers only some sizes
+// (512 x 512 always; `GET /v1/account` `limits.v2Resolutions` lists
+// them): another is `400 invalid_input` ("resolution WxH is not
+// offered; offered: ..."). On an avatar it is a build input of v2 avatars only
 // (`400 invalid_input` for a v1 avatar): the portrait is preprocessed
 // at that size, so a change on PATCH builds a new version with new
 // candidates, like a new portrait; sending the current size again
 // builds nothing. Absent or null keeps the current size (on create:
-// the default).
+// the default).<!-- v2pro -->
+//
+// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+// (864 x 480), default 640 x 640, and only the sizes
+// `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
+// 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
+// are not V2 Pro sizes.<!-- /v2pro -->
 type RenderResolution struct {
 	Height int `json:"height"`
 	Width  int `json:"width"`
@@ -4902,7 +4968,12 @@ type ClientInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).
+	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+	//   model, at 640 x 640 unless `resolution` names another of
+	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -4931,7 +5002,6 @@ type ClientInterface interface {
 	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
 	// v2 conversations do not use knowledge yet.
 	//
@@ -4957,7 +5027,12 @@ type ClientInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).
+	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+	//   model, at 640 x 640 unless `resolution` names another of
+	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -4986,7 +5061,6 @@ type ClientInterface interface {
 	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
 	// v2 conversations do not use knowledge yet.
 	//
@@ -5683,7 +5757,7 @@ type ClientInterface interface {
 
 	// GenerateClipWithBody Generate a clip
 	//
-	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 	// in `image`, moving as `prompt` describes and optionally speaking
 	// `audio`. No avatar is needed.
 	//
@@ -5694,31 +5768,29 @@ type ClientInterface interface {
 	//   person other than you, get their permission first.
 	// - **Duration**: `durationSeconds` is required with `audio` (set it to
 	//   the audio's length; the file is not measured) and defaults to 8 for a
-	//   silent clip. At most 15 seconds where clips render on the sessions'
-	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
-	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-	//   side rounded up to 32 and the centre is cropped. Where
-	//   `clipAnySize` is false the render size must be one of
-	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	//   silent clip; 1 to 15 seconds at every size.
+	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+	//   output size, one of the sizes in `ClipResolution` (listed with
+	//   their prices in `pricing.generation.clipSizes` on
+	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: the per-15-second price from `GET /v1/account`
-	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-	//   `durationSeconds` and rounded up, charged only when the clip comes
-	//   back.
+	// - **Billing**: a fixed price per clip, set by its size and the same
+	//   for any length (`pricing.generation.clipSizes`), charged only when
+	//   the clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
 	//   seconds the call answers `409 request_in_progress`; retry with the
 	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
 	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`) and the
-	//   `generation:write` and `avatars:write` scopes.
+	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
+	//   that includes video generation, Growth and up (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
+	//   scopes.
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type.
@@ -5728,7 +5800,7 @@ type ClientInterface interface {
 
 	// GenerateClip Generate a clip
 	//
-	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 	// in `image`, moving as `prompt` describes and optionally speaking
 	// `audio`. No avatar is needed.
 	//
@@ -5739,31 +5811,29 @@ type ClientInterface interface {
 	//   person other than you, get their permission first.
 	// - **Duration**: `durationSeconds` is required with `audio` (set it to
 	//   the audio's length; the file is not measured) and defaults to 8 for a
-	//   silent clip. At most 15 seconds where clips render on the sessions'
-	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
-	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-	//   side rounded up to 32 and the centre is cropped. Where
-	//   `clipAnySize` is false the render size must be one of
-	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	//   silent clip; 1 to 15 seconds at every size.
+	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+	//   output size, one of the sizes in `ClipResolution` (listed with
+	//   their prices in `pricing.generation.clipSizes` on
+	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: the per-15-second price from `GET /v1/account`
-	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-	//   `durationSeconds` and rounded up, charged only when the clip comes
-	//   back.
+	// - **Billing**: a fixed price per clip, set by its size and the same
+	//   for any length (`pricing.generation.clipSizes`), charged only when
+	//   the clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
 	//   seconds the call answers `409 request_in_progress`; retry with the
 	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
 	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`) and the
-	//   `generation:write` and `avatars:write` scopes.
+	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
+	//   that includes video generation, Growth and up (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
+	//   scopes.
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type.
@@ -5824,9 +5894,14 @@ type ClientInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Billing**: the operation's price from `GET /v1/account`, charged
-	//   only when at least one portrait comes back. A flagged, failed or
-	//   refused call costs nothing.
+	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
+	//   make, one per image provider in a fixed order.
+	// - **Billing**: priced per portrait (`GET /v1/account`,
+	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
+	//   `count` portraits, and the charge is for the portraits that come
+	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	//   allowance pays first. A flagged, failed or refused call costs
+	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 	//   key never charges twice and returns the first result (`replayed:
 	//   true`).
@@ -5848,9 +5923,14 @@ type ClientInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Billing**: the operation's price from `GET /v1/account`, charged
-	//   only when at least one portrait comes back. A flagged, failed or
-	//   refused call costs nothing.
+	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
+	//   make, one per image provider in a fixed order.
+	// - **Billing**: priced per portrait (`GET /v1/account`,
+	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
+	//   `count` portraits, and the charge is for the portraits that come
+	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	//   allowance pays first. A flagged, failed or refused call costs
+	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 	//   key never charges twice and returns the first result (`replayed:
 	//   true`).
@@ -6619,7 +6699,12 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).
+//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+//     model, at 640 x 640 unless `resolution` names another of
+//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -6648,7 +6733,6 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 // | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 // | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 // | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
 // v2 conversations do not use knowledge yet.
 //
@@ -6684,7 +6768,12 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).
+//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+//     model, at 640 x 640 unless `resolution` names another of
+//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -6713,7 +6802,6 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 // | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 // | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 // | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
 // v2 conversations do not use knowledge yet.
 //
@@ -7778,7 +7866,7 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 
 // GenerateClipWithBody Generate a clip
 //
-// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 // in `image`, moving as `prompt` describes and optionally speaking
 // `audio`. No avatar is needed.
 //
@@ -7789,31 +7877,29 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     person other than you, get their permission first.
 //   - **Duration**: `durationSeconds` is required with `audio` (set it to
 //     the audio's length; the file is not measured) and defaults to 8 for a
-//     silent clip. At most 15 seconds where clips render on the sessions'
-//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
-//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-//     side rounded up to 32 and the centre is cropped. Where
-//     `clipAnySize` is false the render size must be one of
-//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//     silent clip; 1 to 15 seconds at every size.
+//   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+//     output size, one of the sizes in `ClipResolution` (listed with
+//     their prices in `pricing.generation.clipSizes` on
+//     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: the per-15-second price from `GET /v1/account`
-//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-//     `durationSeconds` and rounded up, charged only when the clip comes
-//     back.
+//   - **Billing**: a fixed price per clip, set by its size and the same
+//     for any length (`pricing.generation.clipSizes`), charged only when
+//     the clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
 //     seconds the call answers `409 request_in_progress`; retry with the
 //     same `Idempotency-Key` after `Retry-After` to get the clip, charged
 //     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`) and the
-//     `generation:write` and `avatars:write` scopes.
+//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
+//     that includes video generation, Growth and up (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`), and the `generation:write` and `avatars:write`
+//     scopes.
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type.
@@ -7833,7 +7919,7 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 
 // GenerateClip Generate a clip
 //
-// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 // in `image`, moving as `prompt` describes and optionally speaking
 // `audio`. No avatar is needed.
 //
@@ -7844,31 +7930,29 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     person other than you, get their permission first.
 //   - **Duration**: `durationSeconds` is required with `audio` (set it to
 //     the audio's length; the file is not measured) and defaults to 8 for a
-//     silent clip. At most 15 seconds where clips render on the sessions'
-//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
-//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-//     side rounded up to 32 and the centre is cropped. Where
-//     `clipAnySize` is false the render size must be one of
-//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//     silent clip; 1 to 15 seconds at every size.
+//   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+//     output size, one of the sizes in `ClipResolution` (listed with
+//     their prices in `pricing.generation.clipSizes` on
+//     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: the per-15-second price from `GET /v1/account`
-//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-//     `durationSeconds` and rounded up, charged only when the clip comes
-//     back.
+//   - **Billing**: a fixed price per clip, set by its size and the same
+//     for any length (`pricing.generation.clipSizes`), charged only when
+//     the clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
 //     seconds the call answers `409 request_in_progress`; retry with the
 //     same `Idempotency-Key` after `Retry-After` to get the clip, charged
 //     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`) and the
-//     `generation:write` and `avatars:write` scopes.
+//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
+//     that includes video generation, Growth and up (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`), and the `generation:write` and `avatars:write`
+//     scopes.
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type.
@@ -7959,9 +8043,14 @@ func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitPar
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Billing**: the operation's price from `GET /v1/account`, charged
-//     only when at least one portrait comes back. A flagged, failed or
-//     refused call costs nothing.
+//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
+//     make, one per image provider in a fixed order.
+//   - **Billing**: priced per portrait (`GET /v1/account`,
+//     `pricing.generation.portraitsMicrocredits`). The balance must cover
+//     `count` portraits, and the charge is for the portraits that come
+//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//     allowance pays first. A flagged, failed or refused call costs
+//     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 //     key never charges twice and returns the first result (`replayed:
 //     true`).
@@ -7993,9 +8082,14 @@ func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *Generate
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Billing**: the operation's price from `GET /v1/account`, charged
-//     only when at least one portrait comes back. A flagged, failed or
-//     refused call costs nothing.
+//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
+//     make, one per image provider in a fixed order.
+//   - **Billing**: priced per portrait (`GET /v1/account`,
+//     `pricing.generation.portraitsMicrocredits`). The balance must cover
+//     `count` portraits, and the charge is for the portraits that come
+//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//     allowance pays first. A flagged, failed or refused call costs
+//     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 //     key never charges twice and returns the first result (`replayed:
 //     true`).
@@ -10771,7 +10865,12 @@ type ClientWithResponsesInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).
+	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+	//   model, at 640 x 640 unless `resolution` names another of
+	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -10800,7 +10899,6 @@ type ClientWithResponsesInterface interface {
 	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
 	// v2 conversations do not use knowledge yet.
 	//
@@ -10826,7 +10924,12 @@ type ClientWithResponsesInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).
+	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+	//   model, at 640 x 640 unless `resolution` names another of
+	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -10855,7 +10958,6 @@ type ClientWithResponsesInterface interface {
 	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
 	// v2 conversations do not use knowledge yet.
 	//
@@ -11576,7 +11678,7 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithBodyWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 	// in `image`, moving as `prompt` describes and optionally speaking
 	// `audio`. No avatar is needed.
 	//
@@ -11587,31 +11689,29 @@ type ClientWithResponsesInterface interface {
 	//   person other than you, get their permission first.
 	// - **Duration**: `durationSeconds` is required with `audio` (set it to
 	//   the audio's length; the file is not measured) and defaults to 8 for a
-	//   silent clip. At most 15 seconds where clips render on the sessions'
-	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
-	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-	//   side rounded up to 32 and the centre is cropped. Where
-	//   `clipAnySize` is false the render size must be one of
-	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	//   silent clip; 1 to 15 seconds at every size.
+	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+	//   output size, one of the sizes in `ClipResolution` (listed with
+	//   their prices in `pricing.generation.clipSizes` on
+	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: the per-15-second price from `GET /v1/account`
-	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-	//   `durationSeconds` and rounded up, charged only when the clip comes
-	//   back.
+	// - **Billing**: a fixed price per clip, set by its size and the same
+	//   for any length (`pricing.generation.clipSizes`), charged only when
+	//   the clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
 	//   seconds the call answers `409 request_in_progress`; retry with the
 	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
 	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`) and the
-	//   `generation:write` and `avatars:write` scopes.
+	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
+	//   that includes video generation, Growth and up (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
+	//   scopes.
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -11621,7 +11721,7 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 	// in `image`, moving as `prompt` describes and optionally speaking
 	// `audio`. No avatar is needed.
 	//
@@ -11632,31 +11732,29 @@ type ClientWithResponsesInterface interface {
 	//   person other than you, get their permission first.
 	// - **Duration**: `durationSeconds` is required with `audio` (set it to
 	//   the audio's length; the file is not measured) and defaults to 8 for a
-	//   silent clip. At most 15 seconds where clips render on the sessions'
-	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
-	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-	//   side rounded up to 32 and the centre is cropped. Where
-	//   `clipAnySize` is false the render size must be one of
-	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	//   silent clip; 1 to 15 seconds at every size.
+	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+	//   output size, one of the sizes in `ClipResolution` (listed with
+	//   their prices in `pricing.generation.clipSizes` on
+	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: the per-15-second price from `GET /v1/account`
-	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-	//   `durationSeconds` and rounded up, charged only when the clip comes
-	//   back.
+	// - **Billing**: a fixed price per clip, set by its size and the same
+	//   for any length (`pricing.generation.clipSizes`), charged only when
+	//   the clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
 	//   seconds the call answers `409 request_in_progress`; retry with the
 	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
 	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`) and the
-	//   `generation:write` and `avatars:write` scopes.
+	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
+	//   that includes video generation, Growth and up (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
+	//   scopes.
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -11717,9 +11815,14 @@ type ClientWithResponsesInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Billing**: the operation's price from `GET /v1/account`, charged
-	//   only when at least one portrait comes back. A flagged, failed or
-	//   refused call costs nothing.
+	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
+	//   make, one per image provider in a fixed order.
+	// - **Billing**: priced per portrait (`GET /v1/account`,
+	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
+	//   `count` portraits, and the charge is for the portraits that come
+	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	//   allowance pays first. A flagged, failed or refused call costs
+	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 	//   key never charges twice and returns the first result (`replayed:
 	//   true`).
@@ -11741,9 +11844,14 @@ type ClientWithResponsesInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Billing**: the operation's price from `GET /v1/account`, charged
-	//   only when at least one portrait comes back. A flagged, failed or
-	//   refused call costs nothing.
+	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
+	//   make, one per image provider in a fixed order.
+	// - **Billing**: priced per portrait (`GET /v1/account`,
+	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
+	//   `count` portraits, and the charge is for the portraits that come
+	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	//   allowance pays first. A flagged, failed or refused call costs
+	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 	//   key never charges twice and returns the first result (`replayed:
 	//   true`).
@@ -15401,7 +15509,12 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).
+//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+//     model, at 640 x 640 unless `resolution` names another of
+//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -15430,7 +15543,6 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 // | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 // | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 // | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
 // v2 conversations do not use knowledge yet.
 //
@@ -15462,7 +15574,12 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).
+//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
+//     model, at 640 x 640 unless `resolution` names another of
+//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
+//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
+//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -15491,7 +15608,6 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 // | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
 // | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
 // | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
-// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
 // v2 conversations do not use knowledge yet.
 //
@@ -16433,7 +16549,7 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 
 // GenerateClipWithBodyWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 // in `image`, moving as `prompt` describes and optionally speaking
 // `audio`. No avatar is needed.
 //
@@ -16444,31 +16560,29 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     person other than you, get their permission first.
 //   - **Duration**: `durationSeconds` is required with `audio` (set it to
 //     the audio's length; the file is not measured) and defaults to 8 for a
-//     silent clip. At most 15 seconds where clips render on the sessions'
-//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
-//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-//     side rounded up to 32 and the centre is cropped. Where
-//     `clipAnySize` is false the render size must be one of
-//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//     silent clip; 1 to 15 seconds at every size.
+//   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+//     output size, one of the sizes in `ClipResolution` (listed with
+//     their prices in `pricing.generation.clipSizes` on
+//     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: the per-15-second price from `GET /v1/account`
-//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-//     `durationSeconds` and rounded up, charged only when the clip comes
-//     back.
+//   - **Billing**: a fixed price per clip, set by its size and the same
+//     for any length (`pricing.generation.clipSizes`), charged only when
+//     the clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
 //     seconds the call answers `409 request_in_progress`; retry with the
 //     same `Idempotency-Key` after `Retry-After` to get the clip, charged
 //     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`) and the
-//     `generation:write` and `avatars:write` scopes.
+//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
+//     that includes video generation, Growth and up (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`), and the `generation:write` and `avatars:write`
+//     scopes.
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -16484,7 +16598,7 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 
 // GenerateClipWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
 // in `image`, moving as `prompt` describes and optionally speaking
 // `audio`. No avatar is needed.
 //
@@ -16495,31 +16609,29 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     person other than you, get their permission first.
 //   - **Duration**: `durationSeconds` is required with `audio` (set it to
 //     the audio's length; the file is not measured) and defaults to 8 for a
-//     silent clip. At most 15 seconds where clips render on the sessions'
-//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
-//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
-//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
-//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
-//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
-//     side rounded up to 32 and the centre is cropped. Where
-//     `clipAnySize` is false the render size must be one of
-//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//     silent clip; 1 to 15 seconds at every size.
+//   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
+//     output size, one of the sizes in `ClipResolution` (listed with
+//     their prices in `pricing.generation.clipSizes` on
+//     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: the per-15-second price from `GET /v1/account`
-//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
-//     `durationSeconds` and rounded up, charged only when the clip comes
-//     back.
+//   - **Billing**: a fixed price per clip, set by its size and the same
+//     for any length (`pricing.generation.clipSizes`), charged only when
+//     the clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
 //     seconds the call answers `409 request_in_progress`; retry with the
 //     same `Idempotency-Key` after `Retry-After` to get the clip, charged
 //     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`) and the
-//     `generation:write` and `avatars:write` scopes.
+//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
+//     that includes video generation, Growth and up (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`), and the `generation:write` and `avatars:write`
+//     scopes.
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -16598,9 +16710,14 @@ func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, p
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Billing**: the operation's price from `GET /v1/account`, charged
-//     only when at least one portrait comes back. A flagged, failed or
-//     refused call costs nothing.
+//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
+//     make, one per image provider in a fixed order.
+//   - **Billing**: priced per portrait (`GET /v1/account`,
+//     `pricing.generation.portraitsMicrocredits`). The balance must cover
+//     `count` portraits, and the charge is for the portraits that come
+//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//     allowance pays first. A flagged, failed or refused call costs
+//     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 //     key never charges twice and returns the first result (`replayed:
 //     true`).
@@ -16628,9 +16745,14 @@ func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Billing**: the operation's price from `GET /v1/account`, charged
-//     only when at least one portrait comes back. A flagged, failed or
-//     refused call costs nothing.
+//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
+//     make, one per image provider in a fixed order.
+//   - **Billing**: priced per portrait (`GET /v1/account`,
+//     `pricing.generation.portraitsMicrocredits`). The balance must cover
+//     `count` portraits, and the charge is for the portraits that come
+//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//     allowance pays first. A flagged, failed or refused call costs
+//     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
 //     key never charges twice and returns the first result (`replayed:
 //     true`).

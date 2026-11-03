@@ -175,9 +175,9 @@ func (a *app) printAccount(x *api.Account) {
 	a.printf("API access   %s\n", access)
 	if v := x.V2Access; v != nil {
 		a.printf("v2 avatars   %s\n", map[string]string{
-			"granted":         "yes",
-			"invite_required": "invite only: redeem an invite code in Creator Studio (Billing); creates default to v1",
-			"unavailable":     "not offered on this server",
+			api.V2AccessGranted:        "yes",
+			api.V2AccessInviteRequired: "invite only: redeem an invite code in Creator Studio (Billing); creates default to v1",
+			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
 	}
 	a.printf("Limits       session length %s · %s at once · %s API avatars\n", length, limit(l.MaxConcurrentSessions), limit(l.MaxApiAvatars))
@@ -197,27 +197,70 @@ func (a *app) printAccount(x *api.Account) {
 	a.printf("Preview clip %s credits\n", credits(int64(pr.PreviewClipMicrocredits)))
 	if g := pr.Generation; g != nil {
 		clip := ""
-		if g.ClipPer15SecondsMicrocredits != nil {
-			clip = " · clip " + credits(int64(*g.ClipPer15SecondsMicrocredits)) + " per 15 s"
-		} else if g.ClipPerSecondMicrocredits != nil {
-			clip = " · clip " + credits(int64(*g.ClipPerSecondMicrocredits)) + "/s"
+		// A server older than per-size clip prices reports one price per 15
+		// seconds (or per second); a newer one lists each size's price below.
+		if g.ClipSizes == nil {
+			if g.ClipPer15SecondsMicrocredits != nil {
+				clip = " · clip " + credits(int64(*g.ClipPer15SecondsMicrocredits)) + " per 15 s"
+			} else if g.ClipPerSecondMicrocredits != nil {
+				clip = " · clip " + credits(int64(*g.ClipPerSecondMicrocredits)) + "/s"
+			}
 		}
-		a.printf("Generation   portraits %s · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),
+		a.printf("Generation   portraits %s each · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),
 			credits(int64(g.EnhancementsMicrocredits)), credits(int64(g.VoicesMicrocredits)), clip)
-	}
-	if g := pr.Generation; g != nil && g.ClipResolutions != nil && len(*g.ClipResolutions) > 0 {
-		sizes := make([]string, len(*g.ClipResolutions))
-		for i, r := range *g.ClipResolutions {
-			sizes[i] = fmt.Sprintf("%dx%d", r.Width, r.Height)
+		// The plan's free generation: portraits, enhance and voice draw on
+		// it before credits; clips never do.
+		if fa := g.FreeAllowance; fa != nil && fa.LimitMicrocredits > 0 {
+			resets := ""
+			if fa.ResetsAt != nil {
+				resets = ", resets " + day(*fa.ResetsAt)
+			}
+			a.printf("Free gen     %s of %s credits left this cycle (%s used%s) · portraits, enhance and voice; not clips\n",
+				credits(int64(fa.RemainingMicrocredits)), credits(int64(fa.LimitMicrocredits)), credits(int64(fa.UsedMicrocredits)), resets)
 		}
-		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(sizes, ", "))
-	}
-	if g := pr.Generation; g != nil && g.ClipAnySize != nil {
-		if *g.ClipAnySize {
-			a.printf("Clip sizes   any, up to 1920x1080 and 30 s (1920x1080: 10 s, 1280x720: 22 s)\n")
-		} else {
-			a.printf("Clip sizes   the v2 sizes only, up to 15 s\n")
+		if cs := g.ClipSizes; cs != nil && len(*cs) > 0 {
+			sizes := make([]string, len(*cs))
+			for i, c := range *cs {
+				sizes[i] = fmt.Sprintf("%dx%d %s", c.Width, c.Height, credits(int64(c.Microcredits)))
+			}
+			a.printf("Clip sizes   %s credits a clip, any length from 1 to 15 s (--resolution)\n", strings.Join(sizes, ", "))
 		}
+	}
+	// The v2 avatar sizes: limits.v2Resolutions, or on an older server
+	// (no clipSizes) its clipResolutions, which then listed them.
+	var v2Sizes []string
+	if rs := l.V2Resolutions; rs != nil {
+		for _, r := range *rs {
+			v2Sizes = append(v2Sizes, fmt.Sprintf("%dx%d", r.Width, r.Height))
+		}
+	} else if g := pr.Generation; g != nil && g.ClipSizes == nil && g.ClipResolutions != nil {
+		for _, r := range *g.ClipResolutions {
+			v2Sizes = append(v2Sizes, fmt.Sprintf("%dx%d", r.Width, r.Height))
+		}
+	}
+	if len(v2Sizes) > 0 {
+		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(v2Sizes, ", "))
+	}
+	// Atmee V2 Pro: reported only where this server offers it.
+	if v := l.V2Pro; v != nil {
+		switch {
+		case !*v:
+			a.printf("V2 Pro       not in this plan (Growth and up): --engine v2pro answers 403 v2_pro_not_in_plan\n")
+		case x.V2Access != nil && string(*x.V2Access) != api.V2AccessGranted:
+			a.printf("V2 Pro       in this plan, once the account has v2 access (--engine v2pro, at v2's rates)\n")
+		default:
+			a.printf("V2 Pro       yes (--engine v2pro, at v2's rates)\n")
+		}
+		if rs := l.V2ProResolutions; rs != nil && len(*rs) > 0 {
+			sizes := make([]string, len(*rs))
+			for i, r := range *rs {
+				sizes[i] = fmt.Sprintf("%dx%d", r.Width, r.Height)
+			}
+			a.printf("V2 Pro sizes %s (--resolution)\n", strings.Join(sizes, ", "))
+		}
+	}
+	if v := l.VideoGeneration; v != nil && !*v {
+		a.printf("Video clips  not in this plan (Growth and up): atmee generate clip answers 403 video_generation_not_in_plan\n")
 	}
 	q := x.CaptureQuota
 	a.printf("Captures     %d of %d queued or running\n", q.Pending, q.PendingLimit)
@@ -401,9 +444,9 @@ func (a *app) redeemCmd() *cobra.Command {
 			}
 			if res.V2Access != nil {
 				parts = append(parts, map[string]string{
-					"granted":         "v2 avatars are open",
-					"invite_required": "v2 avatars are still invite-only for this account",
-					"unavailable":     "v2 avatars are not offered on this server",
+					api.V2AccessGranted:        "v2 avatars are open",
+					api.V2AccessInviteRequired: "v2 avatars are still invite-only for this account",
+					api.V2AccessUnavailable:    "v2 avatars are not offered on this server",
 				}[string(*res.V2Access)])
 			}
 			if len(parts) == 0 {

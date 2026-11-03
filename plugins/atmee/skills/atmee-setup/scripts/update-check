@@ -10,7 +10,7 @@
 # and exit 0. Each lookup is cut at ATMEE_UPDATE_TIMEOUT seconds (default 6).
 set -u
 
-PINNED="0.10.10" # x-release-please-version
+PINNED="0.10.11" # x-release-please-version
 
 here="$(cd "$(dirname "$0")" && pwd -P)"
 repo="Atmanity/atmee-toolkit"

@@ -62,7 +62,6 @@ type configFile struct {
 	SponsorCap       *int           `json:"sponsor_max_per_session"`
 	RuntimeSeed      *int           `json:"runtime_seed"`
 	Resolution       *configRes     `json:"resolution"`
-	AspectRatio      *string        `json:"aspect_ratio"`
 	Name             *string        `json:"name"` // ignored: --name wins
 }
 
@@ -87,7 +86,7 @@ func (r *configRes) UnmarshalJSON(b []byte) error {
 	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&o); err != nil || o.Width == nil || o.Height == nil {
-		return errors.New(`resolution takes "WxH" (e.g. "384x640") or {"width": W, "height": H}`)
+		return errors.New(`resolution takes "WxH" (e.g. "672x384") or {"width": W, "height": H}`)
 	}
 	*r = configRes{Width: *o.Width, Height: *o.Height}
 	return nil
@@ -125,7 +124,7 @@ func readConfig(path string, in io.Reader) (configFile, error) {
 func (a *app) createCmd() *cobra.Command {
 	var (
 		name, image, voice, eng, selection, previewMsg, whoPrompt, whatPrompt, greeting, selfIntro string
-		facts, factsFile, alias, spokenName, language, visibility, configPath, resolution, aspect  string
+		facts, factsFile, alias, spokenName, language, visibility, configPath, resolution          string
 		candidates, sponsorMicro, sponsorCap, runtimeSeed                                          int
 		guardrails, knowledge, knownAliases, habits                                                []string
 		previews, noPreviews, wait, jsonOut                                                        bool
@@ -137,6 +136,9 @@ func (a *app) createCmd() *cobra.Command {
 			"person speaking, which is cloned): one candidate, a short talking clip, used as soon as it is finished. If " +
 			"its lips don't match, build more (`atmee avatars candidates add`) and choose one " +
 			"(`atmee avatars candidates pick` or `select`).\n\n" +
+			"--engine v2pro makes an Atmee V2 Pro avatar where the server offers it (`atmee account` shows a V2 Pro " +
+			"line and its sizes only there): a larger v2 model that builds, previews and serves like v2, at the same " +
+			"rates, at larger frame sizes (640x640 by default). It needs v2 access and a plan with V2 Pro (Growth and up).\n\n" +
 			"Both files can come later: without one the avatar is a draft (status draft) whose persona and knowledge " +
 			"build; give them with `atmee avatars replace-appearance` and `replace-voice`, in either order, and it " +
 			"builds then. A v1 avatar with only --image is render-only (no voice).\n\n" +
@@ -165,7 +167,6 @@ func (a *app) createCmd() *cobra.Command {
 					r := api.Resolution(*cfg.Resolution)
 					in.Resolution = &r
 				}
-				in.AspectRatio = deref(cfg.AspectRatio)
 				if cfg.WhoPrompt != nil && cfg.Personality != nil {
 					return usagef("--config: who_prompt and personality are the same field (personality is its older name): give one")
 				}
@@ -220,22 +221,12 @@ func (a *app) createCmd() *cobra.Command {
 			if f.Changed("runtime-seed") {
 				in.RuntimeSeed = &runtimeSeed
 			}
-			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
-				return usagef("%v", err)
-			}
-			if f.Changed("aspect-ratio") {
-				r, err := api.ParseAspectRatio(aspect)
-				if err != nil {
-					return usagef("%v", err)
-				}
-				in.AspectRatio, in.Resolution = string(r), nil
-			}
 			if f.Changed("resolution") {
 				r, err := api.ParseResolution(resolution)
 				if err != nil {
 					return usagef("%v", err)
 				}
-				in.Resolution, in.AspectRatio = &r, ""
+				in.Resolution = &r
 			}
 			if factsFile != "" {
 				b, err := os.ReadFile(factsFile)
@@ -291,21 +282,30 @@ func (a *app) createCmd() *cobra.Command {
 			// portrait or no voice yet) gets the candidate options from the
 			// API when it is completed.
 			if in.Engine == "" {
-				in.Engine = "v2"
+				in.Engine = api.EngineV2
 				if why := noV2Reason(cl.Account(ctx())); why != "" {
-					if in.Candidates != 0 || in.SeedSelection != "" || in.AspectRatio != "" || in.Resolution != nil {
-						return fmt.Errorf("%s; --candidates, --seed-selection, --aspect-ratio and --resolution are for v2 avatars: drop them to make a v1 avatar", why)
+					if in.Candidates != 0 || in.SeedSelection != "" || in.Resolution != nil {
+						return fmt.Errorf("%s; --candidates, --seed-selection and --resolution are for v2 avatars: drop them to make a v1 avatar", why)
 					}
-					in.Engine = "v1"
+					in.Engine = api.EngineV1
 					a.note("Making a v1 avatar: %s.\n", why)
 				}
 			}
 			complete := in.Image != "" && in.Voice != ""
-			if in.Engine == "v2" && complete && in.SeedSelection == "" {
+			if api.IsV2Family(in.Engine) && complete && in.SeedSelection == "" {
 				in.SeedSelection = "auto"
 			}
-			if in.Engine == "v2" && complete && in.Candidates == 0 {
+			if api.IsV2Family(in.Engine) && complete && in.Candidates == 0 {
 				in.Candidates = 1
+			}
+			if r := in.Resolution; r != nil {
+				if err := cl.CheckSize(ctx(), in.Engine, *r); err != nil {
+					var pro *api.V2ProSizeError
+					if errors.As(err, &pro) {
+						return usagef("%v: make one with --engine v2pro, where the server offers it (`atmee account` shows a V2 Pro line)", err)
+					}
+					return usagef("%v", err)
+				}
 			}
 			res, quota, err := cl.Create(ctx(), in)
 			if err != nil {
@@ -336,7 +336,7 @@ func (a *app) createCmd() *cobra.Command {
 	_ = c.MarkFlagRequired("name")
 	f.StringVar(&image, "image", "", "Portrait: local file, https URL or upload:ID (from atmee generate). Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
 	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file, https URL or upload:ID (from atmee generate) (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
-	f.StringVar(&eng, "engine", "", "v2 (default) or v1")
+	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2pro (Atmee V2 Pro, where the server offers it: `atmee account` shows it; Growth and up)")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
 	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 300 characters)")
@@ -361,7 +361,6 @@ func (a *app) createCmd() *cobra.Command {
 	f.IntVar(&sponsorMicro, "sponsor-microcredits", 0, "Put credits in its sponsor pool so visitors talk for free (100 = 1 credit; a signed-in user, or an API key with billing:write)")
 	f.IntVar(&sponsorCap, "sponsor-max-per-session", 0, "Most the sponsor pool pays for one conversation, in microcredits")
 	f.IntVar(&runtimeSeed, "runtime-seed", 0, runtimeSeedHelp)
-	f.StringVar(&aspect, "aspect-ratio", "", aspectRatioHelp)
 	f.StringVar(&resolution, "resolution", "", resolutionHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	promptAliases(c)
@@ -790,13 +789,11 @@ func (a *app) reportSponsor(sp *api.SponsorGrant) {
 const runtimeSeedHelp = "v2: the renderer's runtime seed, 0-2147483647 (default 42): another seed gives different motion " +
 	"during conversations; the take and its preview stay the same. Applies from the next session; nothing rebuilds"
 
-// aspectRatioHelp is the --aspect-ratio flag's help on create and update.
-const aspectRatioHelp = "v2: the avatar's shape, square (512x512, the default), portrait (384x640) or landscape (640x384). " +
-	"The portrait is framed at that size, so a new shape builds new candidates"
-
 // resolutionHelp is the --resolution flag's help on create and update.
-const resolutionHelp = "v2: the frame size as `WxH` (or use --aspect-ratio), each side a multiple of 32 from 256 to 1024, " +
-	"at most 512x512 pixels in all; atmee account lists the sizes offered"
+const resolutionHelp = "v2: the frame size as `WxH`, one the server offers: 512x512 (1:1, the default), 672x384 (16:9), " +
+	"384x672 (9:16), 576x448 (4:3) or 448x576 (3:4). V2 Pro: 640x640 (1:1, the default), 864x480 (16:9), 480x864 (9:16), " +
+	"736x544 (4:3) or 544x736 (3:4). A size not offered is refused with the list (`atmee account` lists what the server " +
+	"offers for both). The portrait is framed at that size, so a new size builds new candidates"
 
 // spokenNameHelp and knownAliasHelp describe the persona's name flags
 // (Studio's "Pronunciation" and "Known aliases").
@@ -875,6 +872,44 @@ func download(link, path string) error {
 
 const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
 
+// engineOffer says where `atmee account` shows which engines a server offers.
+const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 Pro line only where V2 Pro is offered"
+
+// engineHints are what to do about an engine or plan refusal, by its code:
+// on a create, which takes --engine, and on any other command (an update,
+// a capture, a session), where the avatar's engine is already set.
+var engineHints = map[string]struct{ create, other string }{
+	"v2_pro_not_in_plan": {
+		create: "V2 Pro avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use --engine v2",
+		other:  "V2 Pro avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use a v2 avatar",
+	},
+	"v2_access_required": {
+		create: "v2 is invite-only for now (v2 and V2 Pro avatars and video clips need it): " + redeemV2Hint + ", or use --engine v1",
+		other:  "v2 is invite-only for now (v2 and V2 Pro avatars and video clips need it): " + redeemV2Hint,
+	},
+	"engine_unavailable": {
+		create: "this server does not offer that engine (" + engineOffer + "): use another --engine",
+		other:  "this server does not offer this avatar's engine right now (" + engineOffer + "): use an avatar on an engine it offers, or another server",
+	},
+}
+
+// engineHint is what to do about an engine or plan refusal on cmd, or ""
+// for any other error.
+func engineHint(cmd *cobra.Command, err error) string {
+	var apiErr *api.Error
+	if !errors.As(err, &apiErr) {
+		return ""
+	}
+	h, ok := engineHints[apiErr.Code]
+	if !ok {
+		return ""
+	}
+	if cmd != nil && cmd.Flags().Lookup("engine") != nil {
+		return h.create
+	}
+	return h.other
+}
+
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
 // or the account could not be read (the create then says so itself).
 func noV2Reason(acct *api.Account, err error) string {
@@ -882,9 +917,9 @@ func noV2Reason(acct *api.Account, err error) string {
 		return ""
 	}
 	switch string(*acct.V2Access) {
-	case "invite_required":
+	case api.V2AccessInviteRequired:
 		return "v2 avatars are invite-only for now and this account has not been let in; " + redeemV2Hint + " to make v2"
-	case "unavailable":
+	case api.V2AccessUnavailable:
 		return "v2 avatars are not offered on this server"
 	}
 	return ""

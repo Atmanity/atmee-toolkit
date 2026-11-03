@@ -89,7 +89,7 @@ func TestAccount(t *testing.T) {
 	}
 	for _, want := range []string{"Account 11111111-1111-4111-8111-111111111111", "Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-0",
 		"Next cycle   Pro (pro)", "API access   on", "session length no plan cap · 7 at once · 50 API avatars",
-		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x640", "Clip sizes   any, up to 1920x1080 and 30 s", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
+		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 each · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x640", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
@@ -98,6 +98,95 @@ func TestAccount(t *testing.T) {
 	if !strings.Contains(out, `"renderV2PerMinuteMicrocredits": 100`) || !strings.Contains(out, `"status": "verified"`) ||
 		strings.Contains(out, "V2PerMinuteMicrocredits\": 0") {
 		t.Fatalf("--json: %s", out)
+	}
+}
+
+// A server with per-size clip prices lists each size and its price per
+// clip, not the deprecated per-15-seconds price, the v2 avatar sizes from
+// limits.v2Resolutions (not the clip sizes), and a plan without video
+// generation says so.
+func TestAccountClipSizes(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},
+		"limits":{"apiAccess":true,"videoGeneration":false,"v2Resolutions":[{"width":512,"height":512},{"width":384,"height":640}]},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+			"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0,
+			"generation":{"portraitsMicrocredits":100,"enhancementsMicrocredits":100,"voicesMicrocredits":100,
+				"clipPer15SecondsMicrocredits":2250,"clipPerSecondMicrocredits":150,
+				"clipSizes":[{"width":480,"height":480,"microcredits":50},{"width":1280,"height":720,"microcredits":150}],
+				"clipResolutions":[{"width":480,"height":480},{"width":1280,"height":720}],"clipAnySize":false}},
+		"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
+	out, errOut, code := run(t, "", "account")
+	if code != 0 {
+		t.Fatalf("%d %s", code, errOut)
+	}
+	for _, want := range []string{"Generation   portraits 1.00 each · enhance 1.00 · voice 1.00 credits",
+		"Clip sizes   480x480 0.50, 1280x720 1.50 credits a clip, any length from 1 to 15 s",
+		"Video clips  not in this plan (Growth and up)", "v2 sizes     512x512, 384x640 (--resolution)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "per 15 s") || strings.Contains(out, "1280x720 (--resolution)") {
+		t.Errorf("deprecated clip fields shown:\n%s", out)
+	}
+}
+
+// The plan's free generation allowance shows what is left, used and when
+// it resets; a plan without one shows nothing.
+func TestAccountFreeGeneration(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := func(fa string) string {
+		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"limits":{"apiAccess":true},
+			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+				"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0,
+				"generation":{"portraitsMicrocredits":100,"enhancementsMicrocredits":100,"voicesMicrocredits":100` + fa + `}},
+			"captureQuota":{"pending":0,"pendingLimit":10}}`
+	}
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(`,"freeAllowance":{"limitMicrocredits":1000,"usedMicrocredits":300,`+
+		`"remainingMicrocredits":700,"resetsAt":"2026-11-25T12:00:00Z"}`)).URL)
+	out, errOut, code := run(t, "", "account")
+	if code != 0 || !strings.Contains(out, "Free gen     7.00 of 10.00 credits left this cycle (3.00 used, resets 2026-11-2") ||
+		!strings.Contains(out, "not clips") {
+		t.Fatalf("%d %s\n%s", code, errOut, out)
+	}
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(`,"freeAllowance":{"limitMicrocredits":0,"usedMicrocredits":0,"remainingMicrocredits":0}`)).URL)
+	if out, _, _ := run(t, "", "account"); strings.Contains(out, "Free gen") {
+		t.Errorf("a plan without an allowance shows one:\n%s", out)
+	}
+}
+
+// Atmee V2 Pro shows only where the server reports it: offered with its
+// sizes, not in the plan, or absent.
+func TestAccountV2Pro(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := func(limits string) string {
+		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted","limits":{"apiAccess":true` + limits + `},
+			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+				"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+	}
+	for limits, want := range map[string][]string{
+		`,"v2Pro":true,"v2ProResolutions":[{"width":640,"height":640},{"width":864,"height":480}]`: {
+			"V2 Pro       yes (--engine v2pro", "V2 Pro sizes 640x640, 864x480 (--resolution)"},
+		`,"v2Pro":false`: {"V2 Pro       not in this plan (Growth and up)", "v2_pro_not_in_plan"},
+		``:               nil,
+	} {
+		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(limits)).URL)
+		out, errOut, code := run(t, "", "account")
+		if code != 0 {
+			t.Fatalf("%d %s", code, errOut)
+		}
+		for _, w := range want {
+			if !strings.Contains(out, w) {
+				t.Errorf("%s: missing %q in:\n%s", limits, w, out)
+			}
+		}
+		if want == nil && strings.Contains(out, "V2 Pro") {
+			t.Errorf("V2 Pro shown where the server does not offer it:\n%s", out)
+		}
 	}
 }
 

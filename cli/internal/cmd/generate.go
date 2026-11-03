@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
@@ -15,8 +16,31 @@ import (
 // Generation answers with upload:<uploadId> references, which create and the
 // replace commands take as they are.
 
+// portraitsNote replaces generationNote's first sentence for portraits,
+// which are priced per portrait.
+const portraitsNote = "Costs the portrait price (`atmee account`, portraits ... each) for every portrait that comes back, so up to four " +
+	"times it; a flagged, failed or refused call costs nothing. A paid plan's free generation allowance pays first. Results last " +
+	"24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
+
 const generationNote = "Costs the operation's price (`atmee account`), charged only when something comes back; a flagged, failed or refused " +
 	"call costs nothing. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
+
+const (
+	enhanceEngineHelp = "The engine the avatar will be created with, v1, v2 or v2pro (Atmee V2 Pro, where the server offers it): " +
+		"v1 turns the face to the camera, shoulders up, v2 and v2pro keep the pose, framing and background (the API's default is v1)"
+	portraitsEngineHelp = "The engine the avatar will be created with, v1, v2 or v2pro (Atmee V2 Pro, where the server offers it): " +
+		"v1 frames the character from the shoulders up, v2 and v2pro half-body unless the description sets another framing " +
+		"(the API's default is v1)"
+)
+
+// checkPortraitEngine refuses an engine the API does not know before any
+// request; both generation requests take the same engines.
+func checkPortraitEngine(engine string) error {
+	if engine != "" && !avatarapi.EnhancePortraitRequestEngine(engine).Valid() {
+		return usagef("--engine takes v1, v2 or v2pro (%s)", engine)
+	}
+	return nil
+}
 
 const idempotencyHelp = "Reuse the key a failed call printed to retry it: the same key never charges twice and returns the first result"
 
@@ -26,24 +50,27 @@ func (a *app) generateCmd() *cobra.Command {
 }
 
 func (a *app) generatePortraitsCmd() *cobra.Command {
-	var description, key string
+	var description, engine, key string
 	var jsonOut bool
 	c := &cobra.Command{
 		Use:   "portraits --description TEXT",
 		Short: "Generate portraits of an invented character from a description.",
 		Long: "Generate up to four square portraits of an invented character, one from each image provider. Never use it to depict a " +
-			"real person from a description: for a real person, with their permission, use `atmee generate enhance` on their own photo. " + generationNote,
+			"real person from a description: for a real person, with their permission, use `atmee generate enhance` on their own photo. " + portraitsNote,
 		Example: `  atmee generate portraits --description "a weathered lighthouse keeper, sixties, warm smile"`,
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if strings.TrimSpace(description) == "" || utf8.RuneCountInString(description) > 2000 {
 				return usagef("--description takes 1 to 2000 characters: what the portrait shows")
 			}
+			if err := checkPortraitEngine(engine); err != nil {
+				return err
+			}
 			cl, err := a.api()
 			if err != nil {
 				return err
 			}
-			out, err := cl.GeneratePortraits(ctx(), description, key)
+			out, err := cl.GeneratePortraits(ctx(), description, engine, key)
 			if err != nil {
 				return err
 			}
@@ -52,13 +79,14 @@ func (a *app) generatePortraitsCmd() *cobra.Command {
 	}
 	f := c.Flags()
 	f.StringVar(&description, "description", "", "What the portrait shows, an invented character (required)")
+	f.StringVar(&engine, "engine", "", portraitsEngineHelp)
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
 }
 
 func (a *app) generateEnhanceCmd() *cobra.Command {
-	var image, prompt, key string
+	var image, prompt, engine, avatar, key string
 	var jsonOut bool
 	c := &cobra.Command{
 		Use:   "enhance --image PATH",
@@ -79,6 +107,17 @@ func (a *app) generateEnhanceCmd() *cobra.Command {
 			if utf8.RuneCountInString(prompt) > 2000 {
 				return usagef("--prompt takes at most 2000 characters")
 			}
+			if err := checkPortraitEngine(engine); err != nil {
+				return err
+			}
+			in := api.EnhanceInput{Prompt: prompt, Engine: engine}
+			if avatar != "" {
+				id, err := uuid.Parse(avatar)
+				if err != nil {
+					return usagef("--avatar: %q is not an avatar id (find it with `atmee avatars list`)", avatar)
+				}
+				in.AvatarID = &id
+			}
 			if key != "" && !api.IsRemote(image) {
 				return usagef("--idempotency-key retries the same inputs: give --image the upload:ID the failed call printed, not the file again")
 			}
@@ -92,7 +131,8 @@ func (a *app) generateEnhanceCmd() *cobra.Command {
 					return err
 				}
 			}
-			out, err := cl.EnhancePortrait(ctx(), ref, prompt, key)
+			in.Image = ref
+			out, err := cl.EnhancePortrait(ctx(), in, key)
 			if err != nil {
 				// A retry must send the same inputs, and a new upload is a new
 				// reference: hand this one back with the key.
@@ -107,6 +147,8 @@ func (a *app) generateEnhanceCmd() *cobra.Command {
 	f := c.Flags()
 	f.StringVar(&image, "image", "", "The photo: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required)")
 	f.StringVar(&prompt, "prompt", "", "How to restyle the photo; without it the photo is only enhanced")
+	f.StringVar(&engine, "engine", "", enhanceEngineHelp)
+	f.StringVar(&avatar, "avatar", "", "An existing avatar the photo is for, to replace its photo; its own engine is used, so leave out --engine")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
@@ -143,8 +185,8 @@ func (a *app) generateVoiceCmd() *cobra.Command {
 			if jsonOut {
 				return a.printJSON(out)
 			}
-			a.printf("%s in %s (%s credits charged%s)\n", plural(len(out.Voices), "voice preview"), out.Language,
-				credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed))
+			a.printf("%s in %s (%s%s)\n", plural(len(out.Voices), "voice preview"), out.Language,
+				paidNote(out.MicrocreditsCharged, out.MicrocreditsFree), replayNote(out.Replayed))
 			first := ""
 			for _, v := range out.Voices {
 				if v.Unavailable {
@@ -178,7 +220,7 @@ func (a *app) generateVoiceCmd() *cobra.Command {
 
 func (a *app) generateClipCmd() *cobra.Command {
 	var in api.ClipInput
-	var resolution, aspect, key string
+	var resolution, key string
 	var seed int64
 	var jsonOut bool
 	c := &cobra.Command{
@@ -187,16 +229,19 @@ func (a *app) generateClipCmd() *cobra.Command {
 		Long: "Render an mp4 of the person or character in the image, moving as the prompt says, silent or speaking " +
 			"--audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
 			"seconds for a silent clip.\n\n" +
-			"--resolution is the clip's size, each side even from 256 to 1920, e.g. 1920x1080, 1080x1920 or 1280x720; " +
-			"--aspect-ratio names an avatar shape instead (square 512x512, the default; portrait 384x640; landscape 640x384). " +
-			"A larger size allows a shorter clip: up to 30 seconds within a budget of 1920x1080 for 10 seconds (1280x720: 22 seconds). " +
-			"Where `atmee account` shows no any-size clips, a clip renders at one of the sizes it lists for at most 15 seconds.\n\n" +
-			"If the image shows a real person other than you, have their permission first. A clip is " +
-			"priced per 15 seconds of video, prorated (`atmee account`), the same with or without audio, charged only when it comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 24 hours. Needs v2 access. A signed-in user, or an API key with generation:write and avatars:write.",
+			"A clip lasts at least 1 second, up to the server's limit (15 seconds on current servers); a longer --duration " +
+			"is refused with the limit.\n\n" +
+			"--resolution is the clip's size, one the server serves: `atmee account` lists this server's sizes and, on a " +
+			"current server, each one's fixed price per clip whatever its length (for example 480x480, the default there, " +
+			"or 1280x720). Without --resolution the server's default size is used. A size it doesn't serve is refused " +
+			"with its list.\n\n" +
+			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
+			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
+			"The result lasts 24 hours. Needs v2 access and a plan with video generation (Growth and up). " +
+			"A signed-in user, or an API key with generation:write and avatars:write.",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
-  atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --aspect-ratio portrait
-  atmee generate clip --image ./me.jpg --prompt "he waves at the camera" --resolution 1920x1080 --duration 10`,
+  atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 480x640
+  atmee generate clip --image ./me.jpg --prompt "he waves at the camera" --resolution 1280x720 --duration 10`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			f := cmd.Flags()
@@ -214,26 +259,13 @@ func (a *app) generateClipCmd() *cobra.Command {
 			if in.Audio != "" && !f.Changed("duration") {
 				return usagef("--duration is required with --audio: the audio's length in seconds")
 			}
-			if f.Changed("duration") && (in.Duration < 1 || in.Duration > api.MaxClipSeconds) {
-				return usagef("--duration takes 1 to %d seconds", api.MaxClipSeconds)
-			}
-			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
-				return usageError{err}
-			}
-			if f.Changed("aspect-ratio") {
-				r, err := api.ParseAspectRatio(aspect)
-				if err != nil {
-					return usageError{err}
-				}
-				in.AspectRatio = string(r)
+			if f.Changed("duration") && in.Duration < 1 {
+				return usagef("--duration takes 1 second or more (the server sets the most; 15 on current servers)")
 			}
 			if f.Changed("resolution") {
 				r, err := api.ParseClipResolution(resolution)
 				if err != nil {
 					return usageError{err}
-				}
-				if most := api.MaxClipSecondsAt(r); in.Duration > most {
-					return usagef("a %dx%d clip lasts at most %d seconds", r.Width, r.Height, most)
 				}
 				in.Resolution = &r
 			}
@@ -272,8 +304,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 					return fmt.Errorf("%w, and %s", err, strings.Join(sent, " "))
 				}
 				var apiErr *api.Error
-				if errors.As(err, &apiErr) && apiErr.Code == "v2_access_required" {
-					return fmt.Errorf("%w; clips need v2 access: %s", err, redeemV2Hint)
+				if errors.As(err, &apiErr) && apiErr.Code == "video_generation_not_in_plan" {
+					return fmt.Errorf("%w; video clips come with the Growth plan and up: change plans in Creator Studio (Billing)", err)
 				}
 				return err
 			}
@@ -298,9 +330,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 	f.StringVar(&in.Image, "image", "", "Who or what the clip shows: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required)")
 	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion, up to 2000 characters (required)")
 	f.StringVar(&in.Audio, "audio", "", "What the clip says or plays: a local audio file, an https URL or upload:ID; without it the clip is silent")
-	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, 1 to 30 (a large --resolution allows less; 15 where clips render at the offered sizes): required with --audio, set to the audio's length; default 8 for a silent clip")
-	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, each side even from 256 to 1920, e.g. 1920x1080, 1080x1920 or 1280x720 (default 512x512)")
-	f.StringVar(&aspect, "aspect-ratio", "", "An avatar shape instead of --resolution: square (512x512, the default), portrait (384x640) or landscape (640x384)")
+	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, from 1 up to the server's limit (15 on current servers; the price does not depend on it): required with --audio, set to the audio's length; default 8 for a silent clip")
+	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, one this server serves (`atmee account` lists them; e.g. 480x480, the default on current servers)")
 	f.Int64Var(&seed, "seed", 0, "The render's seed; another seed gives other motion")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
@@ -311,7 +342,7 @@ func (a *app) printPortraits(out *api.GeneratedPortraits, jsonOut bool) error {
 	if jsonOut {
 		return a.printJSON(out)
 	}
-	a.printf("%s (%s credits charged%s)\n", plural(len(out.Portraits), "portrait"), credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed))
+	a.printf("%s (%s%s)\n", plural(len(out.Portraits), "portrait"), paidNote(out.MicrocreditsCharged, out.MicrocreditsFree), replayNote(out.Replayed))
 	first := ""
 	for _, p := range out.Portraits {
 		if p.Unavailable {
@@ -331,6 +362,17 @@ func (a *app) printPortraits(out *api.GeneratedPortraits, jsonOut bool) error {
 		a.printf("Use one: atmee avatars create --name NAME --image %s --voice VOICE\n  or: atmee avatars replace-appearance AVATAR_ID %s\n", first, first)
 	}
 	return nil
+}
+
+// paidNote is what a portrait, enhance or voice call cost: the credits
+// charged and, when the plan's free generation allowance paid for part or
+// all of it, that part (the two add up to the call's price).
+func paidNote(charged, free int) string {
+	s := credits(int64(charged)) + " credits charged"
+	if free > 0 {
+		s += " · " + credits(int64(free)) + " from free generation"
+	}
+	return s
 }
 
 func replayNote(replayed bool) string {

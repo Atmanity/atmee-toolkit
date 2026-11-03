@@ -30,7 +30,7 @@ type CreateInput struct {
 	Image          string
 	Voice          string
 	Knowledge      []string
-	Engine         string // "v2" (default) or "v1"
+	Engine         string // "v2" (default), "v1" or "v2pro" (Atmee V2 Pro)
 	Candidates     int    // v2: 1-10; 0 = API default (3)
 	SeedSelection  string // v2: "manual" or "auto"
 	PreviewMessage string
@@ -45,55 +45,43 @@ type CreateInput struct {
 	SponsorMicrocredits, SponsorMaxPerSession *int
 	// RuntimeSeed is the v2 renderer's runtime seed (nil: the default, 42).
 	RuntimeSeed *int
-	// AspectRatio is the v2 avatar's shape: square (the default), portrait
-	// or landscape. Send it or Resolution, not both.
-	AspectRatio string
-	// Resolution is the v2 frame size (nil: the default, 512x512);
-	// AspectRatio names one by shape instead.
+	// Resolution is the v2 or V2 Pro frame size (nil: the engine's default,
+	// 512x512 for v2, 640x640 for V2 Pro).
 	Resolution *Resolution
 }
 
 // Resolution is a v2 frame size in pixels.
 type Resolution = avatarapi.RenderResolution
 
-// AspectRatio is a v2 avatar's shape, which picks its frame size.
-type AspectRatio = avatarapi.AspectRatio
-
-// AspectRatioSizes are the frame sizes behind the aspect ratios. The sizes
-// follow the renderer and may change; the names do not.
-var AspectRatioSizes = map[AspectRatio]Resolution{
-	avatarapi.AspectRatioSquare:    {Width: 512, Height: 512},
-	avatarapi.AspectRatioPortrait:  {Width: 384, Height: 640},
-	avatarapi.AspectRatioLandscape: {Width: 640, Height: 384},
-}
-
-// ParseAspectRatio reads square, portrait or landscape.
-func ParseAspectRatio(s string) (AspectRatio, error) {
-	r := AspectRatio(strings.ToLower(strings.TrimSpace(s)))
-	if !r.Valid() {
-		return "", fmt.Errorf("--aspect-ratio takes square (512x512, the default), portrait (384x640) or landscape (640x384); got %q", s)
-	}
-	return r, nil
-}
-
-// errAspectAndResolution refuses an aspect ratio and a resolution together.
-var errAspectAndResolution = errors.New("--aspect-ratio and --resolution both set the size: give one")
-
-// CheckAspectOrResolution refuses --aspect-ratio and --resolution together.
-func CheckAspectOrResolution(aspect, resolution bool) error {
-	if aspect && resolution {
-		return errAspectAndResolution
-	}
-	return nil
-}
-
-// The v2 renderer's frame rule: each side a multiple of ResolutionStep from
-// MinResolutionSide to MaxResolutionSide, at most MaxResolutionPixels in all.
+// The engines: v1, v2 and Atmee V2 Pro (v2pro), a larger v2 model that
+// builds, previews and serves like v2.
 const (
-	ResolutionStep      = 32
-	MinResolutionSide   = 256
-	MaxResolutionSide   = 1024
-	MaxResolutionPixels = 512 * 512
+	EngineV1    = "v1"
+	EngineV2    = "v2"
+	EngineV2Pro = "v2pro"
+)
+
+// The account's v2 access (v2Access on GET /v1/account and on a
+// redemption).
+const (
+	V2AccessGranted        = "granted"
+	V2AccessInviteRequired = "invite_required"
+	V2AccessUnavailable    = "unavailable"
+)
+
+// IsV2Family says the engine builds candidates and serves a take: v2 and
+// V2 Pro.
+func IsV2Family(engine string) bool { return engine == EngineV2 || engine == EngineV2Pro }
+
+// The renderers' frame rule: each side a multiple of ResolutionStep from
+// MinResolutionSide to MaxResolutionSide, at most MaxResolutionPixels in all
+// for v2 (512x512) and MaxV2ProResolutionPixels for V2 Pro (864x480).
+const (
+	ResolutionStep           = 32
+	MinResolutionSide        = 256
+	MaxResolutionSide        = 1024
+	MaxResolutionPixels      = 512 * 512
+	MaxV2ProResolutionPixels = 864 * 480
 )
 
 // parseWxH reads WIDTHxHEIGHT.
@@ -104,19 +92,49 @@ func parseWxH(s string) (w, h int, ok bool) {
 	return wi, hi, found && werr == nil && herr == nil
 }
 
-// ParseResolution reads WxH (e.g. 384x640) and checks it against the
-// renderer's rule. Which sizes a deployment offers is the API's to say.
+// ParseResolution reads WxH (e.g. 672x384) and checks it against the
+// largest renderer's rule (V2 Pro's); CheckResolutionFor checks an
+// engine's own. Which sizes a deployment offers is the API's to say.
 func ParseResolution(s string) (Resolution, error) {
 	w, h, ok := parseWxH(s)
 	if !ok {
-		return Resolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 512x512, 384x640 (portrait) or 640x384 (landscape); got %q", s)
+		return Resolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 512x512, 672x384 (16:9) or 384x672 (9:16); got %q", s)
 	}
 	r := Resolution{Width: w, Height: h}
-	return r, CheckResolution(r)
+	return r, CheckResolutionFor(EngineV2Pro, r)
 }
 
-// CheckResolution refuses a frame size the renderer cannot take.
-func CheckResolution(r Resolution) error {
+// sizeRule is an engine's frame rule: its name in messages, its pixel cap
+// (as WxH for messages, with examples), and the account limit listing the
+// sizes a server offers it.
+type sizeRule struct {
+	label     string
+	maxPixels int
+	maxName   string
+	examples  string
+	offered   func(avatarapi.AccountLimits) *[]Resolution
+}
+
+var sizeRules = map[string]sizeRule{
+	EngineV2: {label: "v2", maxPixels: MaxResolutionPixels, maxName: "512x512", examples: "672x384 or 384x672",
+		offered: func(l avatarapi.AccountLimits) *[]Resolution { return l.V2Resolutions }},
+	EngineV2Pro: {label: "V2 Pro", maxPixels: MaxV2ProResolutionPixels, maxName: "864x480", examples: "640x640, 864x480 or 480x864",
+		offered: func(l avatarapi.AccountLimits) *[]Resolution { return l.V2ProResolutions }},
+}
+
+// ruleFor is the engine's frame rule; any engine but V2 Pro takes v2's.
+func ruleFor(engine string) sizeRule {
+	if r, ok := sizeRules[engine]; ok {
+		return r
+	}
+	return sizeRules[EngineV2]
+}
+
+// CheckResolution refuses a frame size the v2 renderer cannot take.
+func CheckResolution(r Resolution) error { return CheckResolutionFor(EngineV2, r) }
+
+// CheckResolutionFor refuses a frame size the engine's renderer cannot take.
+func CheckResolutionFor(engine string, r Resolution) error {
 	side := func(n int) bool {
 		return n >= MinResolutionSide && n <= MaxResolutionSide && n%ResolutionStep == 0
 	}
@@ -124,10 +142,74 @@ func CheckResolution(r Resolution) error {
 		return fmt.Errorf("resolution %dx%d: width and height must each be a multiple of %d from %d to %d",
 			r.Width, r.Height, ResolutionStep, MinResolutionSide, MaxResolutionSide)
 	}
-	if r.Width*r.Height > MaxResolutionPixels {
-		return fmt.Errorf("resolution %dx%d: at most %d pixels (512x512), e.g. 384x640 or 640x384", r.Width, r.Height, MaxResolutionPixels)
+	rule, px := ruleFor(engine), r.Width*r.Height
+	if px <= rule.maxPixels {
+		return nil
+	}
+	err := fmt.Errorf("resolution %dx%d: %s frames are at most %d pixels (%s), e.g. %s",
+		r.Width, r.Height, rule.label, rule.maxPixels, rule.maxName, rule.examples)
+	if pro := sizeRules[EngineV2Pro]; engine != EngineV2Pro && px <= pro.maxPixels {
+		return &V2ProSizeError{err}
+	}
+	return err
+}
+
+// V2ProSizeError is a frame size too large for v2 that V2 Pro's rule
+// allows. What to do about it depends on the command: a create can choose
+// V2 Pro; an existing avatar's engine cannot change.
+type V2ProSizeError struct{ err error }
+
+func (e *V2ProSizeError) Error() string { return e.err.Error() + "; that size is for V2 Pro avatars" }
+
+// OfferedResolutions are the frame sizes the server offers the engine
+// (limits.v2ProResolutions for v2pro, else limits.v2Resolutions), or nil
+// where it lists none (every size the rule allows).
+func OfferedResolutions(acct *Account, engine string) []Resolution {
+	if acct == nil {
+		return nil
+	}
+	if rs := ruleFor(engine).offered(acct.Limits); rs != nil {
+		return *rs
 	}
 	return nil
+}
+
+// CheckOffered refuses a frame size the server does not offer the engine,
+// naming the ones it does. Without a list (an older server, or one that
+// offers every size the rule allows) it lets the server decide: the server
+// is the authority either way.
+func CheckOffered(acct *Account, engine string, r Resolution) error {
+	offered := OfferedResolutions(acct, engine)
+	if len(offered) == 0 {
+		return nil
+	}
+	names := make([]string, len(offered))
+	for i, o := range offered {
+		if o.Width == r.Width && o.Height == r.Height {
+			return nil
+		}
+		names[i] = fmt.Sprintf("%dx%d", o.Width, o.Height)
+	}
+	return fmt.Errorf("resolution %dx%d is not a %s size on this server; offered: %s (`atmee account` lists them)",
+		r.Width, r.Height, ruleFor(engine).label, strings.Join(names, ", "))
+}
+
+// CheckSize checks a frame size for an engine before it is sent: the
+// engine's rule, then the sizes the account lists for it. A v1 engine is
+// left to the server (which refuses it), and so is the list when the
+// account cannot be read: the server is the authority.
+func (c *Client) CheckSize(ctx context.Context, engine string, r Resolution) error {
+	if !IsV2Family(engine) {
+		return nil
+	}
+	if err := CheckResolutionFor(engine, r); err != nil {
+		return err
+	}
+	acct, err := c.Account(ctx)
+	if err != nil {
+		return nil
+	}
+	return CheckOffered(acct, engine, r)
 }
 
 // MaxRuntimeSeed is the largest runtime seed the API takes.
@@ -143,7 +225,7 @@ func CheckRuntimeSeed(seed int) error {
 
 // CheckPrimeText refuses a v2 preview message the API would refuse.
 func CheckPrimeText(engine, text string) error {
-	if engine == "v2" && runeLen(text) > MaxPrimeTextChars {
+	if IsV2Family(engine) && runeLen(text) > MaxPrimeTextChars {
 		return fmt.Errorf("v2 preview messages are spoken as a ~30 s clip: at most %d characters (got %d)", MaxPrimeTextChars, runeLen(text))
 	}
 	return nil
@@ -153,7 +235,7 @@ func runeLen(s string) int { return utf8.RuneCountInString(strings.TrimSpace(s))
 
 func engineOf(a *Avatar) string {
 	if a.Engine == nil {
-		return "v1"
+		return EngineV1
 	}
 	return string(*a.Engine)
 }
@@ -179,9 +261,9 @@ func expandHome(p string) string {
 func (in CreateInput) Manifest() (map[string]any, error) {
 	engine := in.Engine
 	if engine == "" {
-		engine = "v2"
+		engine = EngineV2
 	}
-	if engine == "v2" && (in.Image == "" || in.Voice == "") && (in.Candidates != 0 || in.SeedSelection != "") {
+	if IsV2Family(engine) && (in.Image == "" || in.Voice == "") && (in.Candidates != 0 || in.SeedSelection != "") {
 		return nil, errors.New("--candidates and --seed-selection need both --image and --voice: a v2 avatar created without them " +
 			"builds one candidate, used as soon as it is finished, once both are given")
 	}
@@ -211,29 +293,16 @@ func (in CreateInput) Manifest() (map[string]any, error) {
 		}
 		m["runtimeSeed"] = *in.RuntimeSeed
 	}
-	if in.AspectRatio != "" {
-		if err := CheckAspectOrResolution(true, in.Resolution != nil); err != nil {
-			return nil, err
-		}
-		if engine == "v1" {
-			return nil, errors.New("--aspect-ratio is only for v2 avatars")
-		}
-		r, err := ParseAspectRatio(in.AspectRatio)
-		if err != nil {
-			return nil, err
-		}
-		m["aspectRatio"] = string(r)
-	}
 	if r := in.Resolution; r != nil {
-		if engine == "v1" {
-			return nil, errors.New("--resolution is only for v2 avatars")
+		if engine == EngineV1 {
+			return nil, errors.New("--resolution is only for v2 and V2 Pro avatars")
 		}
-		if err := CheckResolution(*r); err != nil {
+		if err := CheckResolutionFor(engine, *r); err != nil {
 			return nil, err
 		}
 		m["resolution"] = map[string]int{"width": r.Width, "height": r.Height}
 	}
-	if engine != "v1" {
+	if engine != EngineV1 {
 		m["engine"] = engine
 	}
 	if in.SponsorMicrocredits != nil || in.SponsorMaxPerSession != nil {

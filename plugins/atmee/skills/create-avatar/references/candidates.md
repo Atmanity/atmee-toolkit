@@ -14,7 +14,10 @@ Step 1 creates the avatar from its name, portrait, voice and language alone,
 so the creator sees it talk before shaping its character. Create through the
 avatars server with:
 
-- **`engine`:** `v2`. Use v1 only if the creator asks, or when the account
+- **`engine`:** the one any paid portrait was made for (the
+  credits-and-generation reference, The engine a portrait is for), normally
+  `v2`, or `v2pro` when the creator chose Atmee V2 Pro (Model, below). Use
+  v1 only if the creator asks, or when the account
   has no v2 access: v2 is invite-only for now, and `get_account`'s `v2Access`
   is then `invite_required`. Ask the creator for an invite code first and
   redeem it with `redeem_code`. Make v2 only once its answer (or, when it
@@ -34,13 +37,43 @@ avatars server with:
   (`SKILL.md`, Files and uploads) or a generated portrait or voice as it came
   back (the credits-and-generation reference), or a public https link the
   creator gave.
-- **`aspectRatio`:** leave it out (`square`, 512×512) unless the creator
-  wants a tall or wide video, then `portrait` (384×640) or `landscape`
-  (640×384). `resolution` names a pixel size instead (one get_account's
-  clipResolutions lists); send one or the other, not both. The portrait is cropped to that shape at its centre, so check the
-  face against it. A later change on `update_avatar` makes new seeds, like a
-  new portrait. v1 refuses it: leave it out of a v1 create, and tell the
-  creator the video stays square.
+- **`resolution`:** leave it out (512×512, square) unless the creator
+  wants a tall or wide video, then for example `{width: 384, height: 672}`
+  (9:16) or `{width: 672, height: 384}` (16:9), if the server offers it
+  (`get_account` `limits.v2Resolutions`; absent means every size the rule
+  allows): a size it doesn't offer answers `invalid_input` listing the ones
+  it does. The portrait is cropped to that shape at its centre, so
+  check the face against it. A later change on `update_avatar` makes new
+  seeds, like a new portrait. v1 refuses it: leave it out of a v1 create,
+  and tell the creator the video stays square. A V2 Pro avatar has its own
+  sizes: leave it out for 640×640 (square), or pick one of
+  `limits.v2ProResolutions`, the only list to trust (for example a tall
+  `{width: 480, height: 864}` or a wide `{width: 864, height: 480}`, if it
+  lists them); the v2 sizes (512×512, 672×384,
+  384×672, 576×448, 448×576) are not V2 Pro sizes.
+
+### Model
+
+There are three models. Name them Atmee V1, Atmee V2 and Atmee V2 Pro to the
+creator; the API's `engine` is `v1`, `v2` and `v2pro`.
+
+- **Atmee V2** is the default, and what this skill makes.
+- **Atmee V2 Pro** is a larger V2 model on its own GPUs, at larger frames
+  (640×640 by default; `limits.v2ProResolutions` lists the others). It is a V2 avatar in every
+  other way: seeds, picking another, the character, the preview line and its
+  links all work as this skill says, and its conversations cost what V2's do.
+  Offer it when the creator wants a bigger video or asks for the best model.
+- **Atmee V1** is the older model, for an account without v2 access.
+
+Whether the account has V2 Pro is in `get_account`: `limits.v2Pro: true` with
+`v2Access: granted` means yes. `limits.v2Pro: false` means the plan lacks it
+(Growth and up have it): mention it only if the creator asks for it or for a
+bigger video, and point to Billing. No `limits.v2Pro` at all means this server
+doesn't offer it: never mention V2 Pro. Only when the account has it, add one
+question to step 1's name and language call ("Which model?", with "Atmee V2
+(Recommended)" and "Atmee V2 Pro: a larger model, bigger video"), and save
+the answer with the `create` iteration. Every later call on the avatar works
+the same either way; `get_avatar` reads `engine: v2pro` for a V2 Pro one.
 
 The avatars server's create tool may default to manual selection or several
 seeds: pass the selection and count above every time.

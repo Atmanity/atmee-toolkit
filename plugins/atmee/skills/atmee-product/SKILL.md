@@ -100,18 +100,26 @@ always its chat page: never start a session for it (`start_session`,
   tooling (`create-avatar`) build v2 for an account that has it, and v1 for
   any account. Agents go to v2 by default: with no access they ask for an
   invite code first, and make v1 only if there is none and the creator agrees.
+- **Atmee V2 Pro** (engine `v2pro`) is a larger v2 model on its own GPUs, at
+  larger frames (640×640 by default; `limits.v2ProResolutions` lists the others). It builds,
+  picks seeds and serves exactly like v2, through the same tools and
+  sessions, and costs what v2 does for now. It needs v2 access and the
+  Growth plan or higher, and only some servers offer it yet: `get_account`'s
+  `limits.v2Pro` is true where the account can make one, false where the
+  plan lacks it, and absent where the server doesn't offer it (then don't
+  mention it). `limits.v2ProResolutions` lists its sizes.
 - **`/v1` in a path is the API version, not the engine.** Every endpoint
   starts with `/v1` (`POST /v1/sessions`, `/v1/avatars`), and v1 and v2
   avatars use the same ones. Never infer an avatar's engine from a path or
   call a `/v1` endpoint "the v1 API"; read `engine` on the avatar. To a
-  person, name the engines Atmee V1 and Atmee V2.
+  person, name the engines Atmee V1, Atmee V2 and Atmee V2 Pro.
 - **Visibility:** private, unlisted (anyone with the link) or public (listed
   on atmee.ai). Through the API an avatar starts private or unlisted and
   goes public by an update once it is ready.
 - **Status:** building, then ready, or failed, or `moderation_hold` (a person
   reviews it; never retry). Talk only when `readyToChat` is true.
-- **Credits** pay for everything: conversations by the minute, generation
-  per call. The API counts microcredits: divide by 100 for credits.
+- **Credits** pay for everything: conversations by the minute, portraits
+  per portrait, other generation per call. The API counts microcredits: divide by 100 for credits.
 - **Monetized and sponsored are opposites,** never one setting. A
   **monetized** (Signature) avatar charges the visitor a higher per-minute
   rate on atmee.ai and the creator earns from those minutes. A **sponsored** avatar lets
@@ -142,11 +150,11 @@ last column.
 | A talking avatar in their website or app, with Atmee running the conversation | **Session API**: their backend starts the session, their page joins the LiveKit room (there is no embeddable widget) | `build-avatar-app` |
 | The avatar to act on their app: turn a slide, look up an order, keep score | Session API with **app tools** | `build-avatar-app` |
 | A conversation with steps: an interview, a lesson, an onboarding | Session API with an **agenda** | `build-avatar-app` |
-| A face for a voice agent they already run on LiveKit Agents | **Render path**: `livekit-plugins-atmee` (it targets v1 avatars), or the API's avatar sessions for v1 or v2; a portrait-only avatar is enough | `https://www.atmee.ai/docs/livekit-plugin/livekit-agents-plugin` |
+| A face for a voice agent they already run on LiveKit Agents | **Render path**: `livekit-plugins-atmee` (v1 and v2 avatars from 0.2.0), or the API's avatar sessions for any engine (V2 Pro only this way); a portrait-only avatar is enough | `https://www.atmee.ai/docs/livekit-plugin/livekit-agents-plugin` |
 | Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
-| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of up to 30 seconds is paid by its length, with or without sound, and needs v2 access | `create-avatar` |
+| A portrait, a voice or a short video they don't have | the avatars server's generation tools, portraits paid per portrait and the rest per call; a clip of 1 to 15 seconds costs a fixed price for its size (480×480 up to 1280×720 or 720×1280; 1080p coming soon), whatever its length, with or without sound, and needs v2 access and a plan with video generation (Growth and up) | `create-avatar` |
 | A voice conversation over a WebSocket, with no video | **Speech session** (`start_speech_session`, `atmee speech start`); the avatar needs a voice | `build-avatar-app` |
 | To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/atmee-toolkit` |
 

@@ -152,7 +152,7 @@ func (a *app) updateCmd() *cobra.Command {
 		Use:   "update AVATAR_ID",
 		Short: "Change an avatar's name, persona, knowledge, Explore profile, visibility or monetization.",
 		Long: "Change fields of an avatar; only the flags you pass change. v1 rebuilds its persona and is briefly not ready. " +
-			"v2 keeps serving while the persona rebuilds; a new --preview-message or --aspect-ratio builds new candidates.\n\n" +
+			"v2 keeps serving while the persona rebuilds; a new --preview-message or --resolution builds new candidates.\n\n" +
 			"The Explore profile (--title, --subtitle, --description, --tag, --social, the thumbnail of " +
 			"`atmee avatars thumbnail set`) is what Creator Studio's \"Share to community\" card edits; nothing is rebuilt. " +
 			"--visibility public needs a title, a tag, a subtitle, a description and a thumbnail.\n\n" +
@@ -247,17 +247,6 @@ func (a *app) updateCmd() *cobra.Command {
 					return usagef("%v", err)
 				}
 				set("runtime-seed", "runtimeSeed", seed)
-			}
-			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
-				return usagef("%v", err)
-			}
-			if f.Changed("aspect-ratio") {
-				v, _ := f.GetString("aspect-ratio")
-				r, err := api.ParseAspectRatio(v)
-				if err != nil {
-					return usagef("%v", err)
-				}
-				set("aspect-ratio", "aspectRatio", string(r))
 			}
 			if f.Changed("resolution") {
 				v, _ := f.GetString("resolution")
@@ -370,6 +359,20 @@ func (a *app) updateCmd() *cobra.Command {
 			if len(knowledge) > 0 {
 				body["knowledge"] = knowledge
 			}
+			if r, ok := fields["resolution"].(map[string]int); ok {
+				// The size is checked for the avatar's engine; an avatar
+				// that cannot be read is left to the server.
+				if av, err := cl.Get(ctx(), id); err == nil {
+					if err := cl.CheckSize(ctx(), engine(deref(av.Engine)), api.Resolution{Width: r["width"], Height: r["height"]}); err != nil {
+						var pro *api.V2ProSizeError
+						if errors.As(err, &pro) {
+							return usagef("%v, and an avatar's engine can't change: create a V2 Pro avatar for it "+
+								"(`atmee avatars create --engine v2pro`, where the server offers it), or pick a v2 size (`atmee account` lists them)", err)
+						}
+						return usagef("%v", err)
+					}
+				}
+			}
 			av, err := cl.Update(ctx(), id, body)
 			var apiErr *api.Error
 			if errors.As(err, &apiErr) && apiErr.Code == "sponsor_pool_not_empty" && !confirmWithdrawal {
@@ -411,7 +414,6 @@ func (a *app) updateCmd() *cobra.Command {
 	f.StringVar(&monetize, "monetize", "", "Turn monetization on or off (on needs a statement, verified payouts, the 30-day requirements and room under the plan's cap)")
 	f.BoolVar(&confirmWithdrawal, "confirm-sponsor-withdrawal", false, "With --monetize on: withdraw the sponsor pool's credits to the account without asking")
 	f.Int("runtime-seed", 0, runtimeSeedHelp)
-	f.String("aspect-ratio", "", aspectRatioHelp)
 	f.String("resolution", "", resolutionHelp)
 	f.StringArrayVar(&clear, "clear", nil, "Remove a value: description, greeting, alias, spoken-name, known-aliases, habits, guardrails, facts, questionnaire, "+
 		"title, subtitle, tags, socials, statement (resets it) or preview-message (back to the default line); repeat for several")

@@ -260,9 +260,10 @@ Tell the person, in one or two lines, for example:
 > few minutes.
 
 Then call `get_account` (free) for the clip line. Clips are offered on this
-server when its `pricing.generation` has `clipPer15SecondsMicrocredits` (or
-the older `clipPerSecondMicrocredits`); without either, say nothing about
-clips. When they are offered and `v2Access` is granted, add one line saying
+server when its `pricing.generation` has `clipSizes` (an older server:
+`clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`); without any,
+say nothing about clips. When they are offered, `v2Access` is granted and
+`limits.videoGeneration` is not false (absent counts as allowed), add one line saying
 atmee can also make videos, for example:
 
 > atmee v2 can also make short videos: give a photo and a prompt, and you

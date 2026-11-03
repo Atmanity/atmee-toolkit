@@ -15,7 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 	"github.com/google/uuid"
 )
 

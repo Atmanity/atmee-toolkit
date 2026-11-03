@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 // App tools on `avatars session chat`: the tool list and the instructions

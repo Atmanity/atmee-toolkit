@@ -1,6 +1,6 @@
 ---
 name: create-avatar
-description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a short video clip. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
+description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a v2 video clip from a photo. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -135,7 +135,7 @@ Read these before anything else, and keep them for the whole conversation.
    - `v2_access_required`: v2 is invite-only for now and this account has not been let in. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
-   - `preview_message_too_long`: shorten the preview line to 60 characters (code points) or fewer.
+   - `preview_message_too_long`: shorten the preview line to 300 characters (code points) or fewer.
 
    **Two identical failures stop a retry,** on either server, paid or free:
    the same tool with the same inputs failing with the same error twice, or
@@ -181,7 +181,7 @@ every call (setup saves it for a sign-in that belongs to several accounts).
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
-  | `generate_clip` | a short video (up to 15 s) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
+  | `generate_clip` | a short video (up to 30 s, up to 1920×1080) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
 
   If the server lists none of them, or `get_account` has no
   `pricing.generation`, say generation isn't available and work with the
@@ -324,7 +324,14 @@ open the link yourself or say you'll test it
 ### Step 5: Ready
 
 Hand over the chat link and the Studio link
-(`references/test-and-handover.md`, Hand over).
+(`references/test-and-handover.md`, Hand over). When the account has v2
+access and `get_account`'s `pricing.generation` has a clip price
+(`clipPer15SecondsMicrocredits`, or the older `clipPerSecondMicrocredits`),
+add one line that Atmee can also make a short video clip from the same photo,
+with sound when they give an audio file to play (a recording, or the voice
+sample they gave) (Clips in
+`references/credits-and-generation.md`), and make one only if the creator
+asks. Without a clip price, say nothing about clips.
 
 Never offer to commit or `git init`: the iteration files are saved either
 way. Only when the creator asks, commit as `references/iterations.md`

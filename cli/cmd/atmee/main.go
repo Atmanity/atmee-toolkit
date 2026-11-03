@@ -4,7 +4,7 @@ package main
 import (
 	"os"
 
-	"github.com/Atmanity/toolkit/cli/internal/cmd"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/cmd"
 )
 
 func main() {

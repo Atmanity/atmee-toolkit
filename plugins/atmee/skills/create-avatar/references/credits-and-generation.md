@@ -211,14 +211,14 @@ make the sample longer.
 
 ## Clips
 
-`generate_clip` renders an mp4 of up to 15 seconds (25 fps) of the person in
+`generate_clip` renders an mp4 of up to 30 seconds (25 fps) of the person in
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
 for a clip (a teaser, a post), not as part of the five steps. Clips need v2
 access: without it the call answers `v2_access_required`, so ask for an invite
 code (`redeem_code`); there is no v1 clip. In a shell, `atmee generate clip`
-does the same (`--image`, `--prompt`, `--audio`, `--duration`, `--resolution`,
-`--seed`), and uploads local files first. Like the other `atmee generate`
+does the same (`--image`, `--prompt`, `--audio`, `--duration`, `--resolution` or
+`--aspect-ratio`, `--seed`), and uploads local files first. Like the other `atmee generate`
 commands it does not ask first, so confirm the price with the creator before
 running it.
 
@@ -229,11 +229,20 @@ running it.
   2,000 characters) are moderated.
 - **`audio`** (optional; with sound if audio is given): a voice upload or
   https link. Then `durationSeconds` is required: set it to the audio's
-  length, at most 15; the server doesn't read it from the file. A silent clip
-  defaults to 8.
-- **`resolution`:** 512×512 unless the creator wants another size, such as
-  384×672 (portrait) or 672×384 (landscape); when `clipResolutions` is listed,
-  pick from it. `seed` defaults to 0; another seed gives other motion, as a
+  length; the server doesn't read it from the file. A silent clip defaults
+  to 8.
+- **Size:** 512×512 unless the creator wants another. `resolution` is the
+  clip's size: each side even, from 256 to 1920, e.g. 1920×1080, 1080×1920
+  or 1280×720. Or `aspectRatio` names an avatar shape instead: `square`
+  512×512, `portrait` 384×640, `landscape` 640×384; send one, not both.
+- **Length:** where `get_account` has `pricing.generation.clipAnySize`
+  true, any size up to 30 seconds, a larger size allowing less: render
+  width × height × seconds at most 1920×1088×10 (each side rounded up to a
+  multiple of 32), so 1920×1080 runs at most 10 seconds and 1280×720 22.
+  Where it is false, pick a size from `clipResolutions` (or an aspect ratio
+  whose size is listed), for at most 15 seconds. Pick the size and length
+  before stating the price.
+- **`seed`:** defaults to 0; another seed gives other motion, as a
   new request.
 - **Price:** with or without sound, `clipPer15SecondsMicrocredits` pro rata
   to `durationSeconds`, rounded up to a whole microcredit:

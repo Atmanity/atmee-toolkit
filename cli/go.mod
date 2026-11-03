@@ -1,4 +1,4 @@
-module github.com/Atmanity/toolkit/cli
+module github.com/Atmanity/atmee-toolkit/cli
 
 go 1.26.0
 

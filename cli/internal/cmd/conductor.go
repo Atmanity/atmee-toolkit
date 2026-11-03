@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 const (

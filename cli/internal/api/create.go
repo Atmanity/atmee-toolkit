@@ -17,7 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 )
 
 // CreateInput is a create request. Image, Voice and Knowledge are https URLs
@@ -45,12 +45,47 @@ type CreateInput struct {
 	SponsorMicrocredits, SponsorMaxPerSession *int
 	// RuntimeSeed is the v2 renderer's runtime seed (nil: the default, 42).
 	RuntimeSeed *int
-	// Resolution is the v2 frame size (nil: the default, 512x512).
+	// AspectRatio is the v2 avatar's shape: square (the default), portrait
+	// or landscape. Send it or Resolution, not both.
+	AspectRatio string
+	// Resolution is the v2 frame size (nil: the default, 512x512);
+	// AspectRatio names one by shape instead.
 	Resolution *Resolution
 }
 
 // Resolution is a v2 frame size in pixels.
 type Resolution = avatarapi.RenderResolution
+
+// AspectRatio is a v2 avatar's shape, which picks its frame size.
+type AspectRatio = avatarapi.AspectRatio
+
+// AspectRatioSizes are the frame sizes behind the aspect ratios. The sizes
+// follow the renderer and may change; the names do not.
+var AspectRatioSizes = map[AspectRatio]Resolution{
+	avatarapi.AspectRatioSquare:    {Width: 512, Height: 512},
+	avatarapi.AspectRatioPortrait:  {Width: 384, Height: 640},
+	avatarapi.AspectRatioLandscape: {Width: 640, Height: 384},
+}
+
+// ParseAspectRatio reads square, portrait or landscape.
+func ParseAspectRatio(s string) (AspectRatio, error) {
+	r := AspectRatio(strings.ToLower(strings.TrimSpace(s)))
+	if !r.Valid() {
+		return "", fmt.Errorf("--aspect-ratio takes square (512x512, the default), portrait (384x640) or landscape (640x384); got %q", s)
+	}
+	return r, nil
+}
+
+// errAspectAndResolution refuses an aspect ratio and a resolution together.
+var errAspectAndResolution = errors.New("--aspect-ratio and --resolution both set the size: give one")
+
+// CheckAspectOrResolution refuses --aspect-ratio and --resolution together.
+func CheckAspectOrResolution(aspect, resolution bool) error {
+	if aspect && resolution {
+		return errAspectAndResolution
+	}
+	return nil
+}
 
 // The v2 renderer's frame rule: each side a multiple of ResolutionStep from
 // MinResolutionSide to MaxResolutionSide, at most MaxResolutionPixels in all.
@@ -61,16 +96,22 @@ const (
 	MaxResolutionPixels = 512 * 512
 )
 
-// ParseResolution reads WxH (e.g. 384x672) and checks it against the
+// parseWxH reads WIDTHxHEIGHT.
+func parseWxH(s string) (w, h int, ok bool) {
+	ws, hs, found := strings.Cut(strings.ToLower(strings.TrimSpace(s)), "x")
+	wi, werr := strconv.Atoi(strings.TrimSpace(ws))
+	hi, herr := strconv.Atoi(strings.TrimSpace(hs))
+	return wi, hi, found && werr == nil && herr == nil
+}
+
+// ParseResolution reads WxH (e.g. 384x640) and checks it against the
 // renderer's rule. Which sizes a deployment offers is the API's to say.
 func ParseResolution(s string) (Resolution, error) {
-	w, h, ok := strings.Cut(strings.ToLower(strings.TrimSpace(s)), "x")
-	wi, werr := strconv.Atoi(strings.TrimSpace(w))
-	hi, herr := strconv.Atoi(strings.TrimSpace(h))
-	if !ok || werr != nil || herr != nil {
-		return Resolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 512x512, 384x672 (portrait) or 672x384 (landscape); got %q", s)
+	w, h, ok := parseWxH(s)
+	if !ok {
+		return Resolution{}, fmt.Errorf("--resolution takes WIDTHxHEIGHT, e.g. 512x512, 384x640 (portrait) or 640x384 (landscape); got %q", s)
 	}
-	r := Resolution{Width: wi, Height: hi}
+	r := Resolution{Width: w, Height: h}
 	return r, CheckResolution(r)
 }
 
@@ -84,7 +125,7 @@ func CheckResolution(r Resolution) error {
 			r.Width, r.Height, ResolutionStep, MinResolutionSide, MaxResolutionSide)
 	}
 	if r.Width*r.Height > MaxResolutionPixels {
-		return fmt.Errorf("resolution %dx%d: at most %d pixels (512x512), e.g. 384x672 or 672x384", r.Width, r.Height, MaxResolutionPixels)
+		return fmt.Errorf("resolution %dx%d: at most %d pixels (512x512), e.g. 384x640 or 640x384", r.Width, r.Height, MaxResolutionPixels)
 	}
 	return nil
 }
@@ -103,7 +144,7 @@ func CheckRuntimeSeed(seed int) error {
 // CheckPrimeText refuses a v2 preview message the API would refuse.
 func CheckPrimeText(engine, text string) error {
 	if engine == "v2" && runeLen(text) > MaxPrimeTextChars {
-		return fmt.Errorf("v2 preview messages are spoken as a ~6 s clip: at most %d characters (got %d)", MaxPrimeTextChars, runeLen(text))
+		return fmt.Errorf("v2 preview messages are spoken as a ~30 s clip: at most %d characters (got %d)", MaxPrimeTextChars, runeLen(text))
 	}
 	return nil
 }
@@ -169,6 +210,19 @@ func (in CreateInput) Manifest() (map[string]any, error) {
 			return nil, err
 		}
 		m["runtimeSeed"] = *in.RuntimeSeed
+	}
+	if in.AspectRatio != "" {
+		if err := CheckAspectOrResolution(true, in.Resolution != nil); err != nil {
+			return nil, err
+		}
+		if engine == "v1" {
+			return nil, errors.New("--aspect-ratio is only for v2 avatars")
+		}
+		r, err := ParseAspectRatio(in.AspectRatio)
+		if err != nil {
+			return nil, err
+		}
+		m["aspectRatio"] = string(r)
 	}
 	if r := in.Resolution; r != nil {
 		if engine == "v1" {

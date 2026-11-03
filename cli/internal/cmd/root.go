@@ -16,8 +16,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
 )
 
 // Version is set at build time (-ldflags "-X .../cmd.Version=..."); without

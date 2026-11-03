@@ -20,10 +20,10 @@ Only a signed-in owner or admin of the account creates keys, and the secret
 exists once, in the answer to create or rotate. Get it straight into the
 backend's environment file so it never passes through the chat, with the
 `atmee` CLI. When `atmee --version` fails, install it with Go (its source is
-in `Atmanity/toolkit`) and sign in against the server the plugin uses:
+in `Atmanity/atmee-toolkit`) and sign in against the server the plugin uses:
 
 ```bash
-go install github.com/Atmanity/toolkit/cli/cmd/atmee@latest
+go install github.com/Atmanity/atmee-toolkit/cli/cmd/atmee@latest
 export ATMEE_BASE_URL=https://api.atmanity.us
 atmee login        # opens the browser; the same account as the avatar
 ```

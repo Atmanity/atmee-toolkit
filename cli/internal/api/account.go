@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 )
 
 // The account reads, as the API answers them (camelCase, microcredits).

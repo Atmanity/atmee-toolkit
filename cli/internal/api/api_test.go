@@ -210,8 +210,8 @@ func TestManifestRules(t *testing.T) {
 	if _, err := (CreateInput{Name: "x", Image: "i", Voice: "v", Candidates: 11}).Manifest(); err == nil {
 		t.Fatal("11 candidates")
 	}
-	if _, err := (CreateInput{Name: "x", Image: "i", Voice: "v", PreviewMessage: strings.Repeat("話", 61)}).Manifest(); err == nil {
-		t.Fatal("61-character preview message")
+	if _, err := (CreateInput{Name: "x", Image: "i", Voice: "v", PreviewMessage: strings.Repeat("話", 301)}).Manifest(); err == nil {
+		t.Fatal("301-character preview message")
 	}
 	m, err := (CreateInput{Name: "x", Image: "i", Engine: "v1", PreviewMessage: strings.Repeat("x", 80)}).Manifest()
 	if err != nil || m["engine"] != nil {
@@ -281,9 +281,9 @@ func TestUpdateChecksTheV2PrimeLimitOnlyForV2(t *testing.T) {
 		}
 		_, _ = w.Write([]byte(`{"id":"` + aid + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private","createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","engine":"` + engine + `"}`))
 	})
-	long := strings.Repeat("x", 61)
+	long := strings.Repeat("x", 301)
 	if _, err := c.Update(context.Background(), aid, map[string]any{"previewMessage": long}); err == nil || patched {
-		t.Fatal("v2 refuses a 61-character preview message before patching")
+		t.Fatal("v2 refuses a 301-character preview message before patching")
 	}
 	engine = "v1"
 	if _, err := c.Update(context.Background(), aid, map[string]any{"previewMessage": long}); err != nil || !patched {
@@ -840,9 +840,59 @@ func TestCreateDraftBodies(t *testing.T) {
 	}
 }
 
+func TestParseAspectRatio(t *testing.T) {
+	for in, want := range map[string]AspectRatio{"square": "square", " Portrait ": "portrait", "LANDSCAPE": "landscape", "wide": "", "": ""} {
+		got, err := ParseAspectRatio(in)
+		if got != want || (err == nil) != (want != "") {
+			t.Errorf("ParseAspectRatio(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+	for r, size := range AspectRatioSizes {
+		if err := CheckResolution(size); err != nil {
+			t.Errorf("%s: %v", r, err)
+		}
+	}
+}
+
+func TestParseClipResolution(t *testing.T) {
+	for in, ok := range map[string]bool{
+		"1920x1080": true, "1080x1920": true, "1280x720": true, "512x512": true, "256x256": true, "1920x1088": true, "1000x1000": true,
+		"1920x1920": false, "1922x1080": false, "254x512": false, "1281x720": false, "1920": false, "": false,
+	} {
+		r, err := ParseClipResolution(in)
+		if (err == nil) != ok {
+			t.Errorf("ParseClipResolution(%q) = %v, %v; want ok=%v", in, r, err, ok)
+		}
+	}
+	for size, want := range map[ClipResolution]int{
+		{Width: 1920, Height: 1080}: 10, {Width: 1080, Height: 1920}: 10, {Width: 1280, Height: 720}: 22,
+		{Width: 512, Height: 512}: 30, {Width: 384, Height: 640}: 30,
+	} {
+		if got := MaxClipSecondsAt(size); got != want {
+			t.Errorf("MaxClipSecondsAt(%v) = %d, want %d", size, got, want)
+		}
+	}
+}
+
+func TestManifestAspectRatio(t *testing.T) {
+	m, err := (CreateInput{Name: "x", AspectRatio: "portrait"}).Manifest()
+	if err != nil || m["aspectRatio"] != "portrait" || m["resolution"] != nil {
+		t.Fatalf("%v %v", m, err)
+	}
+	for _, in := range []CreateInput{
+		{Name: "x", AspectRatio: "portrait", Resolution: &Resolution{Width: 512, Height: 512}},
+		{Name: "x", AspectRatio: "portrait", Engine: "v1"},
+		{Name: "x", AspectRatio: "wide"},
+	} {
+		if _, err := in.Manifest(); err == nil {
+			t.Errorf("%+v: no error", in)
+		}
+	}
+}
+
 func TestParseResolution(t *testing.T) {
 	for in, ok := range map[string]bool{
-		"512x512": true, "384x672": true, "672 x 384": true, "256x1024": true, "1024X256": true, "256x256": true,
+		"512x512": true, "384x640": true, "640 x 384": true, "256x1024": true, "1024X256": true, "256x256": true,
 		"544x512": false, "1024x1024": false, "224x512": false, "500x500": false, "512": false, "x512": false, "512x512x1": false, "": false,
 	} {
 		r, err := ParseResolution(in)

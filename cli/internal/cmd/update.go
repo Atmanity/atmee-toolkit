@@ -11,7 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 // clearable maps the --clear names to their API fields ("knowledge.x" is
@@ -40,7 +40,7 @@ var updateFlagHelp = map[string]string{
 	"language":        "Language it speaks: en, zh-TW, ja, ...",
 	"visibility":      "private, unlisted or public (public needs a title, a tag, a subtitle, a description and a thumbnail)",
 	"spoken-name":     spokenNameHelp,
-	"preview-message": "v2: the line new candidates speak (at most 60 characters; builds new candidates)",
+	"preview-message": "v2: the line new candidates speak (at most 300 characters; builds new candidates)",
 	"title":           "The title on Explore (at most 100 characters; without one Explore shows the alias, then the name)",
 	"subtitle":        "The line under the title on Explore (at most 200 characters)",
 }
@@ -152,7 +152,7 @@ func (a *app) updateCmd() *cobra.Command {
 		Use:   "update AVATAR_ID",
 		Short: "Change an avatar's name, persona, knowledge, Explore profile, visibility or monetization.",
 		Long: "Change fields of an avatar; only the flags you pass change. v1 rebuilds its persona and is briefly not ready. " +
-			"v2 keeps serving while the persona rebuilds; a new --preview-message or --resolution builds new candidates.\n\n" +
+			"v2 keeps serving while the persona rebuilds; a new --preview-message or --aspect-ratio builds new candidates.\n\n" +
 			"The Explore profile (--title, --subtitle, --description, --tag, --social, the thumbnail of " +
 			"`atmee avatars thumbnail set`) is what Creator Studio's \"Share to community\" card edits; nothing is rebuilt. " +
 			"--visibility public needs a title, a tag, a subtitle, a description and a thumbnail.\n\n" +
@@ -247,6 +247,17 @@ func (a *app) updateCmd() *cobra.Command {
 					return usagef("%v", err)
 				}
 				set("runtime-seed", "runtimeSeed", seed)
+			}
+			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
+				return usagef("%v", err)
+			}
+			if f.Changed("aspect-ratio") {
+				v, _ := f.GetString("aspect-ratio")
+				r, err := api.ParseAspectRatio(v)
+				if err != nil {
+					return usagef("%v", err)
+				}
+				set("aspect-ratio", "aspectRatio", string(r))
 			}
 			if f.Changed("resolution") {
 				v, _ := f.GetString("resolution")
@@ -400,6 +411,7 @@ func (a *app) updateCmd() *cobra.Command {
 	f.StringVar(&monetize, "monetize", "", "Turn monetization on or off (on needs a statement, verified payouts, the 30-day requirements and room under the plan's cap)")
 	f.BoolVar(&confirmWithdrawal, "confirm-sponsor-withdrawal", false, "With --monetize on: withdraw the sponsor pool's credits to the account without asking")
 	f.Int("runtime-seed", 0, runtimeSeedHelp)
+	f.String("aspect-ratio", "", aspectRatioHelp)
 	f.String("resolution", "", resolutionHelp)
 	f.StringArrayVar(&clear, "clear", nil, "Remove a value: description, greeting, alias, spoken-name, known-aliases, habits, guardrails, facts, questionnaire, "+
 		"title, subtitle, tags, socials, statement (resets it) or preview-message (back to the default line); repeat for several")

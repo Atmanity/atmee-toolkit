@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 // credits formats microcredits as credits (100 microcredits = 1 credit),
@@ -211,6 +211,13 @@ func (a *app) printAccount(x *api.Account) {
 			sizes[i] = fmt.Sprintf("%dx%d", r.Width, r.Height)
 		}
 		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(sizes, ", "))
+	}
+	if g := pr.Generation; g != nil && g.ClipAnySize != nil {
+		if *g.ClipAnySize {
+			a.printf("Clip sizes   any, up to 1920x1080 and 30 s (1920x1080: 10 s, 1280x720: 22 s)\n")
+		} else {
+			a.printf("Clip sizes   the v2 sizes only, up to 15 s\n")
+		}
 	}
 	q := x.CaptureQuota
 	a.printf("Captures     %d of %d queued or running\n", q.Pending, q.PendingLimit)

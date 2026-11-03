@@ -7,7 +7,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 func deref[T any](p *T) T {
@@ -82,7 +82,13 @@ func (a *app) printAvatar(x *api.Avatar) {
 			a.printf("Runtime seed: %d\n", *x.RuntimeSeed)
 		}
 		if r := x.Resolution; r != nil {
-			a.printf("Resolution: %dx%d\n", r.Width, r.Height)
+			shape := ""
+			if x.AspectRatio != nil {
+				shape = " (" + string(*x.AspectRatio) + ")"
+			}
+			a.printf("Resolution: %dx%d%s\n", r.Width, r.Height, shape)
+		} else if x.AspectRatio != nil {
+			a.printf("Aspect ratio: %s\n", *x.AspectRatio)
 		}
 		if cd := x.Conductor; cd != nil {
 			if cd.Configured {

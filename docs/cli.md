@@ -88,7 +88,10 @@ are already out of the buckets; what a session does not use comes back when it e
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
 are set up in Creator Studio. **Per minute** shows a conversation rate for each engine; a server
 that doesn't report the v2 rate shows one `conversation` rate, which then applies to both. **v2 sizes** (shown only when the deployment offers some
-of the sizes the rule allows) are the frame sizes `--resolution` takes.
+of the sizes the rule allows) are the frame sizes an avatar's `--resolution` takes.
+**Clip sizes** says how `generate clip` renders: `any` (any size up to 1920x1080, up to 30
+seconds within the size's budget) or the v2 sizes only, for up to 15 seconds
+(`pricing.generation.clipAnySize` in `--json`).
 
 ## API keys
 
@@ -182,22 +185,25 @@ while the take itself is good, try another with `atmee avatars update ID
 `avatars get` shows the one in use, and `--runtime-seed 42` goes back to the
 default. It is an API setting only: Creator Studio doesn't show it.
 
-**Resolution (v2).** `--resolution WIDTHxHEIGHT` sets the frame size the avatar's
-candidates, previews and conversations render at: `512x512` (the default, square),
-`384x672` (portrait) or `672x384` (landscape). Each side is a multiple of 32 from 256 to
-1024, at most 512x512 pixels in all; the CLI checks that rule, and the API says which
-sizes the deployment offers (`atmee account` lists them as `v2 sizes` when not every
-size is; another is `400 invalid_input`). The portrait is framed at that size, so on
-`update` a new size builds a new version with new candidates, as a new portrait does,
-while the current candidate keeps serving; the current size sent again builds nothing.
-v1 avatars refuse it. `avatars get` shows it.
+**Aspect ratio (v2).** `--aspect-ratio` sets the avatar's shape, which picks the frame
+size its candidates, previews and conversations render at: `square` (512x512, the
+default), `portrait` (384x640) or `landscape` (640x384). The sizes follow the renderer and
+may change; the names do not. The portrait is framed at that size, so on `update` a new
+shape builds a new version with new candidates, as a new portrait does, while the current
+candidate keeps serving; the current shape sent again builds nothing. v1 avatars refuse
+it. `avatars get` shows the size and the shape, e.g. `Resolution: 384x640 (portrait)`.
+
+`--resolution WIDTHxHEIGHT` names a pixel size instead, one the server offers. Each side is a
+multiple of 32 from 256 to 1024, at most 512x512 pixels in all; the API says which sizes
+the deployment offers (`atmee account` lists them as `v2 sizes` when not every size is;
+another is `400 invalid_input`). Give `--aspect-ratio` or `--resolution`, not both.
 
 `create` flags: `--engine v2|v1` (default v2; v1 for an account without v2 access, which `atmee account` shows), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
-used automatically, once completed), `--preview-message` (v2: at most 60
-characters), `--runtime-seed` (v2: 0-2147483647, default 42; also on `update`, see below), `--resolution WxH` (v2: default
-512x512; also on `update`, see above), `--who-prompt` (Studio's "Who are you"), `--what-prompt` ("What are we doing"), `--greeting`, `--self-intro`,
+used automatically, once completed), `--preview-message` (v2: at most 300
+characters), `--runtime-seed` (v2: 0-2147483647, default 42; also on `update`, see below), `--aspect-ratio square|portrait|landscape` (v2: default
+square; also on `update`, see above; or `--resolution WxH`), `--who-prompt` (Studio's "Who are you"), `--what-prompt` ("What are we doing"), `--greeting`, `--self-intro`,
 `--guardrail` (repeatable), `--facts`/`--facts-file` (text it knows, up to 32,000
 characters, saved as Studio's "Facts with context"), `--knowledge FILE` (repeatable; v1
 conversations use knowledge, v2 ones do not yet),
@@ -220,7 +226,7 @@ before running it again.
 `--answer QUESTION=ANSWER` (repeatable; a question of Studio's knowledge questionnaire, its text or its number in
 `atmee avatars questionnaire`; the other answers stay, an empty answer removes that one),
 `--runtime-seed` (v2: 0-2147483647; `42` goes back to the default; applies from the next session),
-`--resolution WxH` (v2: a new size builds new candidates),
+`--aspect-ratio square|portrait|landscape` (v2: a new shape builds new candidates; or `--resolution WxH`),
 the Explore profile (below), `--monetize on|off` and `--confirm-sponsor-withdrawal`,
 and `--clear FIELD` (repeatable) to remove a value. Fields you leave out stay unchanged.
 `--clear` sends the field empty and takes `description`, `greeting`, `alias`, `spoken-name`, `known-aliases`, `habits`,
@@ -261,8 +267,9 @@ Earnings     2.50 credits this cycle (1 session) · 1,234.56 credits all time (4
 `--config` takes a JSON object (or `-` for stdin) with the create fields in snake_case.
 Flags win over it, and its `name` is ignored (`--name` is the name). An unknown field is
 an error, so a typo never creates an avatar with defaults. `personality` and `scenario` are still read as the
-older names of `who_prompt` and `what_prompt` (giving both names of one field is an error). `resolution` takes
-`"384x672"` or the API's `{"width": 384, "height": 672}`. Relative file paths are read
+older names of `who_prompt` and `what_prompt` (giving both names of one field is an error). `aspect_ratio` takes
+`square`, `portrait` or `landscape`; `resolution` takes `"384x640"` or the
+API's `{"width": 384, "height": 640}`. Relative file paths are read
 from the directory you run `atmee` in.
 
 ```bash
@@ -287,7 +294,7 @@ atmee avatars create --name Coach --config examples/create_with_config.json --wa
   "sponsor_microcredits": 1000,
   "sponsor_max_per_session": 200,
   "runtime_seed": 7,
-  "resolution": "512x512"
+  "aspect_ratio": "square"
 }
 ```
 
@@ -347,7 +354,7 @@ atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--idempotency
 atmee generate voice --description TEXT [--name NAME] [--language LANG] [--text SAMPLE] \
   [--idempotency-key K] [--json]
 atmee generate clip --image PATH|URL|upload:ID --prompt TEXT [--audio PATH|URL|upload:ID] \
-  [--duration SECONDS] [--resolution WxH] [--seed N] [--idempotency-key K] [--json]
+  [--duration SECONDS] [--resolution WxH | --aspect-ratio R] [--seed N] [--idempotency-key K] [--json]
 ```
 
 Each answers with `upload:<uploadId>` references and short-lived links to look or listen.
@@ -361,10 +368,18 @@ files). A reference works once and lasts 24 hours.
   file (jpg, png or webp, at most 10 MB) goes up through `POST /v1/uploads` first.
 - **`voice`** makes previews of 10 to 60 seconds. `--description` is 20 to 1000 characters;
   `--text` is what every preview says, in `--language`.
-- **`clip`** renders an mp4 of 1 to 15 seconds from an image and a prompt, silent or speaking
+- **`clip`** renders an mp4 from an image and a prompt, silent or speaking
   `--audio`; no avatar is made or needed. `--duration` is required with `--audio`, set to the
   audio's length, because it is not read from the file, and defaults to 8 for a silent clip.
-  `--resolution` defaults to 512x512. Local files go up through `POST /v1/uploads` first. A
+  `--resolution` is the clip's size: each side even, from 256 to 1920, e.g. `1920x1080`,
+  `1080x1920` or `1280x720` (default 512x512). The renderer works at each side rounded up to
+  a multiple of 32 (1920x1080 at 1920x1088) and crops the centre, at most 1920x1088 pixels
+  in all. `--aspect-ratio` names an avatar shape instead (`square` 512x512, `portrait`
+  384x640, `landscape` 640x384); give one or the other. A larger size allows a shorter clip:
+  up to 30 seconds, with the render width x height x seconds at most 1920x1088x10
+  (1920x1080: 10 seconds, 1280x720: 22). That is where `atmee account` shows `Clip sizes
+  any`; otherwise a clip renders at one of the offered sizes for at most 15 seconds, and
+  another size or length is `400 invalid_input`. Local files go up through `POST /v1/uploads` first. A
   clip is priced by its length, with or without audio: `atmee account` shows the current
   price, per second (`clip 0.10/s`) or, where the server prices clips per 15 seconds, pro
   rata to `--duration` and rounded up to a whole microcredit (`clip 1.00 per 15 s`). It needs v2 access (otherwise `403

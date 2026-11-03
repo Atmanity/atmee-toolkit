@@ -16,22 +16,24 @@ What gets installed:
   can) and `atmee-product` (what Atmee offers and costs, and which path fits
   an idea).
 - One server, `atmee-avatars`: it creates and updates avatars, takes uploads,
-  reports the balance and generates portraits and voices (paid per call).
+  reports the balance and generates portraits, voices and, with v2 access,
+  short videos: a clip of the person in a photo moving as a prompt says, and
+  speaking a voice line when one is given (paid per call).
   The skills-only route adds the same server under the name `atmee`.
 
 ## 0. Before you start
 
 - **Repository.** Everything installs from the public GitHub repo
-  `Atmanity/toolkit`; no GitHub account or sign-in is needed. Check that this
+  `Atmanity/atmee-toolkit`; no GitHub account or sign-in is needed. Check that this
   machine can reach it:
 
   ```
-  git ls-remote https://github.com/Atmanity/toolkit.git HEAD
+  git ls-remote https://github.com/Atmanity/atmee-toolkit.git HEAD
   ```
 
   If that fails, the machine can't reach GitHub (no network, a proxy or a
   firewall). Stop and tell the person: "This machine can't reach
-  github.com/Atmanity/toolkit. Check the network or proxy settings and ask me
+  github.com/Atmanity/atmee-toolkit. Check the network or proxy settings and ask me
   again."
 - **Already installed?** Skip to [step 4](#4-verify) only when you have all
   five skills (`create-avatar`, `plan-avatar-app`, `build-avatar-app`,
@@ -97,7 +99,7 @@ claude plugin list
 
 Then run the lines that apply:
 
-- No `atmee` marketplace: `claude plugin marketplace add Atmanity/toolkit`
+- No `atmee` marketplace: `claude plugin marketplace add Atmanity/atmee-toolkit`
 - The marketplace is there: `claude plugin marketplace update atmee`
 - `atmee@atmee` is not installed: `claude plugin install atmee@atmee`
 - `atmee@atmee` is installed: `claude plugin update atmee@atmee`
@@ -143,7 +145,7 @@ codex plugin list
 Then run the lines that apply:
 
 - No `atmee` marketplace:
-  `codex plugin marketplace add https://github.com/Atmanity/toolkit.git`
+  `codex plugin marketplace add https://github.com/Atmanity/atmee-toolkit.git`
 - The marketplace is there: `codex plugin marketplace upgrade`
 - `atmee@atmee` is not installed, or an upgrade brought a new version:
   `codex plugin add atmee@atmee`
@@ -169,12 +171,12 @@ Cursor installs plugins from its own settings, so this one needs the person.
 **Ask the person** to do one of these, then restart Cursor:
 
 - In a team: an admin opens Cursor's **Plugins > Import from Repo**, imports
-  `Atmanity/toolkit`, and members install `atmee`.
+  `Atmanity/atmee-toolkit`, and members install `atmee`.
 - Alone: you can do this part. Copy the plugin into Cursor's local plugins:
 
   ```
   src="$(mktemp -d)"
-  git clone --depth 1 https://github.com/Atmanity/toolkit.git "$src/toolkit"
+  git clone --depth 1 https://github.com/Atmanity/atmee-toolkit.git "$src/toolkit"
   mkdir -p ~/.cursor/plugins/local
   rm -rf ~/.cursor/plugins/local/atmee
   cp -R "$src/toolkit/plugins/atmee" ~/.cursor/plugins/local/atmee
@@ -195,7 +197,7 @@ with `node --version`). Use your own agent id, for example `codex`, `cursor`,
 `cline` or `opencode`:
 
 ```
-npx -y skills add Atmanity/toolkit --skill '*' --agent <agent-id> --yes --global
+npx -y skills add Atmanity/atmee-toolkit --skill '*' --agent <agent-id> --yes --global
 ```
 
 Check it worked:
@@ -256,6 +258,21 @@ Tell the person, in one or two lines, for example:
 > atmee is ready: signed in, 120 credits. Say "make me a talking avatar" to
 > start: give it a name, a photo and a voice, and you'll see it talk within a
 > few minutes.
+
+Then call `get_account` (free) for the clip line. Clips are offered on this
+server when its `pricing.generation` has `clipPer15SecondsMicrocredits` (or
+the older `clipPerSecondMicrocredits`); without either, say nothing about
+clips. When they are offered and `v2Access` is granted, add one line saying
+atmee can also make videos, for example:
+
+> atmee v2 can also make short videos: give a photo and a prompt, and you
+> get an mp4 of them moving; add a voice line and they speak it. Say "make a
+> video clip" to try it.
+
+When they are offered and `v2Access` is `invite_required`, mention them
+once as available with an invite code (`redeem_code`), and don't offer to
+make one. Any other `v2Access` (`unavailable`, or none): say nothing about
+clips.
 
 ## If something goes wrong
 

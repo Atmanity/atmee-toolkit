@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/web"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/web"
 )
 
 // run executes the CLI with stdin and returns stdout, stderr and the code.
@@ -556,22 +556,22 @@ func TestResolutionFlag(t *testing.T) {
 			return
 		}
 		_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
-			`"engine":"v2","resolution":{"width":672,"height":384},"createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
+			`"engine":"v2","resolution":{"width":640,"height":384},"createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
-	if _, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--resolution", "384x672", "--json"); code != 0 {
+	if _, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--resolution", "384x640", "--json"); code != 0 {
 		t.Fatalf("create: %d %s", code, errOut)
 	}
-	out, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "672X384")
+	out, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "640X384")
 	if code != 0 {
 		t.Fatalf("update: %d %s", code, errOut)
 	}
-	want := []map[string]any{{"width": float64(384), "height": float64(672)}, {"width": float64(672), "height": float64(384)}}
+	want := []map[string]any{{"width": float64(384), "height": float64(640)}, {"width": float64(640), "height": float64(384)}}
 	if len(got) != 2 || !reflect.DeepEqual(got[0]["resolution"], want[0]) || !reflect.DeepEqual(got[1]["resolution"], want[1]) {
 		t.Fatalf("bodies: %v", got)
 	}
-	if !strings.Contains(out, "Resolution: 672x384") {
+	if !strings.Contains(out, "Resolution: 640x384") {
 		t.Errorf("update output has no resolution:\n%s", out)
 	}
 	for _, bad := range [][]string{
@@ -581,6 +581,60 @@ func TestResolutionFlag(t *testing.T) {
 		{"avatars", "create", "--name", "M", "--engine", "v1", "--resolution", "512x512"},
 	} {
 		if _, errOut, code := run(t, "", bad...); code == 0 || len(got) != 2 || errOut == "" {
+			t.Fatalf("%v was sent: %d %v", bad, code, got)
+		}
+	}
+}
+
+// --aspect-ratio names a v2 shape on create and update, shown beside the
+// size; it does not go with --resolution.
+func TestAspectRatioFlags(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	id := "11111111-2222-4333-8444-555555555555"
+	var got []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		got = append(got, body)
+		if r.Method == http.MethodPost {
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"avatarId":"` + id + `","kind":"conversational","status":"building","statusUrl":"/v1/avatars/` + id + `"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":"` + id + `","name":"M","kind":"conversational","status":"ready","readyToChat":true,"visibility":"private",` +
+			`"engine":"v2","resolution":{"width":640,"height":384},"aspectRatio":"landscape","createdAt":"2026-10-16T00:00:00Z","updatedAt":"2026-10-16T00:00:00Z","stages":{}}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	if _, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--aspect-ratio", "portrait", "--json"); code != 0 {
+		t.Fatalf("create: %d %s", code, errOut)
+	}
+	if _, errOut, code := run(t, `{"aspect_ratio": "square"}`, "avatars", "create", "--name", "M", "--config", "-", "--json"); code != 0 {
+		t.Fatalf("create --config: %d %s", code, errOut)
+	}
+	out, errOut, code := run(t, "", "avatars", "update", id, "--aspect-ratio", "landscape")
+	if code != 0 {
+		t.Fatalf("update: %d %s", code, errOut)
+	}
+	if len(got) != 3 || got[0]["aspectRatio"] != "portrait" || got[1]["aspectRatio"] != "square" || got[2]["aspectRatio"] != "landscape" ||
+		got[0]["resolution"] != nil || got[2]["resolution"] != nil {
+		t.Fatalf("bodies: %v", got)
+	}
+	if !strings.Contains(out, "Resolution: 640x384 (landscape)") {
+		t.Errorf("update output has no aspect ratio:\n%s", out)
+	}
+	for _, bad := range [][]string{
+		{"avatars", "update", id, "--aspect-ratio", "wide"},
+		{"avatars", "update", id, "--aspect-ratio", "portrait", "--resolution", "384x640"},
+		{"avatars", "create", "--name", "M", "--aspect-ratio", "portrait", "--resolution", "384x640"},
+		{"avatars", "create", "--name", "M", "--engine", "v1", "--aspect-ratio", "portrait"},
+	} {
+		if _, errOut, code := run(t, "", bad...); code == 0 || len(got) != 3 || errOut == "" {
 			t.Fatalf("%v was sent: %d %v", bad, code, got)
 		}
 	}
@@ -605,12 +659,12 @@ func TestResolutionFromConfig(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
-	for _, cfg := range []string{`{"resolution": "384x672"}`, `{"resolution": {"width": 384, "height": 672}}`} {
+	for _, cfg := range []string{`{"resolution": "384x640"}`, `{"resolution": {"width": 384, "height": 640}}`} {
 		if _, errOut, code := run(t, cfg, "avatars", "create", "--name", "M", "--config", "-", "--json"); code != 0 {
 			t.Fatalf("%s: %d %s", cfg, code, errOut)
 		}
 	}
-	want := map[string]any{"width": float64(384), "height": float64(672)}
+	want := map[string]any{"width": float64(384), "height": float64(640)}
 	if len(got) != 2 || !reflect.DeepEqual(got[0]["resolution"], want) || !reflect.DeepEqual(got[1]["resolution"], want) {
 		t.Fatalf("bodies: %v", got)
 	}
@@ -739,6 +793,8 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		{access: "invite_required", want: "", note: "invite-only"}, // v1, the API's default, is not sent
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
+		{access: "invite_required", args: []string{"--aspect-ratio", "portrait"}, fails: "drop them to make a v1 avatar"},
+		{access: "unavailable", args: []string{"--resolution", "384x640"}, fails: "drop them to make a v1 avatar"},
 		{access: "granted", want: "v2"},
 		{access: "", want: "v2"},
 		{access: "invite_required", args: []string{"--engine", "v2"}, want: "v2"},

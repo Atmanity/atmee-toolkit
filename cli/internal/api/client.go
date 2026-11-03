@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 	"github.com/google/uuid"
 )
 
@@ -24,8 +24,8 @@ const DefaultBaseURL = "https://api.atmanity.us"
 const (
 	// MaxCandidatesPerRequest mirrors the API so mistakes fail before a request.
 	MaxCandidatesPerRequest = 10
-	// MaxPrimeTextChars bounds a v2 preview message (Unicode code points; ~6 s).
-	MaxPrimeTextChars = 60
+	// MaxPrimeTextChars bounds a v2 preview message (Unicode code points; ~30 s).
+	MaxPrimeTextChars = 300
 	// JoinWaitTimeout covers a cold v2 pool before the avatar joins a room,
 	// and the retries while it warms up.
 	JoinWaitTimeout = 10 * time.Minute

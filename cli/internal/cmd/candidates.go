@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/sheet"
-	"github.com/Atmanity/toolkit/cli/internal/web"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/sheet"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/web"
 )
 
 // captureTimeout is how long add --wait and pick wait for captures; tests

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
 )
 
 const (

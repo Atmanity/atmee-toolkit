@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/creds"
-	"github.com/Atmanity/toolkit/cli/internal/oauth"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/oauth"
 )
 
 // credential is how the avatar commands authenticate: ATMEE_API_KEY or the

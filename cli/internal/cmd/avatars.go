@@ -18,7 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
 )
 
 func (a *app) avatarsCmd() *cobra.Command {
@@ -62,6 +62,7 @@ type configFile struct {
 	SponsorCap       *int           `json:"sponsor_max_per_session"`
 	RuntimeSeed      *int           `json:"runtime_seed"`
 	Resolution       *configRes     `json:"resolution"`
+	AspectRatio      *string        `json:"aspect_ratio"`
 	Name             *string        `json:"name"` // ignored: --name wins
 }
 
@@ -86,7 +87,7 @@ func (r *configRes) UnmarshalJSON(b []byte) error {
 	dec := json.NewDecoder(bytes.NewReader(b))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&o); err != nil || o.Width == nil || o.Height == nil {
-		return errors.New(`resolution takes "WxH" (e.g. "384x672") or {"width": W, "height": H}`)
+		return errors.New(`resolution takes "WxH" (e.g. "384x640") or {"width": W, "height": H}`)
 	}
 	*r = configRes{Width: *o.Width, Height: *o.Height}
 	return nil
@@ -124,7 +125,7 @@ func readConfig(path string, in io.Reader) (configFile, error) {
 func (a *app) createCmd() *cobra.Command {
 	var (
 		name, image, voice, eng, selection, previewMsg, whoPrompt, whatPrompt, greeting, selfIntro string
-		facts, factsFile, alias, spokenName, language, visibility, configPath, resolution          string
+		facts, factsFile, alias, spokenName, language, visibility, configPath, resolution, aspect  string
 		candidates, sponsorMicro, sponsorCap, runtimeSeed                                          int
 		guardrails, knowledge, knownAliases, habits                                                []string
 		previews, noPreviews, wait, jsonOut                                                        bool
@@ -164,6 +165,7 @@ func (a *app) createCmd() *cobra.Command {
 					r := api.Resolution(*cfg.Resolution)
 					in.Resolution = &r
 				}
+				in.AspectRatio = deref(cfg.AspectRatio)
 				if cfg.WhoPrompt != nil && cfg.Personality != nil {
 					return usagef("--config: who_prompt and personality are the same field (personality is its older name): give one")
 				}
@@ -218,12 +220,22 @@ func (a *app) createCmd() *cobra.Command {
 			if f.Changed("runtime-seed") {
 				in.RuntimeSeed = &runtimeSeed
 			}
+			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
+				return usagef("%v", err)
+			}
+			if f.Changed("aspect-ratio") {
+				r, err := api.ParseAspectRatio(aspect)
+				if err != nil {
+					return usagef("%v", err)
+				}
+				in.AspectRatio, in.Resolution = string(r), nil
+			}
 			if f.Changed("resolution") {
 				r, err := api.ParseResolution(resolution)
 				if err != nil {
 					return usagef("%v", err)
 				}
-				in.Resolution = &r
+				in.Resolution, in.AspectRatio = &r, ""
 			}
 			if factsFile != "" {
 				b, err := os.ReadFile(factsFile)
@@ -281,8 +293,8 @@ func (a *app) createCmd() *cobra.Command {
 			if in.Engine == "" {
 				in.Engine = "v2"
 				if why := noV2Reason(cl.Account(ctx())); why != "" {
-					if in.Candidates != 0 || in.SeedSelection != "" {
-						return fmt.Errorf("%s; --candidates and --seed-selection are for v2 avatars: drop them to make a v1 avatar", why)
+					if in.Candidates != 0 || in.SeedSelection != "" || in.AspectRatio != "" || in.Resolution != nil {
+						return fmt.Errorf("%s; --candidates, --seed-selection, --aspect-ratio and --resolution are for v2 avatars: drop them to make a v1 avatar", why)
 					}
 					in.Engine = "v1"
 					a.note("Making a v1 avatar: %s.\n", why)
@@ -327,7 +339,7 @@ func (a *app) createCmd() *cobra.Command {
 	f.StringVar(&eng, "engine", "", "v2 (default) or v1")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
-	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 60 characters)")
+	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 300 characters)")
 	f.StringVar(&whoPrompt, "who-prompt", "", whoPromptHelp)
 	f.StringVar(&whatPrompt, "what-prompt", "", whatPromptHelp)
 	f.StringVar(&greeting, "greeting", "", "The first thing it says in a conversation")
@@ -349,6 +361,7 @@ func (a *app) createCmd() *cobra.Command {
 	f.IntVar(&sponsorMicro, "sponsor-microcredits", 0, "Put credits in its sponsor pool so visitors talk for free (100 = 1 credit; a signed-in user, or an API key with billing:write)")
 	f.IntVar(&sponsorCap, "sponsor-max-per-session", 0, "Most the sponsor pool pays for one conversation, in microcredits")
 	f.IntVar(&runtimeSeed, "runtime-seed", 0, runtimeSeedHelp)
+	f.StringVar(&aspect, "aspect-ratio", "", aspectRatioHelp)
 	f.StringVar(&resolution, "resolution", "", resolutionHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	promptAliases(c)
@@ -777,10 +790,13 @@ func (a *app) reportSponsor(sp *api.SponsorGrant) {
 const runtimeSeedHelp = "v2: the renderer's runtime seed, 0-2147483647 (default 42): another seed gives different motion " +
 	"during conversations; the take and its preview stay the same. Applies from the next session; nothing rebuilds"
 
+// aspectRatioHelp is the --aspect-ratio flag's help on create and update.
+const aspectRatioHelp = "v2: the avatar's shape, square (512x512, the default), portrait (384x640) or landscape (640x384). " +
+	"The portrait is framed at that size, so a new shape builds new candidates"
+
 // resolutionHelp is the --resolution flag's help on create and update.
-const resolutionHelp = "v2: the frame size as `WxH`, e.g. 512x512 (default, square), 384x672 (portrait) or 672x384 (landscape): " +
-	"each side a multiple of 32 from 256 to 1024, at most 512x512 pixels in all; atmee account lists the sizes offered. " +
-	"The portrait is framed at that size, so a new size builds new candidates"
+const resolutionHelp = "v2: the frame size as `WxH` (or use --aspect-ratio), each side a multiple of 32 from 256 to 1024, " +
+	"at most 512x512 pixels in all; atmee account lists the sizes offered"
 
 // spokenNameHelp and knownAliasHelp describe the persona's name flags
 // (Studio's "Pronunciation" and "Known aliases").

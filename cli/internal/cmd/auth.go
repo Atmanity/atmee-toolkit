@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/creds"
-	"github.com/Atmanity/toolkit/cli/internal/oauth"
-	"github.com/Atmanity/toolkit/cli/internal/web"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/oauth"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/web"
 )
 
 // loginTimeout bounds the wait for the browser sign-in; tests shorten it.

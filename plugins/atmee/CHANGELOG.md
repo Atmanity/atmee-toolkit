@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.10 (2026-11-03)
+
+
+### Features
+
+* allow v2 preview messages up to 300 characters
+* aspect-ratio presets for v2 avatars and any-size clips
+
+
+### Documentation
+
+* **atmee-product:** /v1 in a path is the API version, not the engine
+* **skills:** make sure agents know Atmee v2 makes video clips
+
 ## 0.10.9 (2026-11-02)
 
 

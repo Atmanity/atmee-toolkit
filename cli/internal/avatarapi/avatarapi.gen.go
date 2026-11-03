@@ -225,6 +225,27 @@ func (e ApiKeyUpdateRequestSpendCapWindow) Valid() bool {
 	}
 }
 
+// Defines values for AspectRatio.
+const (
+	AspectRatioLandscape AspectRatio = "landscape"
+	AspectRatioPortrait  AspectRatio = "portrait"
+	AspectRatioSquare    AspectRatio = "square"
+)
+
+// Valid indicates whether the value is a known member of the AspectRatio enum.
+func (e AspectRatio) Valid() bool {
+	switch e {
+	case AspectRatioLandscape:
+		return true
+	case AspectRatioPortrait:
+		return true
+	case AspectRatioSquare:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AvatarCreateJsonRequestEngine.
 const (
 	AvatarCreateJsonRequestEngineV1 AvatarCreateJsonRequestEngine = "v1"
@@ -327,6 +348,27 @@ func (e AvatarCreateResponseStatus) Valid() bool {
 	case AvatarCreateResponseStatusDraft:
 		return true
 	case AvatarCreateResponseStatusReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AvatarDetailAspectRatio.
+const (
+	AvatarDetailAspectRatioLandscape AvatarDetailAspectRatio = "landscape"
+	AvatarDetailAspectRatioPortrait  AvatarDetailAspectRatio = "portrait"
+	AvatarDetailAspectRatioSquare    AvatarDetailAspectRatio = "square"
+)
+
+// Valid indicates whether the value is a known member of the AvatarDetailAspectRatio enum.
+func (e AvatarDetailAspectRatio) Valid() bool {
+	switch e {
+	case AvatarDetailAspectRatioLandscape:
+		return true
+	case AvatarDetailAspectRatioPortrait:
+		return true
+	case AvatarDetailAspectRatioSquare:
 		return true
 	default:
 		return false
@@ -1584,33 +1626,26 @@ type Account struct {
 	// Absent when this deployment does not know the website's address.
 	Links *AccountLinks `json:"links,omitempty"`
 
-	// Payouts Whether the account can be paid out (its Stripe Connect payout
-	// account), as last synced from Stripe. Monetizing an avatar needs
-	// `verified`; payouts are set up in Creator Studio. Absent when the
-	// database does not report it.
+	// Payouts Whether the account can be paid out (its Stripe Connect account), as
+	// last synced. Monetizing an avatar needs `verified`; payouts are set up
+	// in Creator Studio. Absent when unknown.
 	Payouts *AccountPayouts `json:"payouts,omitempty"`
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
 
-	// V2Access Whether this account may build v2 avatars (`engine: v2`).
-	// `granted`: it may. `invite_required`: v2 is invite-only for now
-	// and this account has not been let in; v2 creates, candidates,
-	// versions, the conductor and v2 rebuilds answer 403
-	// `v2_access_required` until it redeems an invite code in Creator
-	// Studio (`links.billing`). Use `engine: v1` meanwhile.
-	// `unavailable`: v2 is not offered on this server. Absent when it
-	// could not be determined.
+	// V2Access Whether this account may build v2 avatars: `granted`;
+	// `invite_required` (v2 is invite-only and the account has not been
+	// let in, so v2 calls answer `403 v2_access_required` until it redeems
+	// an invite code; use `engine: v1` meanwhile); or `unavailable` (v2 is
+	// not offered here). Absent when it could not be determined.
 	V2Access *AccountV2Access `json:"v2Access,omitempty"`
 }
 
-// AccountV2Access Whether this account may build v2 avatars (`engine: v2`).
-// `granted`: it may. `invite_required`: v2 is invite-only for now
-// and this account has not been let in; v2 creates, candidates,
-// versions, the conductor and v2 rebuilds answer 403
-// `v2_access_required` until it redeems an invite code in Creator
-// Studio (`links.billing`). Use `engine: v1` meanwhile.
-// `unavailable`: v2 is not offered on this server. Absent when it
-// could not be determined.
+// AccountV2Access Whether this account may build v2 avatars: `granted`;
+// `invite_required` (v2 is invite-only and the account has not been
+// let in, so v2 calls answer `403 v2_access_required` until it redeems
+// an invite code; use `engine: v1` meanwhile); or `unavailable` (v2 is
+// not offered here). Absent when it could not be determined.
 type AccountV2Access string
 
 // AccountBalance defines model for AccountBalance.
@@ -1695,10 +1730,9 @@ type AccountLinks struct {
 	Explore string `json:"explore"`
 }
 
-// AccountPayouts Whether the account can be paid out (its Stripe Connect payout
-// account), as last synced from Stripe. Monetizing an avatar needs
-// `verified`; payouts are set up in Creator Studio. Absent when the
-// database does not report it.
+// AccountPayouts Whether the account can be paid out (its Stripe Connect account), as
+// last synced. Monetizing an avatar needs `verified`; payouts are set up
+// in Creator Studio. Absent when unknown.
 type AccountPayouts struct {
 	// Status not_started until a payout account exists, then its verification status.
 	Status     AccountPayoutsStatus `json:"status"`
@@ -1744,10 +1778,11 @@ type AccountPricing struct {
 	// RenderV2PerMinuteMicrocredits An avatar session (render only, your own agent) of a v2 avatar per minute.
 	RenderV2PerMinuteMicrocredits int `json:"renderV2PerMinuteMicrocredits"`
 
-	// SessionPerMinuteMicrocredits A conversation (`POST /v1/session`) with a v1 avatar per minute, the full stack (speech, language model, voice and render).
+	// SessionPerMinuteMicrocredits A conversation (`POST /v1/sessions`) with a v1 avatar, per minute:
+	// speech, language model, voice and render.
 	SessionPerMinuteMicrocredits int `json:"sessionPerMinuteMicrocredits"`
 
-	// SessionV2PerMinuteMicrocredits A conversation (`POST /v1/session`) with a v2 avatar per minute, the full stack.
+	// SessionV2PerMinuteMicrocredits A conversation (`POST /v1/sessions`) with a v2 avatar, per minute.
 	SessionV2PerMinuteMicrocredits int `json:"sessionV2PerMinuteMicrocredits"`
 
 	// SpeechPerMinuteMicrocredits A speech session (`POST /v1/speech_sessions`) per minute; null on a deployment that does not report it.
@@ -1930,11 +1965,18 @@ type AppTools struct {
 	// Instructions How and when the avatar uses the tools (and any app persona or rules), one text for all of them, at most 4000 characters.
 	Instructions *string `json:"instructions,omitempty"`
 
-	// Tools 1 to 30 tools, names unique, all of them at most 24576 bytes of
-	// JSON. Names must not be one of Causeur's own tools (`web_search`,
-	// `lookup`, `look_at_file`).
+	// Tools 1 to 30 tools with unique names, at most 24,576 bytes of JSON in
+	// all. A name must not be one of the built-in tools `web_search`,
+	// `lookup` or `look_at_file`.
 	Tools []AppTool `json:"tools"`
 }
+
+// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
+// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
+// sizes follow the renderer and may change; the names do not. Send it
+// or `resolution`, not both (`400`). On an avatar it is a build input,
+// like `resolution`: a change on PATCH builds a new version.
+type AspectRatio string
 
 // AssetRef defines model for AssetRef.
 type AssetRef struct {
@@ -1964,6 +2006,13 @@ type AvatarAppearanceJsonRequest struct {
 // manifest and are enforced by the service (400 `invalid_manifest`,
 // naming the field); only the shape is checked here.
 type AvatarCreateJsonRequest struct {
+	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
+	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
+	// sizes follow the renderer and may change; the names do not. Send it
+	// or `resolution`, not both (`400`). On an avatar it is a build input,
+	// like `resolution`: a change on PATCH builds a new version.
+	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
+
 	// Assets The files of a JSON create, by URL. Same limits as the zip folders (image jpg/png/webp <=10 MB, voice 10-60 s <=12 MB, knowledge <=20 files). The image is the portrait; front-facing, face at least about a third of the frame, lips slightly parted (see the operation). With an image and no `voice` a v1 avatar is render-only; without the image (or a v2 one without the voice) it is a draft.
 	Assets *AssetRefs `json:"assets,omitempty"`
 
@@ -1987,12 +2036,13 @@ type AvatarCreateJsonRequest struct {
 	PreviewMessage   *string                        `json:"previewMessage,omitempty"`
 	Previews         *bool                          `json:"previews,omitempty"`
 
-	// Resolution A frame size in pixels for the v2 renderer: width and height are each
+	// Resolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
+	// to pick one by shape: width and height are each
 	// a multiple of 32 from 256 to 1024, and width x height is at most
-	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest` on an
-	// avatar, `400 invalid_input` on a clip. Default 512 x 512 (square).
-	// Common shapes: square 512 x 512, portrait 384 x 672, landscape
-	// 672 x 384. A deployment offers only some sizes (512 x 512 always;
+	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
+	// Default 512 x 512 (square). The aspect ratios' sizes: square
+	// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
+	// offers only some sizes (512 x 512 always;
 	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
 	// where clips are offered): another is `400 invalid_input` ("resolution
 	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
@@ -2038,8 +2088,8 @@ type AvatarCreateJsonRequestVisibility string
 type AvatarCreateResponse struct {
 	AvatarId openapi_types.UUID `json:"avatarId"`
 
-	// Engine Render engine. `v1` is the original renderer. `v2` (AvatarForever) is
-	// built from a bundle plus a promoted candidate; see `/candidates`.
+	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
 	Engine *AvatarEngine `json:"engine,omitempty"`
 
 	// Kind `conversational` avatars have a voice and a persona and can run a full
@@ -2065,12 +2115,15 @@ type AvatarCreateResponseStatus string
 
 // AvatarDetail defines model for AvatarDetail.
 type AvatarDetail struct {
-	// BlackoutRecovery v2 only (absent on v1 avatars and on list rows). The blackout
-	// recovery a session started now would run with: each setting
-	// is the value set on this avatar, else the one its rendering
-	// config carries, else the default. A change applies from the
-	// next session; a running session keeps the settings it
-	// started with.
+	// AspectRatio v2 only, alongside `resolution`: the shape of the avatar's
+	// frame (`portrait` when taller than wide, `landscape` when
+	// wider, else `square`).
+	AspectRatio *AvatarDetailAspectRatio `json:"aspectRatio,omitempty"`
+
+	// BlackoutRecovery v2 only. The blackout recovery a session started now would use:
+	// each setting as set on the avatar, else from its rendering
+	// config, else the default. A change applies from the next
+	// session.
 	BlackoutRecovery *BlackoutRecoveryEffective `json:"blackoutRecovery,omitempty"`
 
 	// Conductor v2 only (absent on v1 avatars and on list rows). Whether a
@@ -2083,8 +2136,8 @@ type AvatarDetail struct {
 	CreationSource *string `json:"creationSource,omitempty"`
 	Description    *string `json:"description,omitempty"`
 
-	// Engine Render engine. `v1` is the original renderer. `v2` (AvatarForever) is
-	// built from a bundle plus a promoted candidate; see `/candidates`.
+	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -2103,17 +2156,13 @@ type AvatarDetail struct {
 	Language *string `json:"language,omitempty"`
 
 	// LatestFailure The failure that still applies: the first stage, in build order
-	// (appearance, voice, persona, knowledge, previews), whose status
-	// is `failed` now. Absent once no stage is failed, so an old
-	// failure that a later build fixed is never reported. A failed
-	// avatar always has one; `userFeedback` is the reason, or a
-	// generic message for the stage when the pipeline recorded none.
-	// It can be present on a `ready` v2 avatar whose new voice or
-	// portrait failed while the previous take keeps serving. An
-	// `appearance` failure with a `portrait_*` reason (no face, face too
-	// small, lips closed) wants a new portrait: front-facing, face at
-	// least about a third of the frame, lips slightly parted, sent with
-	// `PUT /v1/avatars/{avatarId}/appearance`.
+	// (appearance, voice, persona, knowledge, previews), that is
+	// `failed` now; absent once none is. `userFeedback` is the reason.
+	// It can appear on a `ready` v2 avatar whose new portrait or voice
+	// failed while the previous take keeps serving. A `portrait_*`
+	// reason needs a new portrait: front-facing, the face at least a
+	// third of the frame, lips slightly parted (`PUT
+	// /v1/avatars/{avatarId}/appearance`).
 	LatestFailure *struct {
 		Stage        AvatarDetailLatestFailureStage `json:"stage"`
 		UserFeedback *string                        `json:"userFeedback,omitempty"`
@@ -2139,12 +2188,9 @@ type AvatarDetail struct {
 	// PreviewMessage The preview message as set (`previewMessage`); null for the default sentence.
 	PreviewMessage *string `json:"previewMessage,omitempty"`
 
-	// PreviewUrls Pre-signed download URLs (mp4) of the finished preview clips,
-	// valid for about one hour from `expiresAt` backwards; re-GET
-	// the avatar to refresh them. Present on GET only, once at least
-	// one clip is completed. Absent while previews are still
-	// building, when they are disabled for this avatar, and on the
-	// list and PATCH responses.
+	// PreviewUrls Presigned mp4 URLs of the finished preview clips, valid for
+	// about an hour (see `expiresAt`); get the avatar again to refresh
+	// them. Only on `GET /v1/avatars/{avatarId}`, once a clip is done.
 	PreviewUrls *struct {
 		ExpiresAt time.Time `json:"expiresAt"`
 
@@ -2182,7 +2228,12 @@ type AvatarDetail struct {
 	// SeedSelection v2 only.
 	SeedSelection *AvatarDetailSeedSelection `json:"seedSelection,omitempty"`
 
-	// SelectedCandidateId v2 only. The picked candidate (auto or `PUT /selected_candidate`). It becomes `servingCandidateId` once its config is built, a few seconds later; until then `rebuilding` is true if another candidate still serves. The config is built with the current voice, so a pick made before a voice replacement is served once the new voice is cloned, and not at all if cloning fails (the serving candidate stays). Such a pick does not hold `rebuilding`, which then follows the new version.
+	// SelectedCandidateId v2 only. The picked candidate (automatic, or with `PUT
+	// /v1/avatars/{avatarId}/selected_candidate`). It becomes `servingCandidateId` once
+	// built, a few seconds later; meanwhile `rebuilding` is true if
+	// another candidate still serves. A pick made before a voice
+	// replacement is served once the new voice is ready, and not at
+	// all if that fails (the serving candidate stays).
 	SelectedCandidateId *openapi_types.UUID `json:"selectedCandidateId,omitempty"`
 
 	// SelectionRequired v2 only. True while a completed candidate waits to be promoted (manual mode).
@@ -2191,119 +2242,84 @@ type AvatarDetail struct {
 	// ServingCandidateId v2 only. The candidate the avatar renders with; null until one is promoted.
 	ServingCandidateId *openapi_types.UUID `json:"servingCandidateId,omitempty"`
 
-	// Stages For v2 avatars `appearance` is image check plus preprocessing,
-	// `voice` is voice cloning plus the prime clip, and `previews` is
-	// candidate capture (see `GET /candidates`). The appearance check
-	// fails a portrait with no face, a face too small (under about a
-	// fifth of the shorter side once centre-cropped) or closed lips; its
-	// `userFeedback` says which (`portrait_no_face`,
-	// `portrait_face_too_small`, `portrait_mouth_closed`) and asks for a
-	// front-facing photo with the lips slightly parted.
+	// Stages The build stages. On v2, `appearance` is the portrait check and
+	// preprocessing, `voice` is voice cloning, and `previews` is
+	// candidate capture. The portrait check fails a portrait with no
+	// face, a face too small or closed lips, and `userFeedback` says
+	// which (`portrait_no_face`, `portrait_face_too_small`,
+	// `portrait_mouth_closed`).
 	Stages struct {
-		// Appearance One build stage. Internal artifact names are not exposed; on failure,
-		// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-		// on an earlier stage, nothing runs for it yet (after an earlier stage
-		// failed it stays waiting). `pending`: queued. `processing`: running.
-		// `skipped` is used only by the `previews` stage, for avatars that
-		// opted out of preview clips (`previews: false`, the default for
-		// API-created avatars), and by stages a render-only avatar does not
-		// have. Stages report their own step: a later stage can read
-		// `completed` from an earlier build while an earlier one rebuilds.
-		// `previewUrls` carries each clip once that clip is done, even while
-		// the other clip (and so the `previews` stage) is still building.
+		// Appearance One build stage. On failure, `userFeedback` is a message you can show as
+		// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+		// `processing`: running. `skipped`: the `previews` stage when preview
+		// clips are off (the default for API-created avatars), or a stage a
+		// render-only avatar does not have. Each stage reports its own step, so a
+		// later stage can read `completed` from an earlier build while an earlier
+		// stage rebuilds.
 		Appearance BuildStage `json:"appearance"`
 
-		// Knowledge One build stage. Internal artifact names are not exposed; on failure,
-		// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-		// on an earlier stage, nothing runs for it yet (after an earlier stage
-		// failed it stays waiting). `pending`: queued. `processing`: running.
-		// `skipped` is used only by the `previews` stage, for avatars that
-		// opted out of preview clips (`previews: false`, the default for
-		// API-created avatars), and by stages a render-only avatar does not
-		// have. Stages report their own step: a later stage can read
-		// `completed` from an earlier build while an earlier one rebuilds.
-		// `previewUrls` carries each clip once that clip is done, even while
-		// the other clip (and so the `previews` stage) is still building.
+		// Knowledge One build stage. On failure, `userFeedback` is a message you can show as
+		// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+		// `processing`: running. `skipped`: the `previews` stage when preview
+		// clips are off (the default for API-created avatars), or a stage a
+		// render-only avatar does not have. Each stage reports its own step, so a
+		// later stage can read `completed` from an earlier build while an earlier
+		// stage rebuilds.
 		Knowledge BuildStage `json:"knowledge"`
 
-		// Persona One build stage. Internal artifact names are not exposed; on failure,
-		// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-		// on an earlier stage, nothing runs for it yet (after an earlier stage
-		// failed it stays waiting). `pending`: queued. `processing`: running.
-		// `skipped` is used only by the `previews` stage, for avatars that
-		// opted out of preview clips (`previews: false`, the default for
-		// API-created avatars), and by stages a render-only avatar does not
-		// have. Stages report their own step: a later stage can read
-		// `completed` from an earlier build while an earlier one rebuilds.
-		// `previewUrls` carries each clip once that clip is done, even while
-		// the other clip (and so the `previews` stage) is still building.
+		// Persona One build stage. On failure, `userFeedback` is a message you can show as
+		// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+		// `processing`: running. `skipped`: the `previews` stage when preview
+		// clips are off (the default for API-created avatars), or a stage a
+		// render-only avatar does not have. Each stage reports its own step, so a
+		// later stage can read `completed` from an earlier build while an earlier
+		// stage rebuilds.
 		Persona BuildStage `json:"persona"`
 
-		// Previews One build stage. Internal artifact names are not exposed; on failure,
-		// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-		// on an earlier stage, nothing runs for it yet (after an earlier stage
-		// failed it stays waiting). `pending`: queued. `processing`: running.
-		// `skipped` is used only by the `previews` stage, for avatars that
-		// opted out of preview clips (`previews: false`, the default for
-		// API-created avatars), and by stages a render-only avatar does not
-		// have. Stages report their own step: a later stage can read
-		// `completed` from an earlier build while an earlier one rebuilds.
-		// `previewUrls` carries each clip once that clip is done, even while
-		// the other clip (and so the `previews` stage) is still building.
+		// Previews One build stage. On failure, `userFeedback` is a message you can show as
+		// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+		// `processing`: running. `skipped`: the `previews` stage when preview
+		// clips are off (the default for API-created avatars), or a stage a
+		// render-only avatar does not have. Each stage reports its own step, so a
+		// later stage can read `completed` from an earlier build while an earlier
+		// stage rebuilds.
 		Previews BuildStage `json:"previews"`
 
-		// Voice One build stage. Internal artifact names are not exposed; on failure,
-		// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-		// on an earlier stage, nothing runs for it yet (after an earlier stage
-		// failed it stays waiting). `pending`: queued. `processing`: running.
-		// `skipped` is used only by the `previews` stage, for avatars that
-		// opted out of preview clips (`previews: false`, the default for
-		// API-created avatars), and by stages a render-only avatar does not
-		// have. Stages report their own step: a later stage can read
-		// `completed` from an earlier build while an earlier one rebuilds.
-		// `previewUrls` carries each clip once that clip is done, even while
-		// the other clip (and so the `previews` stage) is still building.
+		// Voice One build stage. On failure, `userFeedback` is a message you can show as
+		// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+		// `processing`: running. `skipped`: the `previews` stage when preview
+		// clips are off (the default for API-created avatars), or a stage a
+		// render-only avatar does not have. Each stage reports its own step, so a
+		// later stage can read `completed` from an earlier build while an earlier
+		// stage rebuilds.
 		Voice BuildStage `json:"voice"`
 	} `json:"stages"`
 
-	// Stall Present when the build has recorded no progress for a long time:
-	// with status `stalled` (see `status`), or on a `ready` or held avatar
-	// one of whose stages has been queued or running for 6 hours with no
-	// progress -- the avatar keeps serving and its status is unchanged.
-	// Never on a `failed` or `awaiting_selection` avatar. Reporting only;
-	// the API never changes the build because of it. The list and the
-	// detail report the same stall for the same avatar.
+	// Stall Present when the build has made no progress for a long time: on a
+	// `stalled` avatar, or on a `ready` or held avatar with a stage queued or
+	// running for 6 hours (the avatar keeps serving). Never on a `failed` or
+	// `awaiting_selection` avatar. For information only.
 	Stall *AvatarStall `json:"stall,omitempty"`
 
-	// Status What the avatar is doing now; the set may grow (treat unknown
-	// values as `building`).
+	// Status What the avatar is doing now. More values may be added: treat an
+	// unknown one as `building`.
+	//
 	// - `building`: a build step is queued or running.
-	// - `ready`: the avatar serves a build and `readyToChat` is true. A
-	//   v2 avatar stays `ready` while a newer version builds or waits
-	//   for a pick (`rebuilding` / `selectionRequired`): it keeps
-	//   chatting with the serving take until a new one is selected.
-	// - `awaiting_selection` (v2, manual selection): nothing serves yet,
-	//   every take of the current version has finished and one must be
-	//   selected (`selectionRequired: true`).
-	// - `failed`: a stage failed and nothing serves; `latestFailure`
-	//   names the first failed stage and why.
-	// - `moderation_hold`: held for moderation review (`moderationState`
-	//   on_hold, pending_review or confirmed_unsafe). Visitors -- public
-	//   and unlisted links, Explore -- cannot open it. The account itself
-	//   can still start sessions on it when `readyToChat` is true, as
-	//   session start allows the owning account.
-	// - `stalled`: still unfinished, but the build has recorded no
-	//   progress (no build step started, finished or wrote a file) for
-	//   a long time: 30 minutes with nothing queued or running and a
-	//   stage waiting, or 6 hours with a step -- including moderation
-	//   or the final configuration, which have no stage of their own --
-	//   still queued or running. `stall` says since when and which
-	//   stage. It will not finish by waiting; replace the input of
-	//   that stage or contact support.
+	// - `ready`: it serves a build and `readyToChat` is true. A v2 avatar
+	//   stays `ready` while a newer version builds or waits for a pick
+	//   (`rebuilding`, `selectionRequired`).
+	// - `awaiting_selection` (v2, manual selection): every take of the
+	//   current version finished and nothing serves yet; select one.
+	// - `failed`: a stage failed and nothing serves; see `latestFailure`.
+	// - `moderation_hold`: held for moderation review. Visitors cannot
+	//   open it; the account can still start sessions when `readyToChat`
+	//   is true.
+	// - `stalled`: the build has made no progress for a long time (`stall`
+	//   says since when, and which stage). It will not finish by waiting:
+	//   replace that stage's input or contact support.
 	// - `draft`: created without its portrait or voice; `missingInputs`
-	//   names what it lacks. Nothing that needs them builds until they
-	//   are given (`PUT /appearance`, `PUT /voice`); it will not finish
-	//   by waiting.
+	//   names what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
 	Status AvatarDetailStatus `json:"status"`
 
 	// Studio What was picked in Creator Studio's editor (read only here): how the
@@ -2319,6 +2335,11 @@ type AvatarDetail struct {
 	Voice        *AvatarVoiceSettings   `json:"voice,omitempty"`
 }
 
+// AvatarDetailAspectRatio v2 only, alongside `resolution`: the shape of the avatar's
+// frame (`portrait` when taller than wide, `landscape` when
+// wider, else `square`).
+type AvatarDetailAspectRatio string
+
 // AvatarDetailLatestFailureStage defines model for AvatarDetail.LatestFailure.Stage.
 type AvatarDetailLatestFailureStage string
 
@@ -2328,42 +2349,32 @@ type AvatarDetailMissingInputs string
 // AvatarDetailSeedSelection v2 only.
 type AvatarDetailSeedSelection string
 
-// AvatarDetailStatus What the avatar is doing now; the set may grow (treat unknown
-// values as `building`).
+// AvatarDetailStatus What the avatar is doing now. More values may be added: treat an
+// unknown one as `building`.
+//
 //   - `building`: a build step is queued or running.
-//   - `ready`: the avatar serves a build and `readyToChat` is true. A
-//     v2 avatar stays `ready` while a newer version builds or waits
-//     for a pick (`rebuilding` / `selectionRequired`): it keeps
-//     chatting with the serving take until a new one is selected.
-//   - `awaiting_selection` (v2, manual selection): nothing serves yet,
-//     every take of the current version has finished and one must be
-//     selected (`selectionRequired: true`).
-//   - `failed`: a stage failed and nothing serves; `latestFailure`
-//     names the first failed stage and why.
-//   - `moderation_hold`: held for moderation review (`moderationState`
-//     on_hold, pending_review or confirmed_unsafe). Visitors -- public
-//     and unlisted links, Explore -- cannot open it. The account itself
-//     can still start sessions on it when `readyToChat` is true, as
-//     session start allows the owning account.
-//   - `stalled`: still unfinished, but the build has recorded no
-//     progress (no build step started, finished or wrote a file) for
-//     a long time: 30 minutes with nothing queued or running and a
-//     stage waiting, or 6 hours with a step -- including moderation
-//     or the final configuration, which have no stage of their own --
-//     still queued or running. `stall` says since when and which
-//     stage. It will not finish by waiting; replace the input of
-//     that stage or contact support.
+//   - `ready`: it serves a build and `readyToChat` is true. A v2 avatar
+//     stays `ready` while a newer version builds or waits for a pick
+//     (`rebuilding`, `selectionRequired`).
+//   - `awaiting_selection` (v2, manual selection): every take of the
+//     current version finished and nothing serves yet; select one.
+//   - `failed`: a stage failed and nothing serves; see `latestFailure`.
+//   - `moderation_hold`: held for moderation review. Visitors cannot
+//     open it; the account can still start sessions when `readyToChat`
+//     is true.
+//   - `stalled`: the build has made no progress for a long time (`stall`
+//     says since when, and which stage). It will not finish by waiting:
+//     replace that stage's input or contact support.
 //   - `draft`: created without its portrait or voice; `missingInputs`
-//     names what it lacks. Nothing that needs them builds until they
-//     are given (`PUT /appearance`, `PUT /voice`); it will not finish
-//     by waiting.
+//     names what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
 type AvatarDetailStatus string
 
 // AvatarDetailVisibility defines model for AvatarDetail.Visibility.
 type AvatarDetailVisibility string
 
-// AvatarEngine Render engine. `v1` is the original renderer. `v2` (AvatarForever) is
-// built from a bundle plus a promoted candidate; see `/candidates`.
+// AvatarEngine Render engine: `v1`, the original renderer, or `v2`, which serves a
+// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
 type AvatarEngine string
 
 // AvatarKind `conversational` avatars have a voice and a persona and can run a full
@@ -2615,13 +2626,12 @@ type AvatarSessionCreateRequest struct {
 	// reserved for the avatar).
 	AgentIdentity *string `json:"agentIdentity,omitempty"`
 
-	// LivekitToken LiveKit access token for the avatar participant, minted with YOUR
-	// project's API key and secret: `identity` = the avatar's participant
-	// identity (the plugin uses `atmee-avatar-agent`), `kind: agent`, a
-	// `roomJoin` grant for your room, and the attribute
-	// `lk.publish_on_behalf` = your agent's identity. Read, never verified,
-	// by this service. Omit together with `livekitUrl` for an Atmee-hosted
-	// room.
+	// LivekitToken A LiveKit access token for the avatar participant, minted with your
+	// project's API key and secret: the avatar's `identity` (the plugin
+	// uses `atmee-avatar-agent`), `kind: agent`, a `roomJoin` grant for
+	// your room, and the attribute `lk.publish_on_behalf` set to your
+	// agent's identity. It is read, never verified. Omit it with
+	// `livekitUrl` for an Atmee-hosted room.
 	LivekitToken *string `json:"livekitToken,omitempty"`
 
 	// LivekitUrl Your LiveKit server URL (`wss://<project>.livekit.cloud`, or a
@@ -2632,12 +2642,11 @@ type AvatarSessionCreateRequest struct {
 	// Examples: wss://my-project-abc123.livekit.cloud
 	LivekitUrl *string `json:"livekitUrl,omitempty"`
 
-	// MaxDurationSeconds Hard ceiling of the session, in seconds (default 3600). Also the most
-	// a session can bill if your agent dies without the worker ever
-	// reporting. Capped server-side by the key's limits.
+	// MaxDurationSeconds The session's hard limit in seconds (default 3600), and the most it
+	// can bill if its end is never reported. Capped by the key's limits.
 	MaxDurationSeconds *int `json:"maxDurationSeconds,omitempty"`
 
-	// Metadata Optional free-form metadata to attach to the session (stored as JSONB).
+	// Metadata Optional free-form metadata to attach to the session.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -2696,20 +2705,18 @@ type AvatarSessionEndResponseStatus string
 
 // AvatarSessionStatusResponse defines model for AvatarSessionStatusResponse.
 type AvatarSessionStatusResponse struct {
-	// AgentJoinedAt When the worker saw your agent in the room; billing starts here.
+	// AgentJoinedAt When your agent was seen in the room; billing starts here.
 	AgentJoinedAt  *time.Time `json:"agentJoinedAt,omitempty"`
 	AvatarJoinedAt *time.Time `json:"avatarJoinedAt,omitempty"`
 
-	// BilledSeconds Seconds billed, as the database settled the session (the time
-	// both parties were in the room); null while it is live, or when
-	// the settlement cannot be read.
+	// BilledSeconds Seconds billed (the time both parties were in the room); null while
+	// it is live, or when the settlement cannot be read.
 	BilledSeconds *int                                    `json:"billedSeconds,omitempty"`
 	BillingMode   *AvatarSessionStatusResponseBillingMode `json:"billingMode,omitempty"`
 
-	// ChargedMicrocredits What the session cost, once it ended, in microcredits (100 = 1
-	// credit), from the account's balance and the avatar's sponsor pool,
-	// as the database settled it; null while it is live, or when the
-	// settlement cannot be read.
+	// ChargedMicrocredits What the session cost once it ended, in microcredits (100 = 1
+	// credit), from the account's balance and the avatar's sponsor pool;
+	// null while it is live, or when the settlement cannot be read.
 	ChargedMicrocredits *int `json:"chargedMicrocredits,omitempty"`
 
 	// EndReason Why the session ended; null while it is live. `user_left` the
@@ -2727,7 +2734,8 @@ type AvatarSessionStatusResponse struct {
 	// FailureCode The failure code of a `failed` session (e.g. `USER_DID_NOT_JOIN`, `AVATAR_DID_NOT_JOIN`); null otherwise.
 	FailureCode *string `json:"failureCode,omitempty"`
 
-	// Kind `conversation` (POST /v1/session) or `render` (POST /v1/avatars/{avatarId}/avatar_sessions).
+	// Kind `conversation` (`POST /v1/sessions`) or `render` (`POST
+	// /v1/avatar_sessions`).
 	Kind      *AvatarSessionStatusResponseKind `json:"kind,omitempty"`
 	SessionId openapi_types.UUID               `json:"sessionId"`
 
@@ -2756,7 +2764,8 @@ type AvatarSessionStatusResponseBillingMode string
 // avatar never joined; `error` anything else (see `failureCode`).
 type AvatarSessionStatusResponseEndReason string
 
-// AvatarSessionStatusResponseKind `conversation` (POST /v1/session) or `render` (POST /v1/avatars/{avatarId}/avatar_sessions).
+// AvatarSessionStatusResponseKind `conversation` (`POST /v1/sessions`) or `render` (`POST
+// /v1/avatar_sessions`).
 type AvatarSessionStatusResponseKind string
 
 // AvatarSessionStatusResponseStatus `pending` starting, `active` live, `completed` ran and ended
@@ -2842,13 +2851,10 @@ type AvatarSponsorPatch struct {
 // AvatarSponsorPatchExhaustedBehavior defines model for AvatarSponsorPatch.ExhaustedBehavior.
 type AvatarSponsorPatchExhaustedBehavior string
 
-// AvatarStall Present when the build has recorded no progress for a long time:
-// with status `stalled` (see `status`), or on a `ready` or held avatar
-// one of whose stages has been queued or running for 6 hours with no
-// progress -- the avatar keeps serving and its status is unchanged.
-// Never on a `failed` or `awaiting_selection` avatar. Reporting only;
-// the API never changes the build because of it. The list and the
-// detail report the same stall for the same avatar.
+// AvatarStall Present when the build has made no progress for a long time: on a
+// `stalled` avatar, or on a `ready` or held avatar with a stage queued or
+// running for 6 hours (the avatar keeps serving). Never on a `failed` or
+// `awaiting_selection` avatar. For information only.
 type AvatarStall struct {
 	Reason string `json:"reason"`
 
@@ -2890,8 +2896,8 @@ type AvatarSummary struct {
 	// CreationSource Set to api for avatars created through this API.
 	CreationSource *string `json:"creationSource,omitempty"`
 
-	// Engine Render engine. `v1` is the original renderer. `v2` (AvatarForever) is
-	// built from a bundle plus a promoted candidate; see `/candidates`.
+	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
+	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -2918,44 +2924,31 @@ type AvatarSummary struct {
 	// SelectionRequired v2 only. True while a completed candidate waits to be promoted (manual mode).
 	SelectionRequired *bool `json:"selectionRequired,omitempty"`
 
-	// Stall Present when the build has recorded no progress for a long time:
-	// with status `stalled` (see `status`), or on a `ready` or held avatar
-	// one of whose stages has been queued or running for 6 hours with no
-	// progress -- the avatar keeps serving and its status is unchanged.
-	// Never on a `failed` or `awaiting_selection` avatar. Reporting only;
-	// the API never changes the build because of it. The list and the
-	// detail report the same stall for the same avatar.
+	// Stall Present when the build has made no progress for a long time: on a
+	// `stalled` avatar, or on a `ready` or held avatar with a stage queued or
+	// running for 6 hours (the avatar keeps serving). Never on a `failed` or
+	// `awaiting_selection` avatar. For information only.
 	Stall *AvatarStall `json:"stall,omitempty"`
 
-	// Status What the avatar is doing now; the set may grow (treat unknown
-	// values as `building`).
+	// Status What the avatar is doing now. More values may be added: treat an
+	// unknown one as `building`.
+	//
 	// - `building`: a build step is queued or running.
-	// - `ready`: the avatar serves a build and `readyToChat` is true. A
-	//   v2 avatar stays `ready` while a newer version builds or waits
-	//   for a pick (`rebuilding` / `selectionRequired`): it keeps
-	//   chatting with the serving take until a new one is selected.
-	// - `awaiting_selection` (v2, manual selection): nothing serves yet,
-	//   every take of the current version has finished and one must be
-	//   selected (`selectionRequired: true`).
-	// - `failed`: a stage failed and nothing serves; `latestFailure`
-	//   names the first failed stage and why.
-	// - `moderation_hold`: held for moderation review (`moderationState`
-	//   on_hold, pending_review or confirmed_unsafe). Visitors -- public
-	//   and unlisted links, Explore -- cannot open it. The account itself
-	//   can still start sessions on it when `readyToChat` is true, as
-	//   session start allows the owning account.
-	// - `stalled`: still unfinished, but the build has recorded no
-	//   progress (no build step started, finished or wrote a file) for
-	//   a long time: 30 minutes with nothing queued or running and a
-	//   stage waiting, or 6 hours with a step -- including moderation
-	//   or the final configuration, which have no stage of their own --
-	//   still queued or running. `stall` says since when and which
-	//   stage. It will not finish by waiting; replace the input of
-	//   that stage or contact support.
+	// - `ready`: it serves a build and `readyToChat` is true. A v2 avatar
+	//   stays `ready` while a newer version builds or waits for a pick
+	//   (`rebuilding`, `selectionRequired`).
+	// - `awaiting_selection` (v2, manual selection): every take of the
+	//   current version finished and nothing serves yet; select one.
+	// - `failed`: a stage failed and nothing serves; see `latestFailure`.
+	// - `moderation_hold`: held for moderation review. Visitors cannot
+	//   open it; the account can still start sessions when `readyToChat`
+	//   is true.
+	// - `stalled`: the build has made no progress for a long time (`stall`
+	//   says since when, and which stage). It will not finish by waiting:
+	//   replace that stage's input or contact support.
 	// - `draft`: created without its portrait or voice; `missingInputs`
-	//   names what it lacks. Nothing that needs them builds until they
-	//   are given (`PUT /appearance`, `PUT /voice`); it will not finish
-	//   by waiting.
+	//   names what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
 	Status AvatarSummaryStatus `json:"status"`
 
 	// ThumbnailUrl Presigned image (Studio's custom thumbnail, else the portrait), valid about one hour; re-GET to refresh.
@@ -2967,35 +2960,25 @@ type AvatarSummary struct {
 // AvatarSummaryMissingInputs defines model for AvatarSummary.MissingInputs.
 type AvatarSummaryMissingInputs string
 
-// AvatarSummaryStatus What the avatar is doing now; the set may grow (treat unknown
-// values as `building`).
+// AvatarSummaryStatus What the avatar is doing now. More values may be added: treat an
+// unknown one as `building`.
+//
 //   - `building`: a build step is queued or running.
-//   - `ready`: the avatar serves a build and `readyToChat` is true. A
-//     v2 avatar stays `ready` while a newer version builds or waits
-//     for a pick (`rebuilding` / `selectionRequired`): it keeps
-//     chatting with the serving take until a new one is selected.
-//   - `awaiting_selection` (v2, manual selection): nothing serves yet,
-//     every take of the current version has finished and one must be
-//     selected (`selectionRequired: true`).
-//   - `failed`: a stage failed and nothing serves; `latestFailure`
-//     names the first failed stage and why.
-//   - `moderation_hold`: held for moderation review (`moderationState`
-//     on_hold, pending_review or confirmed_unsafe). Visitors -- public
-//     and unlisted links, Explore -- cannot open it. The account itself
-//     can still start sessions on it when `readyToChat` is true, as
-//     session start allows the owning account.
-//   - `stalled`: still unfinished, but the build has recorded no
-//     progress (no build step started, finished or wrote a file) for
-//     a long time: 30 minutes with nothing queued or running and a
-//     stage waiting, or 6 hours with a step -- including moderation
-//     or the final configuration, which have no stage of their own --
-//     still queued or running. `stall` says since when and which
-//     stage. It will not finish by waiting; replace the input of
-//     that stage or contact support.
+//   - `ready`: it serves a build and `readyToChat` is true. A v2 avatar
+//     stays `ready` while a newer version builds or waits for a pick
+//     (`rebuilding`, `selectionRequired`).
+//   - `awaiting_selection` (v2, manual selection): every take of the
+//     current version finished and nothing serves yet; select one.
+//   - `failed`: a stage failed and nothing serves; see `latestFailure`.
+//   - `moderation_hold`: held for moderation review. Visitors cannot
+//     open it; the account can still start sessions when `readyToChat`
+//     is true.
+//   - `stalled`: the build has made no progress for a long time (`stall`
+//     says since when, and which stage). It will not finish by waiting:
+//     replace that stage's input or contact support.
 //   - `draft`: created without its portrait or voice; `missingInputs`
-//     names what it lacks. Nothing that needs them builds until they
-//     are given (`PUT /appearance`, `PUT /voice`); it will not finish
-//     by waiting.
+//     names what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
 type AvatarSummaryStatus string
 
 // AvatarSummaryVisibility defines model for AvatarSummary.Visibility.
@@ -3008,6 +2991,13 @@ type AvatarThumbnailJsonRequest struct {
 
 // AvatarUpdateRequest defines model for AvatarUpdateRequest.
 type AvatarUpdateRequest struct {
+	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
+	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
+	// sizes follow the renderer and may change; the names do not. Send it
+	// or `resolution`, not both (`400`). On an avatar it is a build input,
+	// like `resolution`: a change on PATCH builds a new version.
+	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
+
 	// BlackoutRecovery Blackout recovery of the v2 renderer. While the avatar listens, it
 	// screens each generated chunk for a fade to black (or fully black
 	// frames) and shows a healthy listening clip in place of a failed one,
@@ -3046,12 +3036,13 @@ type AvatarUpdateRequest struct {
 	// rebuilding them. Omit to leave it unchanged.
 	Previews *bool `json:"previews,omitempty"`
 
-	// Resolution A frame size in pixels for the v2 renderer: width and height are each
+	// Resolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
+	// to pick one by shape: width and height are each
 	// a multiple of 32 from 256 to 1024, and width x height is at most
-	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest` on an
-	// avatar, `400 invalid_input` on a clip. Default 512 x 512 (square).
-	// Common shapes: square 512 x 512, portrait 384 x 672, landscape
-	// 672 x 384. A deployment offers only some sizes (512 x 512 always;
+	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
+	// Default 512 x 512 (square). The aspect ratios' sizes: square
+	// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
+	// offers only some sizes (512 x 512 always;
 	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
 	// where clips are offered): another is `400 invalid_input` ("resolution
 	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
@@ -3180,17 +3171,13 @@ type BlackoutRecoveryEffective struct {
 // BlackoutRecoveryEffectiveDetection defines model for BlackoutRecoveryEffective.Detection.
 type BlackoutRecoveryEffectiveDetection string
 
-// BuildStage One build stage. Internal artifact names are not exposed; on failure,
-// `userFeedback` is a message you can show verbatim. `waiting`: blocked
-// on an earlier stage, nothing runs for it yet (after an earlier stage
-// failed it stays waiting). `pending`: queued. `processing`: running.
-// `skipped` is used only by the `previews` stage, for avatars that
-// opted out of preview clips (`previews: false`, the default for
-// API-created avatars), and by stages a render-only avatar does not
-// have. Stages report their own step: a later stage can read
-// `completed` from an earlier build while an earlier one rebuilds.
-// `previewUrls` carries each clip once that clip is done, even while
-// the other clip (and so the `previews` stage) is still building.
+// BuildStage One build stage. On failure, `userFeedback` is a message you can show as
+// is. `waiting`: blocked on an earlier stage. `pending`: queued.
+// `processing`: running. `skipped`: the `previews` stage when preview
+// clips are off (the default for API-created avatars), or a stage a
+// render-only avatar does not have. Each stage reports its own step, so a
+// later stage can read `completed` from an earlier build while an earlier
+// stage rebuilds.
 type BuildStage struct {
 	Status       BuildStageStatus `json:"status"`
 	UserFeedback *string          `json:"userFeedback,omitempty"`
@@ -3317,6 +3304,20 @@ type CaptureQuota struct {
 	PendingLimit int `json:"pendingLimit"`
 }
 
+// ClipResolution A clip's size in pixels: width and height are each even, from 256
+// to 1920, e.g. 1920 x 1080, 1080 x 1920 or 1280 x 720. The renderer
+// works at each side rounded up to a multiple of 32 (1920 x 1080 at
+// 1920 x 1088) and crops the centre to the size asked for, so at most
+// 31 pixels are lost on a side and nothing is resampled. The render
+// size is at most 1920 x 1088 pixels in all. Where clips render on the
+// sessions' pool (`GET /v1/account`
+// `pricing.generation.clipAnySize` false), the render size must also
+// be one of `clipResolutions`. Another size is `400 invalid_input`.
+type ClipResolution struct {
+	Height int `json:"height"`
+	Width  int `json:"width"`
+}
+
 // CodeRedemption defines model for CodeRedemption.
 type CodeRedemption struct {
 	// MicrocreditsGranted Credits the code added, in microcredits (100 = 1 credit); 0 for a code that only gives v2 access.
@@ -3344,7 +3345,7 @@ type Conductor struct {
 	// Nodes The graph's node count.
 	Nodes int `json:"nodes"`
 
-	// SpeakAfterS As set; absent when it was not (Causeur's default applies, 0.5 today).
+	// SpeakAfterS As set; absent when it was not (the default, 0.5, applies).
 	SpeakAfterS *float64 `json:"speakAfterS,omitempty"`
 }
 
@@ -3383,8 +3384,8 @@ type ConductorGraph struct {
 	Start string `json:"start"`
 }
 
-// ConductorNode A step. Only the fields below are accepted. Text must not hold a
-// `!<...>!` placeholder or start with `supabase/`.
+// ConductorNode A step. Only the fields below are accepted. Text must not contain a
+// `!<...>!` placeholder or start with `supabase/` (both are reserved).
 type ConductorNode struct {
 	// Edges Where the conversation may go from this step, this step itself
 	// included (an edge back to it keeps the conversation here). No
@@ -3429,9 +3430,9 @@ type ConductorRequest struct {
 	// `nodes` and `reasoning` are accepted.
 	Graph ConductorGraph `json:"graph"`
 
-	// SpeakAfterS Seconds after an avatar turn before the avatar speaks again along
-	// a `speak` edge, if the user has not taken the floor. 0.1 to 10;
-	// absent or null: Causeur's default (0.5 today).
+	// SpeakAfterS Seconds after an avatar turn before it speaks again along a `speak`
+	// edge, if the user has not spoken. 0.1 to 10; absent or null uses the
+	// default, 0.5.
 	SpeakAfterS *float64 `json:"speakAfterS,omitempty"`
 }
 
@@ -3493,7 +3494,10 @@ type DesignVoiceRequest struct {
 	// Language The language the voice speaks. Default `en`.
 	Language *DesignVoiceRequestLanguage `json:"language,omitempty"`
 
-	// SampleText What every preview says, in `language` (per-script lengths in the operation's description). Absent, Atmee writes it.
+	// SampleText What every preview says, in `language`: 220 to 600 characters for
+	// Latin and Cyrillic scripts, 120 to 300 for Chinese, Japanese and
+	// Korean, 180 to 450 for Hindi. Absent, a greeting is written from the
+	// description.
 	SampleText *string `json:"sampleText,omitempty"`
 
 	// VoiceDescription How the voice should sound: age, tone, pace, accent, character.
@@ -3608,18 +3612,15 @@ type EmbedSessionStartRequest struct {
 	Welcome *bool `json:"welcome,omitempty"`
 }
 
-// EmbedSessionStartResponse Response body for `/v1/session`'s 201 response. Deliberately
-// different from `SessionStartResponse`: `serverUrl` and `roomName`
-// are split out because the combined `roomUrl` used elsewhere cannot
-// be passed directly to `livekit-client`'s `Room.connect()`.
+// EmbedSessionStartResponse A started conversation session: `serverUrl`, `roomName` and
+// `userToken` are what `livekit-client`'s `Room.connect()` needs.
 type EmbedSessionStartResponse struct {
-	// ActualDurationSeconds Session duration granted by the key/plan/balance limits, in
-	// seconds, counted from the moment both the visitor and the avatar
-	// are in the room. Omitted when the session is uncapped
-	// (`billingMode` `metered` on a key without `max_session_seconds`):
-	// do not start a countdown from a missing value. A metered session
-	// ends when the account's balance or the key's spend cap runs out,
-	// after a short grace, or at the operator ceiling.
+	// ActualDurationSeconds The granted session length in seconds, counted from when both the
+	// visitor and the avatar are in the room. Absent when the session is
+	// uncapped (a `metered` key without a session cap): do not start a
+	// countdown then. A metered session ends when the balance or the key's
+	// spend cap runs out, after a short grace, or at the service's maximum
+	// length.
 	ActualDurationSeconds *int `json:"actualDurationSeconds,omitempty"`
 
 	// BillingMode How the session is billed. `reserve` locks the whole granted
@@ -3632,6 +3633,11 @@ type EmbedSessionStartResponse struct {
 	// `requestedDurationSeconds`: the key's, the plan's or the
 	// balance's limit cut the session you asked for.
 	DurationCapped *bool `json:"durationCapped,omitempty"`
+
+	// FundedSeconds Anonymous sessions only, present when the avatar's sponsor budget
+	// runs out before `actualDurationSeconds`: how long it pays for at
+	// start, in seconds. The session ends there unless the budget grows.
+	FundedSeconds *int `json:"fundedSeconds,omitempty"`
 
 	// Links Absent when this deployment does not know the website's address.
 	Links *SessionLinks `json:"links,omitempty"`
@@ -3666,7 +3672,11 @@ type EmbedSessionStartResponseBillingMode string
 
 // EnhancePortraitRequest defines model for EnhancePortraitRequest.
 type EnhancePortraitRequest struct {
-	// AvatarId An existing avatar the photo is for, to replace its photo; its own engine is used. Leave `engine` out when this is given (a different `engine` is `invalid_input`). Refused before any charge as `avatar_not_found` (404) when the account has no such avatar, and as `avatar_not_allowed` (403) when an avatar-scoped API key is for another avatar.
+	// AvatarId An existing avatar whose photo this replaces. Its own engine is
+	// used, so leave `engine` out (a different one is `invalid_input`). An
+	// avatar the account does not have is `404 avatar_not_found`, and one
+	// outside an avatar-scoped key is `403 avatar_not_allowed`; neither is
+	// charged.
 	AvatarId *openapi_types.UUID `json:"avatarId,omitempty"`
 
 	// Engine The avatar engine the photo is for. `v1` (the default) turns the face to the camera, shoulders up, and blurs the background; `v2` keeps the pose, gaze, hands, framing and background and only improves quality. Pass the engine the avatar will be created with.
@@ -3682,13 +3692,10 @@ type EnhancePortraitRequest struct {
 // EnhancePortraitRequestEngine The avatar engine the photo is for. `v1` (the default) turns the face to the camera, shoulders up, and blurs the background; `v2` keeps the pose, gaze, hands, framing and background and only improves quality. Pass the engine the avatar will be created with.
 type EnhancePortraitRequestEngine string
 
-// FrameworkErrorResponse Error shape returned by the request-validation layer before an
-// operation's own handler logic runs — e.g. a malformed/unparseable
-// JSON body, a field violating a schema constraint (`maxLength`,
-// `minLength`, `minimum`, `maximum`, `maxProperties`, `enum`), a missing
-// required field, or a path parameter failing its declared `format`
-// (such as `uuid`). This is distinct from `ErrorResponse`, which
-// operation handlers construct explicitly for application-level errors.
+// FrameworkErrorResponse The error returned when a request fails schema validation before it is
+// processed: malformed JSON, a missing required field, a value outside its
+// constraints, or a path parameter in the wrong format. Application errors
+// use `ErrorResponse`.
 type FrameworkErrorResponse struct {
 	// Code HTTP status code, repeated in the body (422 for schema/constraint violations, 400 for unparseable JSON).
 	//
@@ -3703,10 +3710,17 @@ type FrameworkErrorResponse struct {
 
 // GenerateClipRequest defines model for GenerateClipRequest.
 type GenerateClipRequest struct {
+	// AspectRatio A v2 avatar's shape, which picks its frame size: `square` 512 x 512
+	// (the default), `portrait` 384 x 640, `landscape` 640 x 384. The
+	// sizes follow the renderer and may change; the names do not. Send it
+	// or `resolution`, not both (`400`). On an avatar it is a build input,
+	// like `resolution`: a change on PATCH builds a new version.
+	AspectRatio *AspectRatio `json:"aspectRatio,omitempty"`
+
 	// Audio What the clip says or plays, `upload:<uploadId>` (a `voice` upload) or a public https link to an audio file. Absent, the clip is silent.
 	Audio *string `json:"audio,omitempty"`
 
-	// DurationSeconds The clip's length. Required with `audio` (set it to the audio's length, at most 15; it is not read from the file); default 8 for a silent clip.
+	// DurationSeconds The clip's length. Required with `audio` (set it to the audio's length; it is not read from the file); default 8 for a silent clip. At most 15 where clips render on the sessions' pool, else 30 and at most the size's budget (render width x height x seconds up to 1920 x 1088 x 10).
 	DurationSeconds *int `json:"durationSeconds,omitempty"`
 
 	// Image Who or what the clip shows, `upload:<uploadId>` (a `portrait` upload) or a public https link (jpg, png or webp, at most 10 MB).
@@ -3715,21 +3729,16 @@ type GenerateClipRequest struct {
 	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following".
 	Prompt string `json:"prompt"`
 
-	// Resolution A frame size in pixels for the v2 renderer: width and height are each
-	// a multiple of 32 from 256 to 1024, and width x height is at most
-	// 262,144 (512 x 512); a larger frame is `400 invalid_manifest` on an
-	// avatar, `400 invalid_input` on a clip. Default 512 x 512 (square).
-	// Common shapes: square 512 x 512, portrait 384 x 672, landscape
-	// 672 x 384. A deployment offers only some sizes (512 x 512 always;
-	// `GET /v1/account` `pricing.generation.clipResolutions` lists them
-	// where clips are offered): another is `400 invalid_input` ("resolution
-	// WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
-	// (`400 invalid_input` for a v1 avatar): the portrait is preprocessed
-	// at that size, so a change on PATCH builds a new version with new
-	// candidates, like a new portrait; sending the current size again
-	// builds nothing. Absent or null keeps the current size (on create:
-	// the default).
-	Resolution *RenderResolution `json:"resolution,omitempty"`
+	// Resolution A clip's size in pixels: width and height are each even, from 256
+	// to 1920, e.g. 1920 x 1080, 1080 x 1920 or 1280 x 720. The renderer
+	// works at each side rounded up to a multiple of 32 (1920 x 1080 at
+	// 1920 x 1088) and crops the centre to the size asked for, so at most
+	// 31 pixels are lost on a side and nothing is resampled. The render
+	// size is at most 1920 x 1088 pixels in all. Where clips render on the
+	// sessions' pool (`GET /v1/account`
+	// `pricing.generation.clipAnySize` false), the render size must also
+	// be one of `clipResolutions`. Another size is `400 invalid_input`.
+	Resolution *ClipResolution `json:"resolution,omitempty"`
 
 	// Seed The render's seed; another seed gives other motion. Default 0.
 	Seed *int64 `json:"seed,omitempty"`
@@ -3818,14 +3827,19 @@ type GeneratedPortraitsResponse struct {
 
 // GenerationPricing The price of one call of each generation operation, charged only when at least one output comes back. Absent when this instance does not offer generation.
 type GenerationPricing struct {
-	// ClipPer15SecondsMicrocredits Fifteen seconds of a `POST /v1/generation/clips` clip; a clip costs this times its `durationSeconds` / 15, rounded up (8 seconds at 100 cost 54). Absent where clips are not offered.
+	// ClipAnySize True where clips render on a pool kept for them, at any `ClipResolution` and up to 30 seconds within the size's budget; false where they render on the sessions' pool, at a size in `clipResolutions` for up to 15 seconds. Absent where clips are not offered.
+	ClipAnySize *bool `json:"clipAnySize,omitempty"`
+
+	// ClipPer15SecondsMicrocredits Fifteen seconds of a `POST /v1/generation/clips` clip. A clip costs
+	// this times its `durationSeconds` / 15, rounded up. Absent where
+	// clips are not offered.
 	ClipPer15SecondsMicrocredits *int `json:"clipPer15SecondsMicrocredits,omitempty"`
 
 	// ClipPerSecondMicrocredits Use `clipPer15SecondsMicrocredits`. One second of a clip, rounded up, so this times `durationSeconds` is never below a clip's price. Absent where clips are not offered.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPerSecondMicrocredits *int `json:"clipPerSecondMicrocredits,omitempty"`
 
-	// ClipResolutions The frame sizes offered, for clips and v2 avatars alike, 512 x 512 first; another is `400 invalid_input`. Absent where clips are not offered, or where every size the rule allows is offered.
+	// ClipResolutions The frame sizes offered for v2 avatars, 512 x 512 first, and the sizes a clip may render at when `clipAnySize` is false; another is `400 invalid_input`. Absent where clips are not offered, or where every size the rule allows is offered.
 	ClipResolutions *[]RenderResolution `json:"clipResolutions,omitempty"`
 
 	// EnhancementsMicrocredits One `POST /v1/generation/enhancements` call.
@@ -3845,9 +3859,8 @@ type KnowledgeAssetRef struct {
 	Url         string  `json:"url"`
 }
 
-// PaymentRequiredResponse Shared 402 response body for `/v1/demo_session`, `/v1/start_session`,
-// `/v1/session`, and `/v1/anonymous_session`, returned when the caller
-// lacks the credits or entitlements needed to start a session.
+// PaymentRequiredResponse Returned with `402` when the caller lacks the credits or entitlements
+// to start a session.
 type PaymentRequiredResponse struct {
 	// Error Error code identifying the type of payment issue
 	//
@@ -3920,12 +3933,13 @@ type RedeemCodeRequest struct {
 	Code string `json:"code"`
 }
 
-// RenderResolution A frame size in pixels for the v2 renderer: width and height are each
+// RenderResolution A frame size in pixels for the v2 renderer, or send `aspectRatio`
+// to pick one by shape: width and height are each
 // a multiple of 32 from 256 to 1024, and width x height is at most
-// 262,144 (512 x 512); a larger frame is `400 invalid_manifest` on an
-// avatar, `400 invalid_input` on a clip. Default 512 x 512 (square).
-// Common shapes: square 512 x 512, portrait 384 x 672, landscape
-// 672 x 384. A deployment offers only some sizes (512 x 512 always;
+// 262,144 (512 x 512); a larger frame is `400 invalid_manifest`.
+// Default 512 x 512 (square). The aspect ratios' sizes: square
+// 512 x 512, portrait 384 x 640, landscape 640 x 384. A deployment
+// offers only some sizes (512 x 512 always;
 // `GET /v1/account` `pricing.generation.clipResolutions` lists them
 // where clips are offered): another is `400 invalid_input` ("resolution
 // WxH is not offered; offered: ..."). On an avatar it is a build input of v2 avatars only
@@ -4147,7 +4161,8 @@ type SponsorWithdrawResponse struct {
 	WithdrawnMicrocredits int `json:"withdrawnMicrocredits"`
 }
 
-// TtsProvider The voice engine (`voice.ttsProvider` on a v1 create); every v2 avatar speaks with fish_audio.
+// TtsProvider The voice engine (`voice.ttsProvider` on a v1 create). Every v2 avatar
+// speaks with `fish_audio`.
 type TtsProvider string
 
 // Upload defines model for Upload.
@@ -4279,7 +4294,7 @@ type RateLimited = RateLimitedResponse
 type ListAvatarsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Before Cursor -- return avatars created before this timestamp.
+	// Before Cursor; returns avatars created before this time.
 	Before *time.Time `form:"before,omitempty" json:"before,omitempty"`
 }
 
@@ -4607,96 +4622,88 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// GetAccount The account's plan, limits, prices and capture quota
+	// GetAccount Get the account
 	//
-	// The plan the account is on (and the one it changes to at the end of
-	// the cycle, if any), the limits that apply to its API usage, what a
-	// session minute, a preview clip and (where generation is offered,
-	// `pricing.generation`) one generation call cost, and how many v2 captures are
-	// queued or running against the pending cap. Prices are in
-	// microcredits (100 microcredits = 1 credit). A conversation
-	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
-	// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
-	// avatar session (render only) the avatar engine's render rate
-	// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
-	// field, that is absent is not set (a limit absent is not capped by the
-	// plan). `payouts` says whether the account can be paid out, which
-	// monetizing an avatar needs.
+	// Returns the account's plan, its API limits, its prices and its v2
+	// capture quota. Prices are in microcredits (100 microcredits = 1 credit).
 	//
-	// Readable by the same callers as `GET /v1/account/balance`.
+	// - **Plan**: the current plan, and the one it changes to at the end of
+	//   the cycle, if any.
+	// - **Pricing**: the per-minute price of each kind of session (a
+	//   conversation or a render, by avatar engine, and a speech session), a
+	//   preview clip, and each generation call where generation is offered
+	//   (`pricing.generation`).
+	// - **Limits**: an absent limit or plan field is not set (an absent limit
+	//   is not capped by the plan).
+	// - **v2**: `v2Access` says whether the account may build v2 avatars;
+	//   `captureQuota` counts v2 captures queued or running against the cap.
+	// - **Payouts**: `payouts` says whether the account can be paid out, which
+	//   monetizing an avatar needs.
+	// - Readable by the same callers as `GET /v1/account/balance`.
 	//
 	// Corresponds with GET /v1/account (the `GetAccount` operationId).
 	GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAccountBalance The account's credit balance
+	// GetAccountBalance Get the balance
 	//
-	// What the calling key's account has to spend on sessions, from the
-	// account's direct wallet (the only one API usage draws on). Every
-	// amount is in microcredits (100 microcredits = 1 credit).
+	// Returns the credits the account can spend on sessions, in microcredits
+	// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
+	// (see `GET /v1/avatars/{avatarId}/sponsor`).
 	//
-	// `spendableMicrocredits` is the amount a session is admitted on: every
-	// positive bucket for a reserve-mode key or a signed-in user; the plan
-	// and top-up buckets only for a metered key, which never spends coupon
-	// credits (`couponSpendable: false`). Live sessions' reservations are
-	// already taken out of the buckets and are reported on their own as
-	// `heldByLiveSessionsMicrocredits`. `unlimited` is true when sessions
-	// are not charged (an unlimited plan, or billing switched off), whatever
-	// the buckets say. `nextExpiry` lists the credits that will expire,
-	// soonest first. An avatar's sponsor pool is not part of this balance
-	// (`GET /v1/avatars/{avatarId}/sponsor`).
-	//
-	// Any key with the `sessions` or `avatars:read` scope may read it, an
-	// avatar-scoped key included, and so may a signed-in user acting for the
-	// account.
+	// - `spendableMicrocredits` is what a session is admitted on: every bucket
+	//   for a reserve-mode key or a signed-in user, only the plan and top-up
+	//   buckets for a metered key (`couponSpendable: false`).
+	// - Live sessions' reservations are already taken out, and reported as
+	//   `heldByLiveSessionsMicrocredits`.
+	// - `unlimited` is true when sessions are not charged, whatever the
+	//   buckets say.
+	// - `nextExpiry` lists the credits that will expire, soonest first.
+	// - Readable by any key with `sessions` or `avatars:read` (an
+	//   avatar-scoped key included), or a signed-in user of the account.
 	//
 	// Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 	GetAccountBalance(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAccountEarnings The account's creator wallet and earnings
+	// GetAccountEarnings Get earnings
 	//
-	// What the account's monetized avatars earned, what was paid out, and
-	// the wallet balance between the two, in microcredits (100 microcredits
-	// = 1 credit), as Studio's billing page shows them. This is not the
-	// credit balance sessions spend (`GET /v1/account/balance`). One
-	// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+	// Returns what the account's monetized avatars earned, what was paid out,
+	// and the wallet balance between them, in microcredits (100 microcredits =
+	// 1 credit). This is not the balance sessions spend (`GET
+	// /v1/account/balance`); one avatar's earnings are in `GET
+	// /v1/avatars/{avatarId}/monetization`.
 	//
-	// Any account-wide key with `avatars:read` may read it, and so may a
-	// signed-in user acting for the account; an avatar-scoped key is
-	// answered `403 avatar_not_allowed`.
+	// Readable by an account-wide key with `avatars:read` or a signed-in user
+	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
 	//
 	// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
 	GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RedeemAccountCodeWithBody Redeem an invite or credit code
+	// RedeemAccountCodeWithBody Redeem a code
 	//
-	// Redeems a code for the account, as Creator Studio's Billing page
-	// does. A code can add credits, let the account into v2 avatars (v2
-	// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-	// the answer says what it gave and where v2 access stands after it.
-	// Each account redeems a code at most once.
+	// Redeems an invite or credit code for the account. A code can add
+	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+	// /v1/account`), or both, and the answer says what it gave. Each account
+	// redeems a code at most once.
 	//
-	// Only a signed-in user may redeem (the MCP server's sign-in, or
-	// `atmee login`); an API key gets 403 `login_required`, so a leaked
-	// key cannot spend the account's codes. Once v2 is let in, v2 creates
-	// work on the next request.
+	// Only a signed-in user may redeem: an API key gets `403 login_required`,
+	// so a leaked key cannot spend the account's codes. v2 access applies from
+	// the next request.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/account/redeem (the `RedeemAccountCode` operationId).
 	RedeemAccountCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RedeemAccountCode Redeem an invite or credit code
+	// RedeemAccountCode Redeem a code
 	//
-	// Redeems a code for the account, as Creator Studio's Billing page
-	// does. A code can add credits, let the account into v2 avatars (v2
-	// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-	// the answer says what it gave and where v2 access stands after it.
-	// Each account redeems a code at most once.
+	// Redeems an invite or credit code for the account. A code can add
+	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+	// /v1/account`), or both, and the answer says what it gave. Each account
+	// redeems a code at most once.
 	//
-	// Only a signed-in user may redeem (the MCP server's sign-in, or
-	// `atmee login`); an API key gets 403 `login_required`, so a leaked
-	// key cannot spend the account's codes. Once v2 is let in, v2 creates
-	// work on the next request.
+	// Only a signed-in user may redeem: an API key gets `403 login_required`,
+	// so a leaked key cannot spend the account's codes. v2 access applies from
+	// the next request.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4759,22 +4766,21 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/api_keys (the `CreateApiKey` operationId).
 	CreateApiKey(ctx context.Context, body CreateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetCurrentApiKey The credential making this call
+	// GetCurrentApiKey Get the current credential
 	//
-	// For an API key (`kind: api_key`): its name, scopes, the avatar it is
-	// restricted to, its billing mode, its own session caps and how much of
-	// its spend cap the current window has used. The secret is never
-	// returned. `spendCap.enforced` is false when the cap is not applied
-	// (an unlimited plan, or billing switched off); `windowResetsAt` is
-	// absent for a cap over the key's whole life (`window: total`), and
-	// `limitMicrocredits` and `remainingMicrocredits` are absent when the
-	// key has no cap (`spentMicrocredits` is still reported).
+	// Describes the credential making this call. Readable by the same callers
+	// as `GET /v1/account/balance`.
 	//
-	// For a signed-in user (`kind: user`): the user and the account it acts
-	// for; a user has no key, no scopes beyond the avatar ones and no spend
-	// cap.
-	//
-	// Readable by the same callers as `GET /v1/account/balance`.
+	// - **API key** (`kind: api_key`): its name, scopes, the avatar it is
+	//   restricted to, its billing mode, its session caps and how much of its
+	//   spend cap the current window used. The secret is never returned.
+	//   `spendCap.enforced` is false when the cap is not applied;
+	//   `limitMicrocredits` and `remainingMicrocredits` are absent when the
+	//   key has no cap, and `windowResetsAt` for a lifetime cap (`window:
+	//   total`).
+	// - **Signed-in user** (`kind: user`): the user and the account it acts
+	//   for. A user has no key, no scopes beyond the avatar ones and no spend
+	//   cap.
 	//
 	// Corresponds with GET /v1/api_keys/current (the `GetCurrentApiKey` operationId).
 	GetCurrentApiKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4834,574 +4840,316 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/api_keys/{apiKeyId}/rotate (the `RotateApiKey` operationId).
 	RotateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarSession Read a session's state, end reason and cost
+	// GetAvatarSession Get an avatar session
 	//
-	// Reads either kind of API session: a conversation (`POST /v1/session`,
-	// `kind: conversation`) or a render into your own room (`POST
-	// /v1/avatars/{avatarId}/avatar_sessions`, `kind: render`).
+	// Reads an API session's state, end reason and cost: a conversation (`POST
+	// /v1/sessions`, `kind: conversation`) or a render (`POST
+	// /v1/avatar_sessions`, `kind: render`).
 	//
-	// `status` is `pending` (starting), `active` (live), `completed` (it
-	// ran and ended normally, including when you ended it) or `failed` (it
-	// never really started: nobody joined, the avatar did not join, or an
-	// error; nothing is billed for the time it did not run). Once it
-	// ended, `endReason` says why, `failureCode` names the failure of a
-	// failed session, and `billedSeconds` / `chargedMicrocredits` say what
-	// it cost (100 microcredits = 1 credit). Billing runs only while both
-	// the avatar and the visitor (or your agent) are in the room:
-	// `userJoinedAt` and `avatarJoinedAt` show when each joined.
+	// - `status` is `pending` (starting), `active` (live), `completed` (ended
+	//   normally, including by you) or `failed` (it never really started;
+	//   nothing is billed for time it did not run).
+	// - Once it ended, `endReason` says why, `failureCode` names the failure
+	//   of a failed session, and `billedSeconds` and `chargedMicrocredits` say
+	//   what it cost (100 microcredits = 1 credit).
+	// - Billing runs only while both the avatar and the visitor (or your
+	//   agent) are in the room; `userJoinedAt` and `avatarJoinedAt` say when
+	//   each joined.
 	//
 	// Corresponds with GET /v1/avatar_sessions/{id} (the `GetAvatarSession` operationId).
 	GetAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EndAvatarSession End an avatar session (optional explicit stop)
+	// EndAvatarSession End an avatar session
 	//
-	// Ends either kind of API session; for a conversation, `POST
-	// /v1/sessions/{id}/end` with an API key is the same call. It settles `completed` with
-	// `endReason: ended_by_api`, never `failed`.
+	// Ends an API session now and stops billing. It settles `completed` with
+	// `endReason: ended_by_api`. For a conversation, this is the same as `POST
+	// /v1/sessions/{id}/end` with an API key.
 	//
-	// Stops billing for the session now. **Idempotent**: ending a session that
-	// already ended answers `200` with `alreadyEnded: true`, so the plugin can
-	// call it from every teardown path without checking first. The primary end
-	// signal is the rendering worker's own report when your agent leaves, the
-	// room closes, or you remove the avatar participant — this call is the
-	// fallback for a worker that could not report, and the way to stop paying
-	// for an avatar you are done with while your room stays open. For a
-	// render it does not remove the avatar from your room; remove the
-	// participant yourself (the plugin does so on close). A conversation's room is closed, as by
-	// `POST /v1/sessions/{id}/end`. Acts only on sessions started through
-	// the API (the account's website sessions are `404`), and for an
-	// avatar-scoped key only on its avatar's.
+	// - **Idempotent**: a session that already ended answers `200` with
+	//   `alreadyEnded: true`, so it is safe to call from every teardown path.
+	// - **Renders** usually end on their own when your agent leaves, the room
+	//   closes or you remove the avatar participant. Call this to stop paying
+	//   while your room stays open; it does not remove the avatar from your
+	//   room, so remove the participant yourself.
+	// - **Conversations**: the room is closed.
+	// - Only sessions started through the API can be ended here (website
+	//   sessions are `404`), and an avatar-scoped key ends only its avatar's.
 	//
 	// Corresponds with POST /v1/avatar_sessions/{id}/end (the `EndAvatarSession` operationId).
 	EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAvatars List the account's avatars
+	// ListAvatars List avatars
+	//
+	// Lists the account's avatars, newest first. Page with `before`.
 	//
 	// Corresponds with GET /v1/avatars (the `ListAvatars` operationId).
 	ListAvatars(ctx context.Context, params *ListAvatarsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateAvatarWithBody Create an avatar (Avatar Import API)
+	// CreateAvatarWithBody Create an avatar
 	//
-	// Three body shapes, one result.
+	// Creates an avatar from a portrait, a voice sample, a persona and
+	// knowledge. A complete avatar builds in the background (`202`, `status:
+	// building`): follow it with `GET /v1/avatars/{avatarId}`.
 	//
-	// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-	// <= 10 MB) as the `file` part and the avatar `name` as a second field
-	// (`description` optional). Creates a **render-only** avatar: no voice, no
-	// persona, nothing to build -- the response is `201` with `status: ready`
-	// and the avatar can be rendered for an external agent at once. Add a voice
-	// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+	// Send one of three body shapes:
 	//
-	// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-	// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-	// optional; without it the result is render-only as above. With a voice the
-	// avatar is created exactly as the studio would: the row, the files under
-	// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-	// pipeline builds it asynchronously (`202`, `status: building`), poll
-	// `GET /v1/avatars/{avatarId}`.
-	// The manifest's `persona` block carries the character: `whoPrompt` (who the
-	// avatar is: the main character description), `whatPrompt` (what the avatar is
-	// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-	// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-	// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-	// `conversationalHabits`. `personality` and `scenario` are older names of
-	// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-	// names is `400 invalid_manifest`.
-	// **JSON.** The manifest as `application/json` with an `assets` block naming
-	// the image, the voice sample, prompt text and knowledge files by https URL;
-	// the service downloads them (public hosts only, same size and type rules as
-	// the zip) and continues identically.
+	// | Body | Content type | Contents |
+	// |---|---|---|
+	// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+	// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+	// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 	//
-	// **A draft.** The image and the voice are both optional on the zip and JSON
-	// bodies (and `assets` itself on JSON), on either engine. An avatar created
-	// without its portrait, or without its voice (other than a v1 avatar with a
-	// portrait, which is render-only), is a **draft**: `status: draft` with
-	// `missingInputs` naming what it lacks. Its persona and knowledge build;
-	// nothing that needs the missing input does. Give them with
-	// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-	// in either order; the build continues once both are there (on v2, the input
-	// that completes it captures the first candidate). `seedPreviews` and
-	// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-	// selected automatically.
-	// Where `assets` takes a URL for the image, the voice sample or a knowledge
-	// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-	// (the prompt stays a URL). The upload must be this account's, of the matching
-	// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-	// type, and the same size and type rules apply. A create that succeeds
-	// consumes its uploads; one that fails leaves them usable for a retry.
+	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
+	//   (default), serves the first that completes. v2 is invite-only (`403
+	//   v2_access_required`).
+	// - **Drafts**: the portrait and the voice are optional in zip and JSON
+	//   bodies. Without either (other than a v1 avatar with a portrait, which
+	//   is render-only) the avatar is a `draft`, and `missingInputs` names
+	//   what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
+	// - **Portrait**: use a front-facing photo of one person, head and
+	//   shoulders, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Uploads**: a create that succeeds consumes its uploads; one that
+	//   fails leaves them usable for a retry.
+	// - **Captures** count against the account's limit of 10 queued or
+	//   running. A v2 create returns `X-RateLimit-Limit` and
+	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+	//   not fit.
+	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+	//   block.
 	//
-	// **The portrait** (every body shape) decides whether the avatar can be
-	// animated. Use a front-facing photo of one person, head and shoulders with
-	// some margin around the head, the face at least about a third of the frame,
-	// in even light, with the **lips slightly parted as if about to speak**. A v2
-	// avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still);
-	// lips slightly parted work far more often. The build refuses a clearly bad
-	// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-	// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-	// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-	// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-	// Preview clips are not generated unless the manifest sets `previews: true`
-	// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-	// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-	// `sponsor` block. Behind the `avatar_import_api` feature flag.
+	// | Manifest field | Rule |
+	// |---|---|
+	// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+	// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+	// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+	// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
-	// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-	// is cloned from its sample; a v2 create with the portrait and the voice
-	// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-	// the first completed candidate is promoted) or `manual`. Both are v2 only.
-	// A portrait, voice or preview message changed outside the API (Creator
-	// Studio) captures one candidate of the new inputs by itself.
-	// Captures count against the account's limit of 10 queued or running; a v2
-	// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-	// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-	// `previewMessage` is the line the preview clips speak; omit it for a default
-	// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-	// candidate is captured from, so at most 60 Unicode code points
-	// (`400 preview_message_too_long`).
-	// `knowledge.descriptions` maps a knowledge file name to a short description.
-	// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-	// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-	// as Creator Studio saves its "Facts with context" box (shown there) and as a
-	// knowledge file the knowledge base reads; change it with PATCH.
-	// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-	// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-	// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-	// change it with PATCH. Knowledge
-	// (files and facts) is used in conversations by v1 avatars; v2 conversations
-	// do not use it yet.
-	// `blackoutRecovery` tunes how v2 sessions recover from frames that
-	// fade to black; it is on by default, so omit it unless a setting
-	// should differ. It is ignored for v1 avatars (the setting exists only
-	// on the v2 renderer).
-	// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-	// the renderer default, 42. Ignored for v1 avatars, like
-	// `blackoutRecovery`.
-	// `resolution` (v2) is the frame size the avatar renders at, e.g.
-	// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-	// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-	// avatars (`400 invalid_input`).
+	// v2 conversations do not use knowledge yet.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/avatars (the `CreateAvatar` operationId).
 	CreateAvatarWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateAvatar Create an avatar (Avatar Import API)
+	// CreateAvatar Create an avatar
 	//
-	// Three body shapes, one result.
+	// Creates an avatar from a portrait, a voice sample, a persona and
+	// knowledge. A complete avatar builds in the background (`202`, `status:
+	// building`): follow it with `GET /v1/avatars/{avatarId}`.
 	//
-	// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-	// <= 10 MB) as the `file` part and the avatar `name` as a second field
-	// (`description` optional). Creates a **render-only** avatar: no voice, no
-	// persona, nothing to build -- the response is `201` with `status: ready`
-	// and the avatar can be rendered for an external agent at once. Add a voice
-	// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+	// Send one of three body shapes:
 	//
-	// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-	// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-	// optional; without it the result is render-only as above. With a voice the
-	// avatar is created exactly as the studio would: the row, the files under
-	// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-	// pipeline builds it asynchronously (`202`, `status: building`), poll
-	// `GET /v1/avatars/{avatarId}`.
-	// The manifest's `persona` block carries the character: `whoPrompt` (who the
-	// avatar is: the main character description), `whatPrompt` (what the avatar is
-	// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-	// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-	// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-	// `conversationalHabits`. `personality` and `scenario` are older names of
-	// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-	// names is `400 invalid_manifest`.
-	// **JSON.** The manifest as `application/json` with an `assets` block naming
-	// the image, the voice sample, prompt text and knowledge files by https URL;
-	// the service downloads them (public hosts only, same size and type rules as
-	// the zip) and continues identically.
+	// | Body | Content type | Contents |
+	// |---|---|---|
+	// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+	// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+	// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 	//
-	// **A draft.** The image and the voice are both optional on the zip and JSON
-	// bodies (and `assets` itself on JSON), on either engine. An avatar created
-	// without its portrait, or without its voice (other than a v1 avatar with a
-	// portrait, which is render-only), is a **draft**: `status: draft` with
-	// `missingInputs` naming what it lacks. Its persona and knowledge build;
-	// nothing that needs the missing input does. Give them with
-	// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-	// in either order; the build continues once both are there (on v2, the input
-	// that completes it captures the first candidate). `seedPreviews` and
-	// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-	// selected automatically.
-	// Where `assets` takes a URL for the image, the voice sample or a knowledge
-	// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-	// (the prompt stays a URL). The upload must be this account's, of the matching
-	// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-	// type, and the same size and type rules apply. A create that succeeds
-	// consumes its uploads; one that fails leaves them usable for a retry.
+	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
+	//   (default), serves the first that completes. v2 is invite-only (`403
+	//   v2_access_required`).
+	// - **Drafts**: the portrait and the voice are optional in zip and JSON
+	//   bodies. Without either (other than a v1 avatar with a portrait, which
+	//   is render-only) the avatar is a `draft`, and `missingInputs` names
+	//   what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
+	// - **Portrait**: use a front-facing photo of one person, head and
+	//   shoulders, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Uploads**: a create that succeeds consumes its uploads; one that
+	//   fails leaves them usable for a retry.
+	// - **Captures** count against the account's limit of 10 queued or
+	//   running. A v2 create returns `X-RateLimit-Limit` and
+	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+	//   not fit.
+	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+	//   block.
 	//
-	// **The portrait** (every body shape) decides whether the avatar can be
-	// animated. Use a front-facing photo of one person, head and shoulders with
-	// some margin around the head, the face at least about a third of the frame,
-	// in even light, with the **lips slightly parted as if about to speak**. A v2
-	// avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still);
-	// lips slightly parted work far more often. The build refuses a clearly bad
-	// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-	// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-	// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-	// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-	// Preview clips are not generated unless the manifest sets `previews: true`
-	// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-	// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-	// `sponsor` block. Behind the `avatar_import_api` feature flag.
+	// | Manifest field | Rule |
+	// |---|---|
+	// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+	// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+	// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+	// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
-	// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-	// is cloned from its sample; a v2 create with the portrait and the voice
-	// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-	// the first completed candidate is promoted) or `manual`. Both are v2 only.
-	// A portrait, voice or preview message changed outside the API (Creator
-	// Studio) captures one candidate of the new inputs by itself.
-	// Captures count against the account's limit of 10 queued or running; a v2
-	// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-	// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-	// `previewMessage` is the line the preview clips speak; omit it for a default
-	// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-	// candidate is captured from, so at most 60 Unicode code points
-	// (`400 preview_message_too_long`).
-	// `knowledge.descriptions` maps a knowledge file name to a short description.
-	// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-	// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-	// as Creator Studio saves its "Facts with context" box (shown there) and as a
-	// knowledge file the knowledge base reads; change it with PATCH.
-	// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-	// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-	// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-	// change it with PATCH. Knowledge
-	// (files and facts) is used in conversations by v1 avatars; v2 conversations
-	// do not use it yet.
-	// `blackoutRecovery` tunes how v2 sessions recover from frames that
-	// fade to black; it is on by default, so omit it unless a setting
-	// should differ. It is ignored for v1 avatars (the setting exists only
-	// on the v2 renderer).
-	// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-	// the renderer default, 42. Ignored for v1 avatars, like
-	// `blackoutRecovery`.
-	// `resolution` (v2) is the frame size the avatar renders at, e.g.
-	// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-	// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-	// avatars (`400 invalid_input`).
+	// v2 conversations do not use knowledge yet.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/avatars (the `CreateAvatar` operationId).
 	CreateAvatar(ctx context.Context, body CreateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAvatar Delete (soft) an avatar
+	// DeleteAvatar Delete an avatar
 	//
-	// Soft-deletes the avatar: it disappears from the API at once and its
-	// unfinished captures are cancelled. After the retention period every
-	// file of the avatar -- every version's portrait, voice sample and
-	// takes included -- is removed permanently.
+	// Deletes the avatar: it disappears from the API at once and its
+	// unfinished captures are cancelled. Its files, every version's included,
+	// are removed permanently after the retention period.
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId} (the `DeleteAvatar` operationId).
 	DeleteAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatar Avatar detail and build status
+	// GetAvatar Get an avatar
+	//
+	// Returns the avatar's settings and its build status, stage by stage.
+	// Poll it after a create or a change: `stages` and `rebuilding` show
+	// progress, and `status` says when it needs you (`failed`,
+	// `awaiting_selection`, `stalled`, `draft`). A v2 avatar stays `ready`
+	// while a new version builds; when that build needs a candidate picked,
+	// `selectionRequired` turns true while `status` stays `ready`.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId} (the `GetAvatar` operationId).
 	GetAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateAvatarWithBody Update name, description, visibility, language or preview message
+	// UpdateAvatarWithBody Update an avatar
 	//
-	// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-	// guardrails, habits, aliases, name) rebuild the persona in the
-	// background. A v1 avatar is briefly not ready; a v2 avatar stays
-	// `ready` and keeps serving its current config while `stages.persona`
-	// shows the rebuild, and serves the new persona a few seconds after
-	// that stage completes. A persona edit captures nothing, so
-	// `rebuilding` (which is about candidates) does not change. Every
-	// persona edit is moderated again, on both engines: a `clean` avatar
-	// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-	// rebuild already under way waits: its candidates stay queued and
-	// are not captured until the check passes; the serving candidate
-	// keeps serving.
-	// On v2, a changed `previewMessage`, portrait or voice captures new
-	// candidates.
+	// Changes an avatar's settings, persona, knowledge or share card, and
+	// returns the avatar. Send only the fields to change: an absent or `null`
+	// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+	// optional one.
 	//
-	// Send only the fields to change: an absent or `null` field is left
-	// unchanged. To remove a value, send it empty: `""` for description,
-	// greeting, preferredAlias and spokenName, `[]` for guardrails and
-	// knownAliases, `{}` for conversationalHabits, and `""` for
-	// `previewMessage` to go back to the default sentence. whoPrompt,
-	// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-	// schema (`422`), and so does blank selfIntroduction text under 51
-	// characters; other blank text is `400 invalid_manifest`.
+	// - **Persona edits** rebuild the persona in the background and are
+	//   moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+	//   serving until the new persona is live.
+	// - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+	//   new version with new candidates, like a new portrait or voice, while
+	//   the serving candidate keeps serving. `blackoutRecovery` and
+	//   `runtimeSeed` apply from the next session and rebuild nothing.
+	// - **Knowledge**: knowledge files stay; replace them with `PUT
+	//   /v1/avatars/{avatarId}/knowledge`.
+	// - **Visibility**: `public` needs a title, a tag, a subtitle, a
+	//   description and a thumbnail (`409 public_requirements_missing` lists
+	//   what is missing). `public` and `unlisted` must pass moderation (`409
+	//   moderation_blocked`).
+	// - **Atomicity**: every field is checked first. The name, description,
+	//   share fields, statement, monetization and visibility are written
+	//   together, and a refusal of any of them writes nothing. The rest is
+	//   written after, so after a later error, send the same request again to
+	//   retry.
 	//
-	// `personality` and `scenario` are older names of `whoPrompt` and
-	// `whatPrompt` and still accepted, nested in `persona` or at the top
-	// level. A field given twice (under both names, or both at the top
-	// level and in `persona`) is `400 invalid_body`.
-	//
-	// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-	// (`400 preview_message_too_long`); changing it captures new
-	// candidates. Sending the current `previewMessage` again is no
-	// rebuild, and `""` (the default sentence) rebuilds only when a custom
-	// line was set.
-	//
-	// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-	// sessions render: nothing is rebuilt or captured, and the serving
-	// candidate stays. They are ignored for v1 avatars (the settings exist
-	// only on the v2 renderer).
-	//
-	// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-	// the frame size: it is a build input, so a new size builds a new
-	// version (new candidates, as a new portrait does) while the serving
-	// candidate keeps serving; the current size sent again builds nothing.
-	//
-	// `knowledge.facts` replaces the avatar's knowledge text (at most
-	// 32,000 characters; `""` removes it), on either engine, as Creator
-	// Studio's "Facts with context" box does: the text and its knowledge
-	// file, which the knowledge stage processes again. Other knowledge
-	// files stay. Nothing is captured.
-	//
-	// `knowledge.questionnaire` replaces the answers to Creator Studio's
-	// knowledge questionnaire, question to answer, as Studio's Knowledge
-	// step saves them: the answers and their knowledge file, which the
-	// knowledge stage processes again (answers equal to the current ones
-	// change nothing). `{}` removes them. The questions are the `questions`
-	// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-	// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-	//
-	// The share fields are what Creator Studio's "Share to community" card
-	// edits, written as Studio writes them and with its limits, on either
-	// engine (nothing is rebuilt): `title` (at most 100 characters),
-	// `subtitle` (200), `description` (280), `tags` (the whole set: at
-	// most 5 after trimming and dropping case-insensitive duplicates, each
-	// with a letter or digit; an existing tag of the same name is reused)
-	// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-	// twitter or youtube, each at most once, with an https URL of at most
-	// 500 characters). `""` clears title and subtitle, `[]` clears tags
-	// and socialLinks. A field Studio's rules refuse is
-	// `400 invalid_body` naming it. The Explore thumbnail has its own
-	// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-	//
-	// `visibility` follows Studio's rules: making an avatar `public` needs
-	// a title, a tag, a subtitle, a description and a thumbnail (`409
-	// public_requirements_missing`, with the `missing` fields), checked on
-	// the state after the rest of the request. On an avatar already
-	// public, only clearing one of them is refused (the same error, with
-	// the cleared fields as `missing`); its other edits, and `public`
-	// sent again, pass. Making it `public` or `unlisted` passes the
-	// moderation publish gate (`409 moderation_blocked` while the avatar
-	// is held or not yet checked, when the gate is enforced). A value
-	// equal to the stored one is no change.
-	//
-	// `statementType` records who the avatar depicts, as Studio's
-	// verification dialog does; `""` resets it (null leaves it unchanged).
-	// It cannot change while the avatar is monetized (`409
-	// avatar_is_earning`; turn monetization off in the same request
-	// first), and changing or resetting it clears `verified`. The identity
-	// check that verifies a self or representative statement runs in
-	// Creator Studio only.
-	//
-	// `monetization.enabled` turns monetization on or off with Studio's
-	// switch's preconditions: a verified avatar or the fictional
-	// statement (`409 statement_required` / `identity_not_verified`), a
-	// verified payout account (`409 payouts_not_ready`; payouts are set up
-	// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-	// eligibility (`409 monetization_eligibility_not_met`) and room under
-	// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-	// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-	// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-	// pool to the account. Turning it off always works.
-	//
-	// `name` and `description` are written with these fields, under the
-	// same rules (`name` at most 100 characters once trimmed, counted in
-	// UTF-16 units as Studio counts them; `description` at most 280).
-	//
-	// Every field of the request is checked before anything is written.
-	// Then the name, description, share fields, statement, monetization
-	// and visibility are written first, in one write: a refusal of any of
-	// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-	// leaves the whole request unwritten, including the persona, preview
-	// message, knowledge and settings, and starts no rebuild. The rest is
-	// written after it, so a later failure (a rebuild refused with `429`,
-	// an outage) answers an error with that first write already made;
-	// sending the same request again writes it as no change and retries
-	// the rest.
+	// | Field | Rule |
+	// |---|---|
+	// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+	// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+	// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+	// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+	// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId} (the `UpdateAvatar` operationId).
 	UpdateAvatarWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateAvatar Update name, description, visibility, language or preview message
+	// UpdateAvatar Update an avatar
 	//
-	// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-	// guardrails, habits, aliases, name) rebuild the persona in the
-	// background. A v1 avatar is briefly not ready; a v2 avatar stays
-	// `ready` and keeps serving its current config while `stages.persona`
-	// shows the rebuild, and serves the new persona a few seconds after
-	// that stage completes. A persona edit captures nothing, so
-	// `rebuilding` (which is about candidates) does not change. Every
-	// persona edit is moderated again, on both engines: a `clean` avatar
-	// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-	// rebuild already under way waits: its candidates stay queued and
-	// are not captured until the check passes; the serving candidate
-	// keeps serving.
-	// On v2, a changed `previewMessage`, portrait or voice captures new
-	// candidates.
+	// Changes an avatar's settings, persona, knowledge or share card, and
+	// returns the avatar. Send only the fields to change: an absent or `null`
+	// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+	// optional one.
 	//
-	// Send only the fields to change: an absent or `null` field is left
-	// unchanged. To remove a value, send it empty: `""` for description,
-	// greeting, preferredAlias and spokenName, `[]` for guardrails and
-	// knownAliases, `{}` for conversationalHabits, and `""` for
-	// `previewMessage` to go back to the default sentence. whoPrompt,
-	// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-	// schema (`422`), and so does blank selfIntroduction text under 51
-	// characters; other blank text is `400 invalid_manifest`.
+	// - **Persona edits** rebuild the persona in the background and are
+	//   moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+	//   serving until the new persona is live.
+	// - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+	//   new version with new candidates, like a new portrait or voice, while
+	//   the serving candidate keeps serving. `blackoutRecovery` and
+	//   `runtimeSeed` apply from the next session and rebuild nothing.
+	// - **Knowledge**: knowledge files stay; replace them with `PUT
+	//   /v1/avatars/{avatarId}/knowledge`.
+	// - **Visibility**: `public` needs a title, a tag, a subtitle, a
+	//   description and a thumbnail (`409 public_requirements_missing` lists
+	//   what is missing). `public` and `unlisted` must pass moderation (`409
+	//   moderation_blocked`).
+	// - **Atomicity**: every field is checked first. The name, description,
+	//   share fields, statement, monetization and visibility are written
+	//   together, and a refusal of any of them writes nothing. The rest is
+	//   written after, so after a later error, send the same request again to
+	//   retry.
 	//
-	// `personality` and `scenario` are older names of `whoPrompt` and
-	// `whatPrompt` and still accepted, nested in `persona` or at the top
-	// level. A field given twice (under both names, or both at the top
-	// level and in `persona`) is `400 invalid_body`.
-	//
-	// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-	// (`400 preview_message_too_long`); changing it captures new
-	// candidates. Sending the current `previewMessage` again is no
-	// rebuild, and `""` (the default sentence) rebuilds only when a custom
-	// line was set.
-	//
-	// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-	// sessions render: nothing is rebuilt or captured, and the serving
-	// candidate stays. They are ignored for v1 avatars (the settings exist
-	// only on the v2 renderer).
-	//
-	// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-	// the frame size: it is a build input, so a new size builds a new
-	// version (new candidates, as a new portrait does) while the serving
-	// candidate keeps serving; the current size sent again builds nothing.
-	//
-	// `knowledge.facts` replaces the avatar's knowledge text (at most
-	// 32,000 characters; `""` removes it), on either engine, as Creator
-	// Studio's "Facts with context" box does: the text and its knowledge
-	// file, which the knowledge stage processes again. Other knowledge
-	// files stay. Nothing is captured.
-	//
-	// `knowledge.questionnaire` replaces the answers to Creator Studio's
-	// knowledge questionnaire, question to answer, as Studio's Knowledge
-	// step saves them: the answers and their knowledge file, which the
-	// knowledge stage processes again (answers equal to the current ones
-	// change nothing). `{}` removes them. The questions are the `questions`
-	// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-	// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-	//
-	// The share fields are what Creator Studio's "Share to community" card
-	// edits, written as Studio writes them and with its limits, on either
-	// engine (nothing is rebuilt): `title` (at most 100 characters),
-	// `subtitle` (200), `description` (280), `tags` (the whole set: at
-	// most 5 after trimming and dropping case-insensitive duplicates, each
-	// with a letter or digit; an existing tag of the same name is reused)
-	// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-	// twitter or youtube, each at most once, with an https URL of at most
-	// 500 characters). `""` clears title and subtitle, `[]` clears tags
-	// and socialLinks. A field Studio's rules refuse is
-	// `400 invalid_body` naming it. The Explore thumbnail has its own
-	// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-	//
-	// `visibility` follows Studio's rules: making an avatar `public` needs
-	// a title, a tag, a subtitle, a description and a thumbnail (`409
-	// public_requirements_missing`, with the `missing` fields), checked on
-	// the state after the rest of the request. On an avatar already
-	// public, only clearing one of them is refused (the same error, with
-	// the cleared fields as `missing`); its other edits, and `public`
-	// sent again, pass. Making it `public` or `unlisted` passes the
-	// moderation publish gate (`409 moderation_blocked` while the avatar
-	// is held or not yet checked, when the gate is enforced). A value
-	// equal to the stored one is no change.
-	//
-	// `statementType` records who the avatar depicts, as Studio's
-	// verification dialog does; `""` resets it (null leaves it unchanged).
-	// It cannot change while the avatar is monetized (`409
-	// avatar_is_earning`; turn monetization off in the same request
-	// first), and changing or resetting it clears `verified`. The identity
-	// check that verifies a self or representative statement runs in
-	// Creator Studio only.
-	//
-	// `monetization.enabled` turns monetization on or off with Studio's
-	// switch's preconditions: a verified avatar or the fictional
-	// statement (`409 statement_required` / `identity_not_verified`), a
-	// verified payout account (`409 payouts_not_ready`; payouts are set up
-	// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-	// eligibility (`409 monetization_eligibility_not_met`) and room under
-	// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-	// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-	// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-	// pool to the account. Turning it off always works.
-	//
-	// `name` and `description` are written with these fields, under the
-	// same rules (`name` at most 100 characters once trimmed, counted in
-	// UTF-16 units as Studio counts them; `description` at most 280).
-	//
-	// Every field of the request is checked before anything is written.
-	// Then the name, description, share fields, statement, monetization
-	// and visibility are written first, in one write: a refusal of any of
-	// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-	// leaves the whole request unwritten, including the persona, preview
-	// message, knowledge and settings, and starts no rebuild. The rest is
-	// written after it, so a later failure (a rebuild refused with `429`,
-	// an outage) answers an error with that first write already made;
-	// sending the same request again writes it as no change and retries
-	// the rest.
+	// | Field | Rule |
+	// |---|---|
+	// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+	// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+	// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+	// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+	// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId} (the `UpdateAvatar` operationId).
 	UpdateAvatar(ctx context.Context, avatarId AvatarIdPath, body UpdateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarAppearance The avatar's portrait
+	// GetAvatarAppearance Get the portrait
+	//
+	// Returns a presigned URL of the portrait last given. The URL expires
+	// after about an hour.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/appearance (the `GetAvatarAppearance` operationId).
 	GetAvatarAppearance(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarAppearanceWithBody Replace the avatar's portrait
+	// ReplaceAvatarAppearanceWithBody Replace the portrait
 	//
-	// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-	// front-facing, head and shoulders with some margin around the head (a face that
-	// fills the frame cannot be animated), the face at least about a third of the
-	// frame, in even light, with the **lips slightly parted as if about to speak**:
-	// a v2 avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still).
-	// The build refuses a clearly bad portrait at the `appearance` stage with a
-	// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-	// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-	// from `POST /v1/uploads`, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its portrait this way; on v2 it captures the first
-	// candidate once the voice is there too.
+	// Replaces the avatar's portrait and re-runs the build stages that depend
+	// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+	// portrait this way (on v2, the first candidate is captured once the voice
+	// is there too).
+	//
+	// - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+	//   of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+	//   `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+	//   `portrait` upload consumed on success.
+	// - **Portrait**: front-facing, head and shoulders with some margin around
+	//   the head, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/appearance (the `ReplaceAvatarAppearance` operationId).
 	ReplaceAvatarAppearanceWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarAppearance Replace the avatar's portrait
+	// ReplaceAvatarAppearance Replace the portrait
 	//
-	// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-	// front-facing, head and shoulders with some margin around the head (a face that
-	// fills the frame cannot be animated), the face at least about a third of the
-	// frame, in even light, with the **lips slightly parted as if about to speak**:
-	// a v2 avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still).
-	// The build refuses a clearly bad portrait at the `appearance` stage with a
-	// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-	// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-	// from `POST /v1/uploads`, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its portrait this way; on v2 it captures the first
-	// candidate once the voice is there too.
+	// Replaces the avatar's portrait and re-runs the build stages that depend
+	// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+	// portrait this way (on v2, the first candidate is captured once the voice
+	// is there too).
+	//
+	// - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+	//   of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+	//   `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+	//   `portrait` upload consumed on success.
+	// - **Portrait**: front-facing, head and shoulders with some margin around
+	//   the head, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5510,33 +5258,30 @@ type ClientInterface interface {
 	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateAvatarSession(ctx context.Context, avatarId AvatarIdPath, params *CreateAvatarSessionParams, body CreateAvatarSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAvatarCandidates List the candidates and versions of a v2 avatar
+	// ListAvatarCandidates List candidates
 	//
-	// v2 (`engine: v2`) avatars only. A candidate (a take) is one capture: a
-	// sink latent that decides lip sync and motion for this image and voice
-	// pair, plus a ~3 s talking preview of the avatar saying the preview
-	// message. Candidates are identified by `candidateId`; the `seed` is
-	// informational (the same seed does not reproduce a capture). Promote one
-	// with `PUT /selected_candidate`; with `seedSelection: auto` the first
-	// completed candidate of the current version is promoted for you.
+	// Lists a v2 avatar's candidates and versions. A candidate (a take) is one
+	// capture of the avatar's lip sync and motion, with a short talking
+	// preview to compare. A version is one set of capture inputs: the
+	// portrait, the voice sample and the preview message.
 	//
-	// A version is one set of capture inputs: the portrait, the voice
-	// sample and the preview message. Replacing any of them starts a new
-	// version; the takes of older versions are kept. `versions` always
-	// lists every version (oldest first) with what going back to it brings
-	// back. `items` lists the takes of the current version, plus the
-	// serving take if it is older; pass `versions=all` for the takes of
-	// every version.
+	// - `items` lists the current version's takes and the serving take;
+	//   `versions=all` adds every older version's.
+	// - `versions` always lists every version, oldest first, with what going
+	//   back to it restores.
+	// - Pick one with `PUT /v1/avatars/{avatarId}/selected_candidate`. With
+	//   `seedSelection: auto`, the first completed take of the current version
+	//   is picked for you.
+	// - `seed` is informational: the same seed does not reproduce a capture.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/candidates (the `ListAvatarCandidates` operationId).
 	ListAvatarCandidates(ctx context.Context, avatarId AvatarIdPath, params *ListAvatarCandidatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateAvatarCandidatesWithBody Capture more candidates
 	//
-	// Captures `count` more candidates from the avatar's current bundle and
-	// prime clip without re-running preprocessing. Captures are free for now
-	// but count against the account's limit: at most 10 queued or running
-	// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+	// Captures `count` more candidates of a v2 avatar from its current inputs,
+	// without preprocessing again. Captures count against the account's limit
+	// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5545,265 +5290,224 @@ type ClientInterface interface {
 
 	// CreateAvatarCandidates Capture more candidates
 	//
-	// Captures `count` more candidates from the avatar's current bundle and
-	// prime clip without re-running preprocessing. Captures are free for now
-	// but count against the account's limit: at most 10 queued or running
-	// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+	// Captures `count` more candidates of a v2 avatar from its current inputs,
+	// without preprocessing again. Captures count against the account's limit
+	// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/candidates (the `CreateAvatarCandidates` operationId).
 	CreateAvatarCandidates(ctx context.Context, avatarId AvatarIdPath, body CreateAvatarCandidatesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAvatarConductor Remove the graph conductor of a v2 avatar
+	// DeleteAvatarConductor Remove the conductor
 	//
-	// The next session runs without a conductor, also one the avatar's own
-	// config carries (a running session keeps the one it started with).
-	// Nothing is rebuilt. Removing a conductor that is not set is no
-	// error.
+	// Removes a v2 avatar's conductor, including one its own configuration
+	// carries: the next session runs without one, and a running session keeps
+	// its own. Nothing is rebuilt. Removing a conductor that is not set is not
+	// an error.
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/conductor (the `DeleteAvatarConductor` operationId).
 	DeleteAvatarConductor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarConductor Read the graph conductor of a v2 avatar
+	// GetAvatarConductor Get the conductor
 	//
-	// The conductor as saved: the whole graph and `speakAfterS`. The
-	// avatar detail (`GET /v1/avatars/{avatarId}`) reports only whether one
-	// is set and its node count.
+	// Returns a v2 avatar's conductor as saved: the whole graph and
+	// `speakAfterS`. `GET /v1/avatars/{avatarId}` only reports whether one is
+	// set and its node count.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/conductor (the `GetAvatarConductor` operationId).
 	GetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetAvatarConductorWithBody Set the graph conductor of a v2 avatar
+	// SetAvatarConductorWithBody Set the conductor
 	//
-	// Gives the avatar's conversations an agenda: a graph of steps, each
-	// with the avatar's instructions while the conversation is in it, and
-	// edges that say when it moves on. At the end of every turn a judge
-	// model gives each condition (`when`) of the current step the
-	// probability that it holds; edges without a condition share the
-	// probability that none holds, by `weight`. The step then takes its
-	// likeliest edge (or, marked `random`, draws one). A step without
-	// edges is the end. An edge marked `speak`, taken after an avatar
-	// turn, has the avatar go on under the next step without waiting for
-	// the user (`speakAfterS` seconds later; absent, Causeur's default).
+	// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+	// instructions for the avatar and edges that say when to move on. It
+	// replaces any earlier conductor, including one the avatar's own
+	// configuration carries, and applies from the next session. Nothing is
+	// rebuilt.
 	//
-	// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-	// conductor runs on Causeur, the conversation runtime v2 sessions are
-	// moving to; it has no effect on a session the behavior module runs.
-	// It replaces any earlier conductor, and any conductor the avatar's
-	// own config carries, and applies from the next session (a running
-	// session keeps what it started with). Nothing is rebuilt or captured,
-	// and the serving candidate stays. A session whose whole payload would
-	// exceed Causeur's limit (262,144 characters, the avatar's persona and
-	// config included) starts without the conductor.
-	//
-	// The graph is checked before it is saved, with Causeur's own rules
-	// and limits; a refusal names the field (`400 invalid_conductor`,
-	// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-	// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-	// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-	// 1000 characters; a condition at most 300; a weight above 0 and at
-	// most 1000, and only on an edge without a condition (default 1); one
-	// edge with a condition and one without per target at most; every
-	// node reachable from `start`, every edge to a node of the graph, a
-	// `speak` edge only into a step with instructions. Not accepted here:
-	// `replan` steps (the graph runs as given), text holding a
-	// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-	// 150,000 characters of JSON (non-ASCII characters count as their
-	// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-	// of the session (a v2 avatar's own config is typically under 15,000).
-	// Only `graph` and `speakAfterS` are accepted at the top level. The
-	// request body may be up to 512 KiB.
+	// - **How it runs**: after each turn, a judge model scores each edge's
+	//   `when` condition. Edges without a condition share the chance that none
+	//   holds, by `weight`. The step takes its likeliest edge, or draws one
+	//   when `random`. A step without edges is the end. A `speak` edge lets
+	//   the avatar go on without waiting for the user, `speakAfterS` seconds
+	//   later.
+	// - **Validation**: the graph is checked before it is saved. `400
+	//   invalid_conductor` names the field (e.g.
+	//   `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+	//   `422`. Per-field limits are on the schema.
+	// - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+	//   graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+	//   request body may be up to 512 KiB. A session whose whole configuration
+	//   would be too large starts without the conductor.
+	// - v1 avatars are refused (`409 not_v2_avatar`).
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductorWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetAvatarConductor Set the graph conductor of a v2 avatar
+	// SetAvatarConductor Set the conductor
 	//
-	// Gives the avatar's conversations an agenda: a graph of steps, each
-	// with the avatar's instructions while the conversation is in it, and
-	// edges that say when it moves on. At the end of every turn a judge
-	// model gives each condition (`when`) of the current step the
-	// probability that it holds; edges without a condition share the
-	// probability that none holds, by `weight`. The step then takes its
-	// likeliest edge (or, marked `random`, draws one). A step without
-	// edges is the end. An edge marked `speak`, taken after an avatar
-	// turn, has the avatar go on under the next step without waiting for
-	// the user (`speakAfterS` seconds later; absent, Causeur's default).
+	// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+	// instructions for the avatar and edges that say when to move on. It
+	// replaces any earlier conductor, including one the avatar's own
+	// configuration carries, and applies from the next session. Nothing is
+	// rebuilt.
 	//
-	// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-	// conductor runs on Causeur, the conversation runtime v2 sessions are
-	// moving to; it has no effect on a session the behavior module runs.
-	// It replaces any earlier conductor, and any conductor the avatar's
-	// own config carries, and applies from the next session (a running
-	// session keeps what it started with). Nothing is rebuilt or captured,
-	// and the serving candidate stays. A session whose whole payload would
-	// exceed Causeur's limit (262,144 characters, the avatar's persona and
-	// config included) starts without the conductor.
-	//
-	// The graph is checked before it is saved, with Causeur's own rules
-	// and limits; a refusal names the field (`400 invalid_conductor`,
-	// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-	// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-	// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-	// 1000 characters; a condition at most 300; a weight above 0 and at
-	// most 1000, and only on an edge without a condition (default 1); one
-	// edge with a condition and one without per target at most; every
-	// node reachable from `start`, every edge to a node of the graph, a
-	// `speak` edge only into a step with instructions. Not accepted here:
-	// `replan` steps (the graph runs as given), text holding a
-	// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-	// 150,000 characters of JSON (non-ASCII characters count as their
-	// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-	// of the session (a v2 avatar's own config is typically under 15,000).
-	// Only `graph` and `speakAfterS` are accepted at the top level. The
-	// request body may be up to 512 KiB.
+	// - **How it runs**: after each turn, a judge model scores each edge's
+	//   `when` condition. Edges without a condition share the chance that none
+	//   holds, by `weight`. The step takes its likeliest edge, or draws one
+	//   when `random`. A step without edges is the end. A `speak` edge lets
+	//   the avatar go on without waiting for the user, `speakAfterS` seconds
+	//   later.
+	// - **Validation**: the graph is checked before it is saved. `400
+	//   invalid_conductor` names the field (e.g.
+	//   `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+	//   `422`. Per-field limits are on the schema.
+	// - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+	//   graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+	//   request body may be up to 512 KiB. A session whose whole configuration
+	//   would be too large starts without the conductor.
+	// - v1 avatars are refused (`409 not_v2_avatar`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarKnowledge The avatar's facts and knowledge files
+	// GetAvatarKnowledge Get the knowledge
+	//
+	// Returns the facts text, the knowledge questionnaire's questions and
+	// answers, and the knowledge files with presigned URLs.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/knowledge (the `GetAvatarKnowledge` operationId).
 	GetAvatarKnowledge(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarKnowledgeWithBody Replace the avatar's knowledge files
+	// ReplaceAvatarKnowledgeWithBody Replace the knowledge files
 	//
-	// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-	// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-	// `descriptions` is an optional JSON object mapping a filename to a short description.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-	// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-	// list clears the set). A URL's file is named by its last path segment, an
-	// upload's by the `fileName` it was created with; `descriptions` uses those
-	// names. The uploads are consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-	// keep their own files: replacing the files leaves them (change them
-	// with PATCH). Knowledge is not used in v2
-	// conversations yet.
+	// Replaces the avatar's whole set of knowledge files and re-runs the build
+	// stages that depend on them; send none to clear the set. The
+	// `knowledge.facts` text and the questionnaire answers are kept (change
+	// them with `PATCH /v1/avatars/{avatarId}`).
+	//
+	// - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+	//   txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+	//   `descriptions` JSON object of file name to description. Where `POST
+	//   /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+	//   {...}}` also works, with https URLs or `knowledge` uploads consumed on
+	//   success.
+	// - A URL's file is named by its last path segment, an upload's by its
+	//   `fileName`; `descriptions` uses those names.
+	// - v2 conversations do not use knowledge yet.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/knowledge (the `ReplaceAvatarKnowledge` operationId).
 	ReplaceAvatarKnowledgeWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarKnowledge Replace the avatar's knowledge files
+	// ReplaceAvatarKnowledge Replace the knowledge files
 	//
-	// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-	// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-	// `descriptions` is an optional JSON object mapping a filename to a short description.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-	// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-	// list clears the set). A URL's file is named by its last path segment, an
-	// upload's by the `fileName` it was created with; `descriptions` uses those
-	// names. The uploads are consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-	// keep their own files: replacing the files leaves them (change them
-	// with PATCH). Knowledge is not used in v2
-	// conversations yet.
+	// Replaces the avatar's whole set of knowledge files and re-runs the build
+	// stages that depend on them; send none to clear the set. The
+	// `knowledge.facts` text and the questionnaire answers are kept (change
+	// them with `PATCH /v1/avatars/{avatarId}`).
+	//
+	// - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+	//   txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+	//   `descriptions` JSON object of file name to description. Where `POST
+	//   /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+	//   {...}}` also works, with https URLs or `knowledge` uploads consumed on
+	//   success.
+	// - A URL's file is named by its last path segment, an upload's by its
+	//   `fileName`; `descriptions` uses those names.
+	// - v2 conversations do not use knowledge yet.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/knowledge (the `ReplaceAvatarKnowledge` operationId).
 	ReplaceAvatarKnowledge(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarMonetization The avatar's monetization eligibility and earnings
+	// GetAvatarMonetization Get monetization
 	//
-	// What Creator Studio's monetization panel shows: whether the avatar is
-	// monetized, its last 30 days against the eligibility requirements, the
-	// account's cap on monetizing avatars, and what it has earned. The 30-day
-	// numbers leave out the account's own conversations. Earnings are in
-	// microcredits (100 = 1 credit); the current cycle is the account's
-	// billing cycle. Requires `avatars:read`; an avatar-scoped key reads only
-	// its own avatar.
+	// Returns whether the avatar is monetized, its last 30 days against the
+	// eligibility requirements (the account's own conversations left out), the
+	// account's cap on monetized avatars, and what the avatar earned, in
+	// microcredits (100 = 1 credit). Requires `avatars:read`.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
 	GetAvatarMonetization(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SelectAvatarCandidateWithBody Promote the candidate a v2 avatar renders with
+	// SelectAvatarCandidateWithBody Select a candidate
 	//
-	// Picks a completed candidate. The pick is recorded at once
-	// (`selectedCandidateId`); the avatar serves it once its config is
-	// built, a few seconds later (`servingCandidateId`). The first pick
-	// makes the avatar `ready`; a later one switches without downtime, with
-	// `rebuilding` true until it serves.
+	// Picks the completed candidate a v2 avatar serves. The pick is recorded
+	// at once (`selectedCandidateId`) and served a few seconds later
+	// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+	// one switches without downtime, with `rebuilding` true until it serves.
 	//
-	// A completed candidate of an older version (`current: false`,
-	// `restorable: true`) goes back to that version -- also when it is
-	// still the pick from before an edit: its portrait, voice sample and
-	// preview message, and the language its default sentence speaks,
-	// become the avatar's again, in one step, and every other setting
-	// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-	// Nothing is captured again and nothing is charged: that version's
-	// takes are already built. Takes of the newer version still queued or
-	// being captured are cancelled. Moderation is not run again for
-	// inputs already checked together; a combination never checked (the
-	// old portrait with a name or description edited since) is moderated
-	// like any edit. Re-selecting the current pick is always allowed.
-	// Queued, failed and superseded candidates cannot be selected.
+	// - **Older versions**: picking a restorable take of an older version
+	//   (`current: false`, `restorable: true`) restores that version's
+	//   portrait, voice sample, preview message and default-sentence language
+	//   in one step. Other settings stay as they are, nothing is captured or
+	//   charged, and the newer version's unfinished takes are cancelled.
+	// - **Moderation**: inputs already checked together are not checked again;
+	//   a combination never checked is moderated like an edit.
+	// - Queued, failed and superseded candidates cannot be selected (`409
+	//   candidate_not_ready`). Selecting the current pick again is always
+	//   allowed.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/selected_candidate (the `SelectAvatarCandidate` operationId).
 	SelectAvatarCandidateWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SelectAvatarCandidate Promote the candidate a v2 avatar renders with
+	// SelectAvatarCandidate Select a candidate
 	//
-	// Picks a completed candidate. The pick is recorded at once
-	// (`selectedCandidateId`); the avatar serves it once its config is
-	// built, a few seconds later (`servingCandidateId`). The first pick
-	// makes the avatar `ready`; a later one switches without downtime, with
-	// `rebuilding` true until it serves.
+	// Picks the completed candidate a v2 avatar serves. The pick is recorded
+	// at once (`selectedCandidateId`) and served a few seconds later
+	// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+	// one switches without downtime, with `rebuilding` true until it serves.
 	//
-	// A completed candidate of an older version (`current: false`,
-	// `restorable: true`) goes back to that version -- also when it is
-	// still the pick from before an edit: its portrait, voice sample and
-	// preview message, and the language its default sentence speaks,
-	// become the avatar's again, in one step, and every other setting
-	// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-	// Nothing is captured again and nothing is charged: that version's
-	// takes are already built. Takes of the newer version still queued or
-	// being captured are cancelled. Moderation is not run again for
-	// inputs already checked together; a combination never checked (the
-	// old portrait with a name or description edited since) is moderated
-	// like any edit. Re-selecting the current pick is always allowed.
-	// Queued, failed and superseded candidates cannot be selected.
+	// - **Older versions**: picking a restorable take of an older version
+	//   (`current: false`, `restorable: true`) restores that version's
+	//   portrait, voice sample, preview message and default-sentence language
+	//   in one step. Other settings stay as they are, nothing is captured or
+	//   charged, and the newer version's unfinished takes are cancelled.
+	// - **Moderation**: inputs already checked together are not checked again;
+	//   a combination never checked is moderated like an edit.
+	// - Queued, failed and superseded candidates cannot be selected (`409
+	//   candidate_not_ready`). Selecting the current pick again is always
+	//   allowed.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/selected_candidate (the `SelectAvatarCandidate` operationId).
 	SelectAvatarCandidate(ctx context.Context, avatarId AvatarIdPath, body SelectAvatarCandidateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarSponsor Sponsor pool balance and settings
+	// GetAvatarSponsor Get the sponsor pool
 	//
-	// Callable by an API key (`avatars:read`) or a signed-in user acting for
-	// the account. Sponsoring otherwise takes an API key with
-	// `billing:write` or a signed-in user, who sponsors the account's
-	// avatars as in Studio without holding that scope.
+	// Returns the avatar's sponsor pool balance and settings. Readable by an
+	// API key with `avatars:read` or a signed-in user of the account. Changing
+	// the pool takes an API key with `billing:write` or a signed-in user.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 	GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateAvatarSponsorWithBody Update sponsor settings
 	//
-	// One request applies all of its fields or none. `anonymousAccess: true`
-	// lets visitors without an account spend the pool, so it needs an avatar
-	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-	// or turn on auto top-up) and is public or unlisted (`409
-	// avatar_not_shared`: change its visibility first). A monetized avatar
-	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-	// already stored (`400 auto_topup_incomplete`).
+	// Changes who may spend the avatar's sponsor pool, and when. The request
+	// applies all of its fields or none.
+	//
+	// - `anonymousAccess: true` lets visitors without an account spend the
+	//   pool. The avatar must be funded first (`409
+	//   avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+	//   public or unlisted (`409 avatar_not_shared`).
+	// - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+	//   already stored (`400 auto_topup_incomplete`).
+	// - A monetized avatar cannot be sponsored (`409
+	//   monetized_avatar_cannot_be_sponsored`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5812,391 +5516,389 @@ type ClientInterface interface {
 
 	// UpdateAvatarSponsor Update sponsor settings
 	//
-	// One request applies all of its fields or none. `anonymousAccess: true`
-	// lets visitors without an account spend the pool, so it needs an avatar
-	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-	// or turn on auto top-up) and is public or unlisted (`409
-	// avatar_not_shared`: change its visibility first). A monetized avatar
-	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-	// already stored (`400 auto_topup_incomplete`).
+	// Changes who may spend the avatar's sponsor pool, and when. The request
+	// applies all of its fields or none.
+	//
+	// - `anonymousAccess: true` lets visitors without an account spend the
+	//   pool. The avatar must be funded first (`409
+	//   avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+	//   public or unlisted (`409 avatar_not_shared`).
+	// - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+	//   already stored (`400 auto_topup_incomplete`).
+	// - A monetized avatar cannot be sponsored (`409
+	//   monetized_avatar_cannot_be_sponsored`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId}/sponsor (the `UpdateAvatarSponsor` operationId).
 	UpdateAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, body UpdateAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GrantAvatarSponsorWithBody Move credits from the account into the avatar's sponsor pool
+	// GrantAvatarSponsorWithBody Fund the sponsor pool
 	//
-	// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-	// first successful result instead of granting twice.
+	// Moves credits from the account into the avatar's sponsor pool. Send an
+	// `Idempotency-Key` to retry safely: the same key replays the first result
+	// instead of granting twice.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/grants (the `GrantAvatarSponsor` operationId).
 	GrantAvatarSponsorWithBody(ctx context.Context, avatarId AvatarIdPath, params *GrantAvatarSponsorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GrantAvatarSponsor Move credits from the account into the avatar's sponsor pool
+	// GrantAvatarSponsor Fund the sponsor pool
 	//
-	// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-	// first successful result instead of granting twice.
+	// Moves credits from the account into the avatar's sponsor pool. Send an
+	// `Idempotency-Key` to retry safely: the same key replays the first result
+	// instead of granting twice.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/grants (the `GrantAvatarSponsor` operationId).
 	GrantAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, params *GrantAvatarSponsorParams, body GrantAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// WithdrawAvatarSponsorWithBody Return unreserved sponsor credits to the account
+	// WithdrawAvatarSponsorWithBody Withdraw sponsor credits
+	//
+	// Returns the sponsor pool's unreserved credits to the account.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/withdrawals (the `WithdrawAvatarSponsor` operationId).
 	WithdrawAvatarSponsorWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// WithdrawAvatarSponsor Return unreserved sponsor credits to the account
+	// WithdrawAvatarSponsor Withdraw sponsor credits
+	//
+	// Returns the sponsor pool's unreserved credits to the account.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/withdrawals (the `WithdrawAvatarSponsor` operationId).
 	WithdrawAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, body WithdrawAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAvatarThumbnail Remove the avatar's Explore thumbnail
+	// DeleteAvatarThumbnail Remove the thumbnail
 	//
-	// Removes the thumbnail, custom or automatic: Explore shows the
-	// portrait in its place, and an automatic thumbnail may be made for
-	// the avatar again. A public avatar keeps needing a thumbnail, so
-	// removing it is `409 public_requirements_missing`; make the avatar
-	// unlisted or private first. Answers the detail. Requires
-	// `avatars:write`.
+	// Removes the thumbnail, custom or automatic: Explore shows the portrait
+	// instead, and an automatic thumbnail may be made again. Returns the
+	// avatar. Requires `avatars:write`.
+	//
+	// A public avatar needs a thumbnail, so this is `409
+	// public_requirements_missing` until you make it unlisted or private.
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/thumbnail (the `DeleteAvatarThumbnail` operationId).
 	DeleteAvatarThumbnail(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarThumbnailWithBody Set the avatar's Explore thumbnail
+	// ReplaceAvatarThumbnailWithBody Set the thumbnail
 	//
-	// A custom thumbnail for the avatar's card on Explore, as Creator
-	// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-	// MB) as the `file` part, or, on an instance that keeps uploads,
-	// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-	// `portrait` upload from `POST /v1/uploads`, consumed when the
-	// thumbnail is set). It replaces any thumbnail, and automatic ones are
-	// no longer made for the avatar. Nothing is rebuilt. Answers the
-	// detail, whose `profile.thumbnailSource` reads `custom` and whose
-	// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-	// is one of what public needs (removing it is refused; setting one
-	// never is). Requires `avatars:write`.
+	// Sets a custom thumbnail for the avatar's Explore card, replacing any
+	// other; automatic thumbnails are no longer made for it. Nothing is
+	// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+	//
+	// - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+	//   part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+	//   URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+	//   consumed on success.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnailWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarThumbnail Set the avatar's Explore thumbnail
+	// ReplaceAvatarThumbnail Set the thumbnail
 	//
-	// A custom thumbnail for the avatar's card on Explore, as Creator
-	// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-	// MB) as the `file` part, or, on an instance that keeps uploads,
-	// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-	// `portrait` upload from `POST /v1/uploads`, consumed when the
-	// thumbnail is set). It replaces any thumbnail, and automatic ones are
-	// no longer made for the avatar. Nothing is rebuilt. Answers the
-	// detail, whose `profile.thumbnailSource` reads `custom` and whose
-	// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-	// is one of what public needs (removing it is refused; setting one
-	// never is). Requires `avatars:write`.
+	// Sets a custom thumbnail for the avatar's Explore card, replacing any
+	// other; automatic thumbnails are no longer made for it. Nothing is
+	// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+	//
+	// - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+	//   part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+	//   URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+	//   consumed on success.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnail(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarThumbnailJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteAvatarVersion Delete an older version of a v2 avatar
+	// DeleteAvatarVersion Delete a version
 	//
-	// Deletes every take of an older version and the files only that
-	// version uses: its takes' sink latents and preview clips, and its
-	// portrait, voice sample, voice clone, prime clip and bundle unless a
-	// kept take or the current inputs still use them. Files that any kept
-	// take or the current inputs reference are never deleted. The version
-	// cannot be restored afterwards. The current version, and a version
-	// holding the serving or selected take, cannot be deleted; nor can a
-	// version whose capture is still running (retry when it ends). When
-	// storage cannot delete the files now, the takes are still gone and
-	// `pendingFiles` counts what is left: repeat the DELETE to retry.
-	// Deleting the avatar deletes all of its files, every version's
-	// included.
+	// Deletes an older version of a v2 avatar: its takes and the files only it
+	// uses. It can no longer be restored.
+	//
+	// - Files that a kept take or the current inputs use are never deleted.
+	// - The current version, a version holding the serving or selected take
+	//   (`409 version_in_use`) and one whose capture is still running (`409
+	//   version_busy`) cannot be deleted.
+	// - If storage cannot delete every file now, the takes are still gone and
+	//   `pendingFiles` counts what is left: call again to retry.
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
 	DeleteAvatarVersion(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAvatarVoice The avatar's voice sample and engine
+	// GetAvatarVoice Get the voice
+	//
+	// Returns a presigned URL of the voice sample last given, and the voice engine.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/voice (the `GetAvatarVoice` operationId).
 	GetAvatarVoice(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarVoiceWithBody Replace the avatar's voice sample
+	// ReplaceAvatarVoiceWithBody Replace the voice
 	//
-	// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-	// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-	// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its voice this way; on v2 it captures the first
-	// candidate once the portrait is there too.
+	// Replaces the avatar's voice sample and re-runs the build stages that
+	// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+	// gets its voice this way (on v2, the first candidate is captured once the
+	// portrait is there too).
+	//
+	// - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+	//   m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+	//   Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+	//   upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+	//   success.
+	// - Silence, pure tones or heavy noise fail the voice stage.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoiceWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAvatarVoice Replace the avatar's voice sample
+	// ReplaceAvatarVoice Replace the voice
 	//
-	// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-	// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-	// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its voice this way; on v2 it captures the first
-	// candidate once the portrait is there too.
+	// Replaces the avatar's voice sample and re-runs the build stages that
+	// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+	// gets its voice this way (on v2, the first candidate is captured once the
+	// portrait is there too).
+	//
+	// - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+	//   m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+	//   Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+	//   upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+	//   success.
+	// - Silence, pure tones or heavy noise fail the voice stage.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GenerateClipWithBody Render a video clip from an image and a prompt
+	// GenerateClipWithBody Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-	// character in `image`, moving as `prompt` describes, optionally
-	// speaking `audio`. No avatar is made or needed: the clip is rendered
-	// directly by Atmee's v2 renderer.
+	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// in `image`, moving as `prompt` describes and optionally speaking
+	// `audio`. No avatar is needed.
 	//
-	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-	// usable afterwards) or a public https link to a jpg, png or webp of at
-	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-	// webm, ...). The audio plays once from the start of the clip, padded
-	// with silence and cut at its end. `durationSeconds` is required with
-	// `audio` (the audio's own length is not read: set it to the audio's
-	// length, at most 15; without it the request is `400 invalid_input`)
-	// and defaults to 8 for a silent clip; `resolution` defaults to
-	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-	// are moderated first. If the image shows a real person other than the
-	// creator, have that person's permission first.
+	// - **Inputs**: `image` is a `portrait` upload or a public https link
+	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+	//   The audio plays once from the start, padded with silence or cut at the
+	//   end. The prompt and the image are moderated; if the image shows a real
+	//   person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio` (set it to
+	//   the audio's length; the file is not measured) and defaults to 8 for a
+	//   silent clip. At most 15 seconds where clips render on the sessions'
+	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
+	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+	//   side rounded up to 32 and the centre is cropped. Where
+	//   `clipAnySize` is false the render size must be one of
+	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+	//   short-lived `url` to download it.
+	// - **Billing**: the per-15-second price from `GET /v1/account`
+	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+	//   `durationSeconds` and rounded up, charged only when the clip comes
+	//   back.
+	// - **Slow starts**: a cold render can take minutes. After about 45
+	//   seconds the call answers `409 request_in_progress`; retry with the
+	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
+	//   once.
+	// - **Access**: needs v2 access (`403 v2_access_required`) and the
+	//   `generation:write` and `avatars:write` scopes.
 	//
-	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per 15 seconds
-	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-	// credit for a 15-second clip), charged only when the clip comes back; a
-	// flagged, failed or refused call costs nothing. Clips use the v2
-	// renderer, so an account without v2 access gets
-	// `403 v2_access_required`. A render can take
-	// minutes when the renderer starts cold: past about 45 seconds the
-	// request answers `409 request_in_progress`, and a retry with the same
-	// `Idempotency-Key` after `Retry-After` returns the clip once it is
-	// done, charged once. An image or audio the renderer cannot use (no
-	// face, an unreadable file) is `400 invalid_input` naming
-	// `input_failure image` or `input_failure audio`. Where clips are not
-	// offered the route answers `503 generation_unavailable`. A size this
-	// deployment offers but its render pool does not serve is `400
-	// invalid_input` naming `input_failure resolution` ("the render pool
-	// does not serve WxH"), not an image error. Requires
-	// `generation:write` and `avatars:write`.
+	// | Error | When |
+	// |---|---|
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClipWithBody(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GenerateClip Render a video clip from an image and a prompt
+	// GenerateClip Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-	// character in `image`, moving as `prompt` describes, optionally
-	// speaking `audio`. No avatar is made or needed: the clip is rendered
-	// directly by Atmee's v2 renderer.
+	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// in `image`, moving as `prompt` describes and optionally speaking
+	// `audio`. No avatar is needed.
 	//
-	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-	// usable afterwards) or a public https link to a jpg, png or webp of at
-	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-	// webm, ...). The audio plays once from the start of the clip, padded
-	// with silence and cut at its end. `durationSeconds` is required with
-	// `audio` (the audio's own length is not read: set it to the audio's
-	// length, at most 15; without it the request is `400 invalid_input`)
-	// and defaults to 8 for a silent clip; `resolution` defaults to
-	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-	// are moderated first. If the image shows a real person other than the
-	// creator, have that person's permission first.
+	// - **Inputs**: `image` is a `portrait` upload or a public https link
+	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+	//   The audio plays once from the start, padded with silence or cut at the
+	//   end. The prompt and the image are moderated; if the image shows a real
+	//   person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio` (set it to
+	//   the audio's length; the file is not measured) and defaults to 8 for a
+	//   silent clip. At most 15 seconds where clips render on the sessions'
+	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
+	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+	//   side rounded up to 32 and the centre is cropped. Where
+	//   `clipAnySize` is false the render size must be one of
+	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+	//   short-lived `url` to download it.
+	// - **Billing**: the per-15-second price from `GET /v1/account`
+	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+	//   `durationSeconds` and rounded up, charged only when the clip comes
+	//   back.
+	// - **Slow starts**: a cold render can take minutes. After about 45
+	//   seconds the call answers `409 request_in_progress`; retry with the
+	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
+	//   once.
+	// - **Access**: needs v2 access (`403 v2_access_required`) and the
+	//   `generation:write` and `avatars:write` scopes.
 	//
-	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per 15 seconds
-	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-	// credit for a 15-second clip), charged only when the clip comes back; a
-	// flagged, failed or refused call costs nothing. Clips use the v2
-	// renderer, so an account without v2 access gets
-	// `403 v2_access_required`. A render can take
-	// minutes when the renderer starts cold: past about 45 seconds the
-	// request answers `409 request_in_progress`, and a retry with the same
-	// `Idempotency-Key` after `Retry-After` returns the clip once it is
-	// done, charged once. An image or audio the renderer cannot use (no
-	// face, an unreadable file) is `400 invalid_input` naming
-	// `input_failure image` or `input_failure audio`. Where clips are not
-	// offered the route answers `503 generation_unavailable`. A size this
-	// deployment offers but its render pool does not serve is `400
-	// invalid_input` naming `input_failure resolution` ("the render pool
-	// does not serve WxH"), not an image error. Requires
-	// `generation:write` and `avatars:write`.
+	// | Error | When |
+	// |---|---|
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClip(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnhancePortraitWithBody Enhance or restyle a portrait photo
+	// EnhancePortraitWithBody Enhance a portrait
 	//
-	// Crops the caller's own photo to a square and returns up to four square
-	// portraits, one per image provider. Without `prompt` they are enhanced
-	// versions that keep the subject's identity. With `prompt` they restyle
-	// the photo as the prompt asks ("this person as a 1920s detective"): the
-	// person is kept unless the prompt asks otherwise. The prompt and the
-	// photo are each moderated before any provider is called. `image` is
-	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-	// stays usable afterwards) or a public https link to a jpg, png or webp of
-	// at most 10 MB. If the photo shows a real person other than the creator,
-	// have that person's permission first.
+	// Crops your photo to a square and returns up to four enhanced portraits
+	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// as the prompt asks ("this person as a 1920s detective"), keeping the
+	// person unless the prompt says otherwise.
 	//
-	// The outputs, price, charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+	//   usable afterwards) or a public https link to a jpg, png or webp of at
+	//   most 10 MB. The prompt and the photo are moderated first.
+	// - **Consent**: if the photo shows a real person other than you, get
+	//   their permission first.
+	// - **Output, billing and idempotency**: as for `POST
+	//   /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
 	EnhancePortraitWithBody(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnhancePortrait Enhance or restyle a portrait photo
+	// EnhancePortrait Enhance a portrait
 	//
-	// Crops the caller's own photo to a square and returns up to four square
-	// portraits, one per image provider. Without `prompt` they are enhanced
-	// versions that keep the subject's identity. With `prompt` they restyle
-	// the photo as the prompt asks ("this person as a 1920s detective"): the
-	// person is kept unless the prompt asks otherwise. The prompt and the
-	// photo are each moderated before any provider is called. `image` is
-	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-	// stays usable afterwards) or a public https link to a jpg, png or webp of
-	// at most 10 MB. If the photo shows a real person other than the creator,
-	// have that person's permission first.
+	// Crops your photo to a square and returns up to four enhanced portraits
+	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// as the prompt asks ("this person as a 1920s detective"), keeping the
+	// person unless the prompt says otherwise.
 	//
-	// The outputs, price, charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+	//   usable afterwards) or a public https link to a jpg, png or webp of at
+	//   most 10 MB. The prompt and the photo are moderated first.
+	// - **Consent**: if the photo shows a real person other than you, get
+	//   their permission first.
+	// - **Output, billing and idempotency**: as for `POST
+	//   /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
 	EnhancePortrait(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GeneratePortraitsWithBody Generate portraits from a description
+	// GeneratePortraitsWithBody Generate portraits
 	//
-	// Generates up to four square portraits from a text description, one from
-	// each configured image provider, with Atmee Studio's portrait prompt. For
-	// an invented character only: never use it to depict a real person from a
-	// description. For a real person, enhance their own photo with
-	// `POST /v1/generation/enhancements`, with their permission.
+	// Generates up to four square portraits of an invented character from a
+	// text description. Never use it to depict a real person: for a real
+	// person, enhance their own photo with `POST /v1/generation/enhancements`,
+	// with their permission.
 	//
-	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-	// take as they are (an upload works once and expires 24 hours after it was
-	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-	//
-	// Costs the operation's price (`GET /v1/account`), charged only when at least
-	// one portrait comes back; a flagged, failed or refused call costs nothing.
-	// The `Idempotency-Key` is required: a retry with the same key never charges
-	// twice and returns the first result (`replayed: true`). Requires
-	// `generation:write` and `avatars:write`.
+	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.image`) and `PUT
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	// - **Billing**: the operation's price from `GET /v1/account`, charged
+	//   only when at least one portrait comes back. A flagged, failed or
+	//   refused call costs nothing.
+	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+	//   key never charges twice and returns the first result (`replayed:
+	//   true`).
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraitsWithBody(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GeneratePortraits Generate portraits from a description
+	// GeneratePortraits Generate portraits
 	//
-	// Generates up to four square portraits from a text description, one from
-	// each configured image provider, with Atmee Studio's portrait prompt. For
-	// an invented character only: never use it to depict a real person from a
-	// description. For a real person, enhance their own photo with
-	// `POST /v1/generation/enhancements`, with their permission.
+	// Generates up to four square portraits of an invented character from a
+	// text description. Never use it to depict a real person: for a real
+	// person, enhance their own photo with `POST /v1/generation/enhancements`,
+	// with their permission.
 	//
-	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-	// take as they are (an upload works once and expires 24 hours after it was
-	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-	//
-	// Costs the operation's price (`GET /v1/account`), charged only when at least
-	// one portrait comes back; a flagged, failed or refused call costs nothing.
-	// The `Idempotency-Key` is required: a retry with the same key never charges
-	// twice and returns the first result (`replayed: true`). Requires
-	// `generation:write` and `avatars:write`.
+	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.image`) and `PUT
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	// - **Billing**: the operation's price from `GET /v1/account`, charged
+	//   only when at least one portrait comes back. A flagged, failed or
+	//   refused call costs nothing.
+	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+	//   key never charges twice and returns the first result (`replayed:
+	//   true`).
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraits(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DesignVoiceWithBody Design a voice from a description
+	// DesignVoiceWithBody Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
-	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-	// sample needs: a preview under 10 seconds is made once more with a longer
-	// read and dropped if it is still short, and one over 60 seconds is
-	// dropped. A preview whose length the provider did not report has
-	// `durationSeconds: null`.
+	// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+	// needs: a short one is made once more with a longer read, and one still
+	// outside that range is dropped.
 	//
-	// `sampleText`, when given, is what every preview says, in `language`:
-	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-	// greeting from the description, long enough for 10 seconds. Each preview
-	// reports the text it actually speaks (`spokenText`).
-	//
-	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-	// take as they are, plus a short-lived `url` to play it. The price,
-	// charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Text**: `sampleText` is what every preview says, in `language`;
+	//   without it, a greeting is written from the description. Each preview
+	//   reports what it actually says in `spokenText`.
+	// - **Output**: each preview is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   `null` when the length is unknown.
+	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
 	DesignVoiceWithBody(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DesignVoice Design a voice from a description
+	// DesignVoice Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
-	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-	// sample needs: a preview under 10 seconds is made once more with a longer
-	// read and dropped if it is still short, and one over 60 seconds is
-	// dropped. A preview whose length the provider did not report has
-	// `durationSeconds: null`.
+	// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+	// needs: a short one is made once more with a longer read, and one still
+	// outside that range is dropped.
 	//
-	// `sampleText`, when given, is what every preview says, in `language`:
-	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-	// greeting from the description, long enough for 10 seconds. Each preview
-	// reports the text it actually speaks (`spokenText`).
-	//
-	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-	// take as they are, plus a short-lived `url` to play it. The price,
-	// charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Text**: `sampleText` is what every preview says, in `language`;
+	//   without it, a greeting is written from the description. Each preview
+	//   reports what it actually says in `spokenText`.
+	// - **Output**: each preview is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   `null` when the length is unknown.
+	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6301,167 +6003,131 @@ type ClientInterface interface {
 	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	StartEmbedSession(ctx context.Context, body StartEmbedSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSpeechSessionWithBody Start a speech-to-speech session (audio only, no video)
+	// CreateSpeechSessionWithBody Start a speech session
 	//
-	// Reserves a **speech session** with an avatar: a realtime
-	// speech-to-speech conversation over a WebSocket, without video. The
-	// answer carries the WebSocket `url` and a short-lived `token`:
-	// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-	// token either as `Authorization: Bearer <token>` or as the WebSocket
-	// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-	// admits the connection. The session ends at its `endsAt` (the
-	// reservation plus `actualDurationSeconds`), whenever the connection
-	// opened. The first connection holds the session for good: no other
-	// connection can use it, so a client that lost its connection starts a
-	// new session.
+	// Starts a realtime speech-to-speech conversation with an avatar over a
+	// WebSocket, without video. The answer carries the WebSocket `url` and a
+	// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 	//
-	// `avatarId` is required: the conversation uses that avatar's persona
-	// (name, personality, facts, self-introduction) and always its voice;
-	// an avatar without a voice (a Fish Audio voice ID) answers `422
-	// avatar_has_no_voice`.
-	//
-	// `settings` pins `session.start` fields from your backend: the speech
-	// server applies them over the client's, refuses a client
-	// `session.start` / `session.update` that sets a pinned field (naming
-	// it), and leaves them out of the session it echoes. Unpinned fields
-	// stay the client's to set. Pinned persona fields override the
-	// avatar's. Appends (`session.instructions.append` and the like) stay
-	// allowed: they add to the pinned instructions, never replace them.
-	//
-	// Billing runs by the minute from the speech server's first usage report
-	// (within 30 s of the connection) until the session ends, at the
-	// plan's speech rate. A session nobody connects to costs nothing and is
-	// closed (`failed`, `no_user_joined`) by the first read, or start of
-	// the account, 30 seconds after its token expired, otherwise by the
-	// stale-session cleanup: 120 seconds without a heartbeat (the
-	// reservation sets the first), checked every minute.
-	//
-	// **Who pays.** Always the account that owns the avatar:
-	//
-	// - **API key** (`X-Api-Key`) — your backend, billed to the key's
-	//   account. Requires the `sessions` scope; an avatar-scoped key may
-	//   only start sessions on its avatar (it must name it).
-	// - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-	//   deployment accepts user tokens) — billed to the account the user
-	//   acts for (`X-Account-Id` when there are several). An avatar of
-	//   another account answers `403 avatar_not_allowed`.
-	// - **No credential** — `401`. There is no anonymous or visitor-paid
-	//   speech session.
-	//
-	// With both an API key and a bearer token, the key's start applies,
-	// as on `POST /v1/sessions`. Read and end a session with either
-	// credential of its account.
+	// - **Connecting**: present the token as `Authorization: Bearer <token>`
+	//   or as the WebSocket subprotocols `atmee-live` and
+	//   `atmee-token.<token>`. The first connection holds the session for
+	//   good; a client that loses it starts a new session.
+	// - **Avatar**: `avatarId` is required, and the session uses that avatar's
+	//   persona and voice. An avatar without a voice is `422
+	//   avatar_has_no_voice`.
+	// - **Pinned settings**: `settings` pins `session.start` fields from your
+	//   backend, over the client's. A client `session.start` or
+	//   `session.update` that sets a pinned field is refused, naming it;
+	//   appends such as `session.instructions.append` still add to it. Pinned
+	//   persona fields override the avatar's.
+	// - **Length**: the session ends at `endsAt` (the reservation plus
+	//   `actualDurationSeconds`), whenever the connection opened.
+	// - **Billing**: by the minute from the first usage report (within 30
+	//   seconds of connecting) until the end, always to the account that owns
+	//   the avatar. A session nobody connects to costs nothing and is closed
+	//   as `failed` (`no_user_joined`).
+	// - **Credentials**: an API key with the `sessions` scope (an
+	//   avatar-scoped key must name its avatar), or the owner's signed-in user
+	//   token where the deployment accepts one (`X-Account-Id` picks among
+	//   several accounts). There are no anonymous speech sessions. Read and
+	//   end a session with either credential of its account.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /v1/speech_sessions (the `CreateSpeechSession` operationId).
 	CreateSpeechSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSpeechSession Start a speech-to-speech session (audio only, no video)
+	// CreateSpeechSession Start a speech session
 	//
-	// Reserves a **speech session** with an avatar: a realtime
-	// speech-to-speech conversation over a WebSocket, without video. The
-	// answer carries the WebSocket `url` and a short-lived `token`:
-	// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-	// token either as `Authorization: Bearer <token>` or as the WebSocket
-	// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-	// admits the connection. The session ends at its `endsAt` (the
-	// reservation plus `actualDurationSeconds`), whenever the connection
-	// opened. The first connection holds the session for good: no other
-	// connection can use it, so a client that lost its connection starts a
-	// new session.
+	// Starts a realtime speech-to-speech conversation with an avatar over a
+	// WebSocket, without video. The answer carries the WebSocket `url` and a
+	// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 	//
-	// `avatarId` is required: the conversation uses that avatar's persona
-	// (name, personality, facts, self-introduction) and always its voice;
-	// an avatar without a voice (a Fish Audio voice ID) answers `422
-	// avatar_has_no_voice`.
-	//
-	// `settings` pins `session.start` fields from your backend: the speech
-	// server applies them over the client's, refuses a client
-	// `session.start` / `session.update` that sets a pinned field (naming
-	// it), and leaves them out of the session it echoes. Unpinned fields
-	// stay the client's to set. Pinned persona fields override the
-	// avatar's. Appends (`session.instructions.append` and the like) stay
-	// allowed: they add to the pinned instructions, never replace them.
-	//
-	// Billing runs by the minute from the speech server's first usage report
-	// (within 30 s of the connection) until the session ends, at the
-	// plan's speech rate. A session nobody connects to costs nothing and is
-	// closed (`failed`, `no_user_joined`) by the first read, or start of
-	// the account, 30 seconds after its token expired, otherwise by the
-	// stale-session cleanup: 120 seconds without a heartbeat (the
-	// reservation sets the first), checked every minute.
-	//
-	// **Who pays.** Always the account that owns the avatar:
-	//
-	// - **API key** (`X-Api-Key`) — your backend, billed to the key's
-	//   account. Requires the `sessions` scope; an avatar-scoped key may
-	//   only start sessions on its avatar (it must name it).
-	// - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-	//   deployment accepts user tokens) — billed to the account the user
-	//   acts for (`X-Account-Id` when there are several). An avatar of
-	//   another account answers `403 avatar_not_allowed`.
-	// - **No credential** — `401`. There is no anonymous or visitor-paid
-	//   speech session.
-	//
-	// With both an API key and a bearer token, the key's start applies,
-	// as on `POST /v1/sessions`. Read and end a session with either
-	// credential of its account.
+	// - **Connecting**: present the token as `Authorization: Bearer <token>`
+	//   or as the WebSocket subprotocols `atmee-live` and
+	//   `atmee-token.<token>`. The first connection holds the session for
+	//   good; a client that loses it starts a new session.
+	// - **Avatar**: `avatarId` is required, and the session uses that avatar's
+	//   persona and voice. An avatar without a voice is `422
+	//   avatar_has_no_voice`.
+	// - **Pinned settings**: `settings` pins `session.start` fields from your
+	//   backend, over the client's. A client `session.start` or
+	//   `session.update` that sets a pinned field is refused, naming it;
+	//   appends such as `session.instructions.append` still add to it. Pinned
+	//   persona fields override the avatar's.
+	// - **Length**: the session ends at `endsAt` (the reservation plus
+	//   `actualDurationSeconds`), whenever the connection opened.
+	// - **Billing**: by the minute from the first usage report (within 30
+	//   seconds of connecting) until the end, always to the account that owns
+	//   the avatar. A session nobody connects to costs nothing and is closed
+	//   as `failed` (`no_user_joined`).
+	// - **Credentials**: an API key with the `sessions` scope (an
+	//   avatar-scoped key must name its avatar), or the owner's signed-in user
+	//   token where the deployment accepts one (`X-Account-Id` picks among
+	//   several accounts). There are no anonymous speech sessions. Read and
+	//   end a session with either credential of its account.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /v1/speech_sessions (the `CreateSpeechSession` operationId).
 	CreateSpeechSession(ctx context.Context, body CreateSpeechSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSpeechSession Read a speech session's state, end reason and cost
+	// GetSpeechSession Get a speech session
 	//
-	// `status` is `active` while the session is reserved or connected,
-	// then `completed` or `failed`. `connectedAt` is when billing started
-	// (the speech server's first usage report), `endsAt` when the session's
-	// time runs out, `endRequestedAt` when you ended it while a connection
-	// was open (until its next usage report settles it). Once it ended,
-	// `endReason` says why and `billedSeconds` / `chargedMicrocredits` what
-	// it cost (100 microcredits = 1 credit).
+	// Reads a speech session's state and, once it ended, why and what it cost.
+	//
+	// - `status` is `active` while the session is reserved or connected, then
+	//   `completed` or `failed`.
+	// - `connectedAt` is when billing started, `endsAt` when the session's
+	//   time runs out, and `endRequestedAt` when you ended it with a
+	//   connection open.
+	// - Once it ended, `endReason` says why, and `billedSeconds` and
+	//   `chargedMicrocredits` what it cost (100 microcredits = 1 credit).
 	//
 	// Corresponds with GET /v1/speech_sessions/{session_id} (the `GetSpeechSession` operationId).
 	GetSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// EndSpeechSession End a speech session
 	//
-	// Ends the session (`completed`, `endReason: ended_by_api`). With no
-	// connection open it settles now. With a connection open, the session
-	// ends at its next usage report (within 30 s) and is billed until
-	// then: the answer is `status: active` with `endRequestedAt` set, and
-	// `GET` reads it `completed` once it settled. **Idempotent**: a repeat
-	// keeps the first request; ending a settled session answers
-	// `alreadyEnded: true`.
+	// Ends the session with `endReason: ended_by_api`. With no connection open
+	// it settles at once. With one open, it ends at the next usage report
+	// (within 30 seconds) and is billed until then: the answer reads `status:
+	// active` with `endRequestedAt` set, and `GET` reads it `completed` once
+	// settled.
+	//
+	// Idempotent: a repeat keeps the first request, and ending a settled
+	// session answers `alreadyEnded: true`.
 	//
 	// Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 	EndSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateUploadWithBody Start a file upload
+	// CreateUploadWithBody Create an upload
 	//
-	// Gets a file to the Avatar API ahead of the create or replace that uses it,
-	// for clients that cannot send a file in the same request (an MCP tool, a
-	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	// Creates a one-time upload for a file you cannot send in the same
+	// request, for example from an MCP tool or a chat assistant. Once it is
+	// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+	// a file URL.
+	//
+	// | `kind` | Accepts |
+	// |---|---|
+	// | `portrait` | jpg, png or webp, up to 10 MB |
+	// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+	// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 	//
 	// Send the file one of two ways:
 	//
 	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-	//   `allowedTypes` when none was declared), at most `maxBytes`:
-	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
-	//   uploaded and how it will be used, takes the file (or, for a voice, records
-	//   one in the browser) and sends it. The link works for 15 minutes
-	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//   `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+	//   -H 'Content-Type: image/png' --data-binary @portrait.png
+	//   '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl`, a page that takes the file (or
+	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+	//   until the file arrives.
 	//
-	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-	// upload works once and expires an hour after it was created. Requires
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+	// upload is used once and expires an hour after it was created.
+	// `contentType`, when given, is the only type accepted. Requires
 	// `avatars:write`.
 	//
 	// Takes any type of body and a specified content type.
@@ -6469,29 +6135,32 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
 	CreateUploadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateUpload Start a file upload
+	// CreateUpload Create an upload
 	//
-	// Gets a file to the Avatar API ahead of the create or replace that uses it,
-	// for clients that cannot send a file in the same request (an MCP tool, a
-	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	// Creates a one-time upload for a file you cannot send in the same
+	// request, for example from an MCP tool or a chat assistant. Once it is
+	// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+	// a file URL.
+	//
+	// | `kind` | Accepts |
+	// |---|---|
+	// | `portrait` | jpg, png or webp, up to 10 MB |
+	// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+	// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 	//
 	// Send the file one of two ways:
 	//
 	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-	//   `allowedTypes` when none was declared), at most `maxBytes`:
-	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
-	//   uploaded and how it will be used, takes the file (or, for a voice, records
-	//   one in the browser) and sends it. The link works for 15 minutes
-	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//   `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+	//   -H 'Content-Type: image/png' --data-binary @portrait.png
+	//   '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl`, a page that takes the file (or
+	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+	//   until the file arrives.
 	//
-	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-	// upload works once and expires an hour after it was created. Requires
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+	// upload is used once and expires an hour after it was created.
+	// `contentType`, when given, is the only type accepted. Requires
 	// `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type.
@@ -6499,34 +6168,35 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
 	CreateUpload(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetUpload Upload status
+	// GetUpload Get an upload
 	//
-	// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
-	// once a create or replace used it, or `expired` an hour after it was
-	// created. Only the account that created it sees it. Requires
-	// `avatars:read` or `avatars:write`.
+	// Returns the upload's `status`: `pending` until the file arrives, then
+	// `uploaded` (usable once), `consumed` once a create or replace used it,
+	// or `expired` an hour after it was created. Only the account that created
+	// it can read it. Requires `avatars:read` or `avatars:write`.
 	//
 	// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 	GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// GetAccount The account's plan, limits, prices and capture quota
+// GetAccount Get the account
 //
-// The plan the account is on (and the one it changes to at the end of
-// the cycle, if any), the limits that apply to its API usage, what a
-// session minute, a preview clip and (where generation is offered,
-// `pricing.generation`) one generation call cost, and how many v2 captures are
-// queued or running against the pending cap. Prices are in
-// microcredits (100 microcredits = 1 credit). A conversation
-// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
-// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
-// avatar session (render only) the avatar engine's render rate
-// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
-// field, that is absent is not set (a limit absent is not capped by the
-// plan). `payouts` says whether the account can be paid out, which
-// monetizing an avatar needs.
+// Returns the account's plan, its API limits, its prices and its v2
+// capture quota. Prices are in microcredits (100 microcredits = 1 credit).
 //
-// Readable by the same callers as `GET /v1/account/balance`.
+//   - **Plan**: the current plan, and the one it changes to at the end of
+//     the cycle, if any.
+//   - **Pricing**: the per-minute price of each kind of session (a
+//     conversation or a render, by avatar engine, and a speech session), a
+//     preview clip, and each generation call where generation is offered
+//     (`pricing.generation`).
+//   - **Limits**: an absent limit or plan field is not set (an absent limit
+//     is not capped by the plan).
+//   - **v2**: `v2Access` says whether the account may build v2 avatars;
+//     `captureQuota` counts v2 captures queued or running against the cap.
+//   - **Payouts**: `payouts` says whether the account can be paid out, which
+//     monetizing an avatar needs.
+//   - Readable by the same callers as `GET /v1/account/balance`.
 //
 // Corresponds with GET /v1/account (the `GetAccount` operationId).
 func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6541,26 +6211,22 @@ func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// GetAccountBalance The account's credit balance
+// GetAccountBalance Get the balance
 //
-// What the calling key's account has to spend on sessions, from the
-// account's direct wallet (the only one API usage draws on). Every
-// amount is in microcredits (100 microcredits = 1 credit).
+// Returns the credits the account can spend on sessions, in microcredits
+// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
+// (see `GET /v1/avatars/{avatarId}/sponsor`).
 //
-// `spendableMicrocredits` is the amount a session is admitted on: every
-// positive bucket for a reserve-mode key or a signed-in user; the plan
-// and top-up buckets only for a metered key, which never spends coupon
-// credits (`couponSpendable: false`). Live sessions' reservations are
-// already taken out of the buckets and are reported on their own as
-// `heldByLiveSessionsMicrocredits`. `unlimited` is true when sessions
-// are not charged (an unlimited plan, or billing switched off), whatever
-// the buckets say. `nextExpiry` lists the credits that will expire,
-// soonest first. An avatar's sponsor pool is not part of this balance
-// (`GET /v1/avatars/{avatarId}/sponsor`).
-//
-// Any key with the `sessions` or `avatars:read` scope may read it, an
-// avatar-scoped key included, and so may a signed-in user acting for the
-// account.
+//   - `spendableMicrocredits` is what a session is admitted on: every bucket
+//     for a reserve-mode key or a signed-in user, only the plan and top-up
+//     buckets for a metered key (`couponSpendable: false`).
+//   - Live sessions' reservations are already taken out, and reported as
+//     `heldByLiveSessionsMicrocredits`.
+//   - `unlimited` is true when sessions are not charged, whatever the
+//     buckets say.
+//   - `nextExpiry` lists the credits that will expire, soonest first.
+//   - Readable by any key with `sessions` or `avatars:read` (an
+//     avatar-scoped key included), or a signed-in user of the account.
 //
 // Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 func (c *Client) GetAccountBalance(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6575,17 +6241,16 @@ func (c *Client) GetAccountBalance(ctx context.Context, reqEditors ...RequestEdi
 	return c.Client.Do(req)
 }
 
-// GetAccountEarnings The account's creator wallet and earnings
+// GetAccountEarnings Get earnings
 //
-// What the account's monetized avatars earned, what was paid out, and
-// the wallet balance between the two, in microcredits (100 microcredits
-// = 1 credit), as Studio's billing page shows them. This is not the
-// credit balance sessions spend (`GET /v1/account/balance`). One
-// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+// Returns what the account's monetized avatars earned, what was paid out,
+// and the wallet balance between them, in microcredits (100 microcredits =
+// 1 credit). This is not the balance sessions spend (`GET
+// /v1/account/balance`); one avatar's earnings are in `GET
+// /v1/avatars/{avatarId}/monetization`.
 //
-// Any account-wide key with `avatars:read` may read it, and so may a
-// signed-in user acting for the account; an avatar-scoped key is
-// answered `403 avatar_not_allowed`.
+// Readable by an account-wide key with `avatars:read` or a signed-in user
+// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
 //
 // Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
 func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6600,18 +6265,16 @@ func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEd
 	return c.Client.Do(req)
 }
 
-// RedeemAccountCodeWithBody Redeem an invite or credit code
+// RedeemAccountCodeWithBody Redeem a code
 //
-// Redeems a code for the account, as Creator Studio's Billing page
-// does. A code can add credits, let the account into v2 avatars (v2
-// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-// the answer says what it gave and where v2 access stands after it.
-// Each account redeems a code at most once.
+// Redeems an invite or credit code for the account. A code can add
+// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+// /v1/account`), or both, and the answer says what it gave. Each account
+// redeems a code at most once.
 //
-// Only a signed-in user may redeem (the MCP server's sign-in, or
-// `atmee login`); an API key gets 403 `login_required`, so a leaked
-// key cannot spend the account's codes. Once v2 is let in, v2 creates
-// work on the next request.
+// Only a signed-in user may redeem: an API key gets `403 login_required`,
+// so a leaked key cannot spend the account's codes. v2 access applies from
+// the next request.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6628,18 +6291,16 @@ func (c *Client) RedeemAccountCodeWithBody(ctx context.Context, contentType stri
 	return c.Client.Do(req)
 }
 
-// RedeemAccountCode Redeem an invite or credit code
+// RedeemAccountCode Redeem a code
 //
-// Redeems a code for the account, as Creator Studio's Billing page
-// does. A code can add credits, let the account into v2 avatars (v2
-// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-// the answer says what it gave and where v2 access stands after it.
-// Each account redeems a code at most once.
+// Redeems an invite or credit code for the account. A code can add
+// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+// /v1/account`), or both, and the answer says what it gave. Each account
+// redeems a code at most once.
 //
-// Only a signed-in user may redeem (the MCP server's sign-in, or
-// `atmee login`); an API key gets 403 `login_required`, so a leaked
-// key cannot spend the account's codes. Once v2 is let in, v2 creates
-// work on the next request.
+// Only a signed-in user may redeem: an API key gets `403 login_required`,
+// so a leaked key cannot spend the account's codes. v2 access applies from
+// the next request.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -6742,22 +6403,21 @@ func (c *Client) CreateApiKey(ctx context.Context, body CreateApiKeyJSONRequestB
 	return c.Client.Do(req)
 }
 
-// GetCurrentApiKey The credential making this call
+// GetCurrentApiKey Get the current credential
 //
-// For an API key (`kind: api_key`): its name, scopes, the avatar it is
-// restricted to, its billing mode, its own session caps and how much of
-// its spend cap the current window has used. The secret is never
-// returned. `spendCap.enforced` is false when the cap is not applied
-// (an unlimited plan, or billing switched off); `windowResetsAt` is
-// absent for a cap over the key's whole life (`window: total`), and
-// `limitMicrocredits` and `remainingMicrocredits` are absent when the
-// key has no cap (`spentMicrocredits` is still reported).
+// Describes the credential making this call. Readable by the same callers
+// as `GET /v1/account/balance`.
 //
-// For a signed-in user (`kind: user`): the user and the account it acts
-// for; a user has no key, no scopes beyond the avatar ones and no spend
-// cap.
-//
-// Readable by the same callers as `GET /v1/account/balance`.
+//   - **API key** (`kind: api_key`): its name, scopes, the avatar it is
+//     restricted to, its billing mode, its session caps and how much of its
+//     spend cap the current window used. The secret is never returned.
+//     `spendCap.enforced` is false when the cap is not applied;
+//     `limitMicrocredits` and `remainingMicrocredits` are absent when the
+//     key has no cap, and `windowResetsAt` for a lifetime cap (`window:
+//     total`).
+//   - **Signed-in user** (`kind: user`): the user and the account it acts
+//     for. A user has no key, no scopes beyond the avatar ones and no spend
+//     cap.
 //
 // Corresponds with GET /v1/api_keys/current (the `GetCurrentApiKey` operationId).
 func (c *Client) GetCurrentApiKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6867,21 +6527,21 @@ func (c *Client) RotateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEdi
 	return c.Client.Do(req)
 }
 
-// GetAvatarSession Read a session's state, end reason and cost
+// GetAvatarSession Get an avatar session
 //
-// Reads either kind of API session: a conversation (`POST /v1/session`,
-// `kind: conversation`) or a render into your own room (`POST
-// /v1/avatars/{avatarId}/avatar_sessions`, `kind: render`).
+// Reads an API session's state, end reason and cost: a conversation (`POST
+// /v1/sessions`, `kind: conversation`) or a render (`POST
+// /v1/avatar_sessions`, `kind: render`).
 //
-// `status` is `pending` (starting), `active` (live), `completed` (it
-// ran and ended normally, including when you ended it) or `failed` (it
-// never really started: nobody joined, the avatar did not join, or an
-// error; nothing is billed for the time it did not run). Once it
-// ended, `endReason` says why, `failureCode` names the failure of a
-// failed session, and `billedSeconds` / `chargedMicrocredits` say what
-// it cost (100 microcredits = 1 credit). Billing runs only while both
-// the avatar and the visitor (or your agent) are in the room:
-// `userJoinedAt` and `avatarJoinedAt` show when each joined.
+//   - `status` is `pending` (starting), `active` (live), `completed` (ended
+//     normally, including by you) or `failed` (it never really started;
+//     nothing is billed for time it did not run).
+//   - Once it ended, `endReason` says why, `failureCode` names the failure
+//     of a failed session, and `billedSeconds` and `chargedMicrocredits` say
+//     what it cost (100 microcredits = 1 credit).
+//   - Billing runs only while both the avatar and the visitor (or your
+//     agent) are in the room; `userJoinedAt` and `avatarJoinedAt` say when
+//     each joined.
 //
 // Corresponds with GET /v1/avatar_sessions/{id} (the `GetAvatarSession` operationId).
 func (c *Client) GetAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6896,24 +6556,21 @@ func (c *Client) GetAvatarSession(ctx context.Context, id AvatarSessionIdPath, r
 	return c.Client.Do(req)
 }
 
-// EndAvatarSession End an avatar session (optional explicit stop)
+// EndAvatarSession End an avatar session
 //
-// Ends either kind of API session; for a conversation, `POST
-// /v1/sessions/{id}/end` with an API key is the same call. It settles `completed` with
-// `endReason: ended_by_api`, never `failed`.
+// Ends an API session now and stops billing. It settles `completed` with
+// `endReason: ended_by_api`. For a conversation, this is the same as `POST
+// /v1/sessions/{id}/end` with an API key.
 //
-// Stops billing for the session now. **Idempotent**: ending a session that
-// already ended answers `200` with `alreadyEnded: true`, so the plugin can
-// call it from every teardown path without checking first. The primary end
-// signal is the rendering worker's own report when your agent leaves, the
-// room closes, or you remove the avatar participant — this call is the
-// fallback for a worker that could not report, and the way to stop paying
-// for an avatar you are done with while your room stays open. For a
-// render it does not remove the avatar from your room; remove the
-// participant yourself (the plugin does so on close). A conversation's room is closed, as by
-// `POST /v1/sessions/{id}/end`. Acts only on sessions started through
-// the API (the account's website sessions are `404`), and for an
-// avatar-scoped key only on its avatar's.
+//   - **Idempotent**: a session that already ended answers `200` with
+//     `alreadyEnded: true`, so it is safe to call from every teardown path.
+//   - **Renders** usually end on their own when your agent leaves, the room
+//     closes or you remove the avatar participant. Call this to stop paying
+//     while your room stays open; it does not remove the avatar from your
+//     room, so remove the participant yourself.
+//   - **Conversations**: the room is closed.
+//   - Only sessions started through the API can be ended here (website
+//     sessions are `404`), and an avatar-scoped key ends only its avatar's.
 //
 // Corresponds with POST /v1/avatar_sessions/{id}/end (the `EndAvatarSession` operationId).
 func (c *Client) EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6928,7 +6585,9 @@ func (c *Client) EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, r
 	return c.Client.Do(req)
 }
 
-// ListAvatars List the account's avatars
+// ListAvatars List avatars
+//
+// Lists the account's avatars, newest first. Page with `before`.
 //
 // Corresponds with GET /v1/avatars (the `ListAvatars` operationId).
 func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6943,106 +6602,55 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 	return c.Client.Do(req)
 }
 
-// CreateAvatarWithBody Create an avatar (Avatar Import API)
+// CreateAvatarWithBody Create an avatar
 //
-// Three body shapes, one result.
+// Creates an avatar from a portrait, a voice sample, a persona and
+// knowledge. A complete avatar builds in the background (`202`, `status:
+// building`): follow it with `GET /v1/avatars/{avatarId}`.
 //
-// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-// <= 10 MB) as the `file` part and the avatar `name` as a second field
-// (`description` optional). Creates a **render-only** avatar: no voice, no
-// persona, nothing to build -- the response is `201` with `status: ready`
-// and the avatar can be rendered for an external agent at once. Add a voice
-// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+// Send one of three body shapes:
 //
-// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-// optional; without it the result is render-only as above. With a voice the
-// avatar is created exactly as the studio would: the row, the files under
-// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-// pipeline builds it asynchronously (`202`, `status: building`), poll
-// `GET /v1/avatars/{avatarId}`.
-// The manifest's `persona` block carries the character: `whoPrompt` (who the
-// avatar is: the main character description), `whatPrompt` (what the avatar is
-// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-// `conversationalHabits`. `personality` and `scenario` are older names of
-// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-// names is `400 invalid_manifest`.
-// **JSON.** The manifest as `application/json` with an `assets` block naming
-// the image, the voice sample, prompt text and knowledge files by https URL;
-// the service downloads them (public hosts only, same size and type rules as
-// the zip) and continues identically.
+// | Body | Content type | Contents |
+// |---|---|---|
+// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 //
-// **A draft.** The image and the voice are both optional on the zip and JSON
-// bodies (and `assets` itself on JSON), on either engine. An avatar created
-// without its portrait, or without its voice (other than a v1 avatar with a
-// portrait, which is render-only), is a **draft**: `status: draft` with
-// `missingInputs` naming what it lacks. Its persona and knowledge build;
-// nothing that needs the missing input does. Give them with
-// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-// in either order; the build continues once both are there (on v2, the input
-// that completes it captures the first candidate). `seedPreviews` and
-// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-// selected automatically.
-// Where `assets` takes a URL for the image, the voice sample or a knowledge
-// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-// (the prompt stays a URL). The upload must be this account's, of the matching
-// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-// type, and the same size and type rules apply. A create that succeeds
-// consumes its uploads; one that fails leaves them usable for a retry.
+//   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+//     `seedPreviews.count` candidates and, with `seedSelection: auto`
+//     (default), serves the first that completes. v2 is invite-only (`403
+//     v2_access_required`).
+//   - **Drafts**: the portrait and the voice are optional in zip and JSON
+//     bodies. Without either (other than a v1 avatar with a portrait, which
+//     is render-only) the avatar is a `draft`, and `missingInputs` names
+//     what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
+//   - **Portrait**: use a front-facing photo of one person, head and
+//     shoulders, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Uploads**: a create that succeeds consumes its uploads; one that
+//     fails leaves them usable for a retry.
+//   - **Captures** count against the account's limit of 10 queued or
+//     running. A v2 create returns `X-RateLimit-Limit` and
+//     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+//     not fit.
+//   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+//     block.
 //
-// **The portrait** (every body shape) decides whether the avatar can be
-// animated. Use a front-facing photo of one person, head and shoulders with
-// some margin around the head, the face at least about a third of the frame,
-// in even light, with the **lips slightly parted as if about to speak**. A v2
-// avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still);
-// lips slightly parted work far more often. The build refuses a clearly bad
-// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-// Preview clips are not generated unless the manifest sets `previews: true`
-// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-// `sponsor` block. Behind the `avatar_import_api` feature flag.
+// | Manifest field | Rule |
+// |---|---|
+// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
-// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-// is cloned from its sample; a v2 create with the portrait and the voice
-// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-// the first completed candidate is promoted) or `manual`. Both are v2 only.
-// A portrait, voice or preview message changed outside the API (Creator
-// Studio) captures one candidate of the new inputs by itself.
-// Captures count against the account's limit of 10 queued or running; a v2
-// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-// `previewMessage` is the line the preview clips speak; omit it for a default
-// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-// candidate is captured from, so at most 60 Unicode code points
-// (`400 preview_message_too_long`).
-// `knowledge.descriptions` maps a knowledge file name to a short description.
-// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-// as Creator Studio saves its "Facts with context" box (shown there) and as a
-// knowledge file the knowledge base reads; change it with PATCH.
-// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-// change it with PATCH. Knowledge
-// (files and facts) is used in conversations by v1 avatars; v2 conversations
-// do not use it yet.
-// `blackoutRecovery` tunes how v2 sessions recover from frames that
-// fade to black; it is on by default, so omit it unless a setting
-// should differ. It is ignored for v1 avatars (the setting exists only
-// on the v2 renderer).
-// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-// the renderer default, 42. Ignored for v1 avatars, like
-// `blackoutRecovery`.
-// `resolution` (v2) is the frame size the avatar renders at, e.g.
-// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-// avatars (`400 invalid_input`).
+// v2 conversations do not use knowledge yet.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7059,106 +6667,55 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateAvatar Create an avatar (Avatar Import API)
+// CreateAvatar Create an avatar
 //
-// Three body shapes, one result.
+// Creates an avatar from a portrait, a voice sample, a persona and
+// knowledge. A complete avatar builds in the background (`202`, `status:
+// building`): follow it with `GET /v1/avatars/{avatarId}`.
 //
-// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-// <= 10 MB) as the `file` part and the avatar `name` as a second field
-// (`description` optional). Creates a **render-only** avatar: no voice, no
-// persona, nothing to build -- the response is `201` with `status: ready`
-// and the avatar can be rendered for an external agent at once. Add a voice
-// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+// Send one of three body shapes:
 //
-// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-// optional; without it the result is render-only as above. With a voice the
-// avatar is created exactly as the studio would: the row, the files under
-// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-// pipeline builds it asynchronously (`202`, `status: building`), poll
-// `GET /v1/avatars/{avatarId}`.
-// The manifest's `persona` block carries the character: `whoPrompt` (who the
-// avatar is: the main character description), `whatPrompt` (what the avatar is
-// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-// `conversationalHabits`. `personality` and `scenario` are older names of
-// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-// names is `400 invalid_manifest`.
-// **JSON.** The manifest as `application/json` with an `assets` block naming
-// the image, the voice sample, prompt text and knowledge files by https URL;
-// the service downloads them (public hosts only, same size and type rules as
-// the zip) and continues identically.
+// | Body | Content type | Contents |
+// |---|---|---|
+// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 //
-// **A draft.** The image and the voice are both optional on the zip and JSON
-// bodies (and `assets` itself on JSON), on either engine. An avatar created
-// without its portrait, or without its voice (other than a v1 avatar with a
-// portrait, which is render-only), is a **draft**: `status: draft` with
-// `missingInputs` naming what it lacks. Its persona and knowledge build;
-// nothing that needs the missing input does. Give them with
-// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-// in either order; the build continues once both are there (on v2, the input
-// that completes it captures the first candidate). `seedPreviews` and
-// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-// selected automatically.
-// Where `assets` takes a URL for the image, the voice sample or a knowledge
-// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-// (the prompt stays a URL). The upload must be this account's, of the matching
-// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-// type, and the same size and type rules apply. A create that succeeds
-// consumes its uploads; one that fails leaves them usable for a retry.
+//   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+//     `seedPreviews.count` candidates and, with `seedSelection: auto`
+//     (default), serves the first that completes. v2 is invite-only (`403
+//     v2_access_required`).
+//   - **Drafts**: the portrait and the voice are optional in zip and JSON
+//     bodies. Without either (other than a v1 avatar with a portrait, which
+//     is render-only) the avatar is a `draft`, and `missingInputs` names
+//     what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
+//   - **Portrait**: use a front-facing photo of one person, head and
+//     shoulders, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Uploads**: a create that succeeds consumes its uploads; one that
+//     fails leaves them usable for a retry.
+//   - **Captures** count against the account's limit of 10 queued or
+//     running. A v2 create returns `X-RateLimit-Limit` and
+//     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+//     not fit.
+//   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+//     block.
 //
-// **The portrait** (every body shape) decides whether the avatar can be
-// animated. Use a front-facing photo of one person, head and shoulders with
-// some margin around the head, the face at least about a third of the frame,
-// in even light, with the **lips slightly parted as if about to speak**. A v2
-// avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still);
-// lips slightly parted work far more often. The build refuses a clearly bad
-// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-// Preview clips are not generated unless the manifest sets `previews: true`
-// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-// `sponsor` block. Behind the `avatar_import_api` feature flag.
+// | Manifest field | Rule |
+// |---|---|
+// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
-// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-// is cloned from its sample; a v2 create with the portrait and the voice
-// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-// the first completed candidate is promoted) or `manual`. Both are v2 only.
-// A portrait, voice or preview message changed outside the API (Creator
-// Studio) captures one candidate of the new inputs by itself.
-// Captures count against the account's limit of 10 queued or running; a v2
-// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-// `previewMessage` is the line the preview clips speak; omit it for a default
-// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-// candidate is captured from, so at most 60 Unicode code points
-// (`400 preview_message_too_long`).
-// `knowledge.descriptions` maps a knowledge file name to a short description.
-// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-// as Creator Studio saves its "Facts with context" box (shown there) and as a
-// knowledge file the knowledge base reads; change it with PATCH.
-// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-// change it with PATCH. Knowledge
-// (files and facts) is used in conversations by v1 avatars; v2 conversations
-// do not use it yet.
-// `blackoutRecovery` tunes how v2 sessions recover from frames that
-// fade to black; it is on by default, so omit it unless a setting
-// should differ. It is ignored for v1 avatars (the setting exists only
-// on the v2 renderer).
-// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-// the renderer default, 42. Ignored for v1 avatars, like
-// `blackoutRecovery`.
-// `resolution` (v2) is the frame size the avatar renders at, e.g.
-// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-// avatars (`400 invalid_input`).
+// v2 conversations do not use knowledge yet.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7175,12 +6732,11 @@ func (c *Client) CreateAvatar(ctx context.Context, body CreateAvatarJSONRequestB
 	return c.Client.Do(req)
 }
 
-// DeleteAvatar Delete (soft) an avatar
+// DeleteAvatar Delete an avatar
 //
-// Soft-deletes the avatar: it disappears from the API at once and its
-// unfinished captures are cancelled. After the retention period every
-// file of the avatar -- every version's portrait, voice sample and
-// takes included -- is removed permanently.
+// Deletes the avatar: it disappears from the API at once and its
+// unfinished captures are cancelled. Its files, every version's included,
+// are removed permanently after the retention period.
 //
 // Corresponds with DELETE /v1/avatars/{avatarId} (the `DeleteAvatar` operationId).
 func (c *Client) DeleteAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7195,7 +6751,14 @@ func (c *Client) DeleteAvatar(ctx context.Context, avatarId AvatarIdPath, reqEdi
 	return c.Client.Do(req)
 }
 
-// GetAvatar Avatar detail and build status
+// GetAvatar Get an avatar
+//
+// Returns the avatar's settings and its build status, stage by stage.
+// Poll it after a create or a change: `stages` and `rebuilding` show
+// progress, and `status` says when it needs you (`failed`,
+// `awaiting_selection`, `stalled`, `draft`). A v2 avatar stays `ready`
+// while a new version builds; when that build needs a candidate picked,
+// `selectionRequired` turns true while `status` stays `ready`.
 //
 // Corresponds with GET /v1/avatars/{avatarId} (the `GetAvatar` operationId).
 func (c *Client) GetAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7210,124 +6773,44 @@ func (c *Client) GetAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditor
 	return c.Client.Do(req)
 }
 
-// UpdateAvatarWithBody Update name, description, visibility, language or preview message
+// UpdateAvatarWithBody Update an avatar
 //
-// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-// guardrails, habits, aliases, name) rebuild the persona in the
-// background. A v1 avatar is briefly not ready; a v2 avatar stays
-// `ready` and keeps serving its current config while `stages.persona`
-// shows the rebuild, and serves the new persona a few seconds after
-// that stage completes. A persona edit captures nothing, so
-// `rebuilding` (which is about candidates) does not change. Every
-// persona edit is moderated again, on both engines: a `clean` avatar
-// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-// rebuild already under way waits: its candidates stay queued and
-// are not captured until the check passes; the serving candidate
-// keeps serving.
-// On v2, a changed `previewMessage`, portrait or voice captures new
-// candidates.
+// Changes an avatar's settings, persona, knowledge or share card, and
+// returns the avatar. Send only the fields to change: an absent or `null`
+// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+// optional one.
 //
-// Send only the fields to change: an absent or `null` field is left
-// unchanged. To remove a value, send it empty: `""` for description,
-// greeting, preferredAlias and spokenName, `[]` for guardrails and
-// knownAliases, `{}` for conversationalHabits, and `""` for
-// `previewMessage` to go back to the default sentence. whoPrompt,
-// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-// schema (`422`), and so does blank selfIntroduction text under 51
-// characters; other blank text is `400 invalid_manifest`.
+//   - **Persona edits** rebuild the persona in the background and are
+//     moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+//     serving until the new persona is live.
+//   - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+//     new version with new candidates, like a new portrait or voice, while
+//     the serving candidate keeps serving. `blackoutRecovery` and
+//     `runtimeSeed` apply from the next session and rebuild nothing.
+//   - **Knowledge**: knowledge files stay; replace them with `PUT
+//     /v1/avatars/{avatarId}/knowledge`.
+//   - **Visibility**: `public` needs a title, a tag, a subtitle, a
+//     description and a thumbnail (`409 public_requirements_missing` lists
+//     what is missing). `public` and `unlisted` must pass moderation (`409
+//     moderation_blocked`).
+//   - **Atomicity**: every field is checked first. The name, description,
+//     share fields, statement, monetization and visibility are written
+//     together, and a refusal of any of them writes nothing. The rest is
+//     written after, so after a later error, send the same request again to
+//     retry.
 //
-// `personality` and `scenario` are older names of `whoPrompt` and
-// `whatPrompt` and still accepted, nested in `persona` or at the top
-// level. A field given twice (under both names, or both at the top
-// level and in `persona`) is `400 invalid_body`.
-//
-// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-// (`400 preview_message_too_long`); changing it captures new
-// candidates. Sending the current `previewMessage` again is no
-// rebuild, and `""` (the default sentence) rebuilds only when a custom
-// line was set.
-//
-// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-// sessions render: nothing is rebuilt or captured, and the serving
-// candidate stays. They are ignored for v1 avatars (the settings exist
-// only on the v2 renderer).
-//
-// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-// the frame size: it is a build input, so a new size builds a new
-// version (new candidates, as a new portrait does) while the serving
-// candidate keeps serving; the current size sent again builds nothing.
-//
-// `knowledge.facts` replaces the avatar's knowledge text (at most
-// 32,000 characters; `""` removes it), on either engine, as Creator
-// Studio's "Facts with context" box does: the text and its knowledge
-// file, which the knowledge stage processes again. Other knowledge
-// files stay. Nothing is captured.
-//
-// `knowledge.questionnaire` replaces the answers to Creator Studio's
-// knowledge questionnaire, question to answer, as Studio's Knowledge
-// step saves them: the answers and their knowledge file, which the
-// knowledge stage processes again (answers equal to the current ones
-// change nothing). `{}` removes them. The questions are the `questions`
-// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-//
-// The share fields are what Creator Studio's "Share to community" card
-// edits, written as Studio writes them and with its limits, on either
-// engine (nothing is rebuilt): `title` (at most 100 characters),
-// `subtitle` (200), `description` (280), `tags` (the whole set: at
-// most 5 after trimming and dropping case-insensitive duplicates, each
-// with a letter or digit; an existing tag of the same name is reused)
-// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-// twitter or youtube, each at most once, with an https URL of at most
-// 500 characters). `""` clears title and subtitle, `[]` clears tags
-// and socialLinks. A field Studio's rules refuse is
-// `400 invalid_body` naming it. The Explore thumbnail has its own
-// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-//
-// `visibility` follows Studio's rules: making an avatar `public` needs
-// a title, a tag, a subtitle, a description and a thumbnail (`409
-// public_requirements_missing`, with the `missing` fields), checked on
-// the state after the rest of the request. On an avatar already
-// public, only clearing one of them is refused (the same error, with
-// the cleared fields as `missing`); its other edits, and `public`
-// sent again, pass. Making it `public` or `unlisted` passes the
-// moderation publish gate (`409 moderation_blocked` while the avatar
-// is held or not yet checked, when the gate is enforced). A value
-// equal to the stored one is no change.
-//
-// `statementType` records who the avatar depicts, as Studio's
-// verification dialog does; `""` resets it (null leaves it unchanged).
-// It cannot change while the avatar is monetized (`409
-// avatar_is_earning`; turn monetization off in the same request
-// first), and changing or resetting it clears `verified`. The identity
-// check that verifies a self or representative statement runs in
-// Creator Studio only.
-//
-// `monetization.enabled` turns monetization on or off with Studio's
-// switch's preconditions: a verified avatar or the fictional
-// statement (`409 statement_required` / `identity_not_verified`), a
-// verified payout account (`409 payouts_not_ready`; payouts are set up
-// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-// eligibility (`409 monetization_eligibility_not_met`) and room under
-// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-// pool to the account. Turning it off always works.
-//
-// `name` and `description` are written with these fields, under the
-// same rules (`name` at most 100 characters once trimmed, counted in
-// UTF-16 units as Studio counts them; `description` at most 280).
-//
-// Every field of the request is checked before anything is written.
-// Then the name, description, share fields, statement, monetization
-// and visibility are written first, in one write: a refusal of any of
-// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-// leaves the whole request unwritten, including the persona, preview
-// message, knowledge and settings, and starts no rebuild. The rest is
-// written after it, so a later failure (a rebuild refused with `429`,
-// an outage) answers an error with that first write already made;
-// sending the same request again writes it as no change and retries
-// the rest.
+// | Field | Rule |
+// |---|---|
+// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 //
 // Takes any type of body and a specified content type.
 //
@@ -7344,124 +6827,44 @@ func (c *Client) UpdateAvatarWithBody(ctx context.Context, avatarId AvatarIdPath
 	return c.Client.Do(req)
 }
 
-// UpdateAvatar Update name, description, visibility, language or preview message
+// UpdateAvatar Update an avatar
 //
-// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-// guardrails, habits, aliases, name) rebuild the persona in the
-// background. A v1 avatar is briefly not ready; a v2 avatar stays
-// `ready` and keeps serving its current config while `stages.persona`
-// shows the rebuild, and serves the new persona a few seconds after
-// that stage completes. A persona edit captures nothing, so
-// `rebuilding` (which is about candidates) does not change. Every
-// persona edit is moderated again, on both engines: a `clean` avatar
-// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-// rebuild already under way waits: its candidates stay queued and
-// are not captured until the check passes; the serving candidate
-// keeps serving.
-// On v2, a changed `previewMessage`, portrait or voice captures new
-// candidates.
+// Changes an avatar's settings, persona, knowledge or share card, and
+// returns the avatar. Send only the fields to change: an absent or `null`
+// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+// optional one.
 //
-// Send only the fields to change: an absent or `null` field is left
-// unchanged. To remove a value, send it empty: `""` for description,
-// greeting, preferredAlias and spokenName, `[]` for guardrails and
-// knownAliases, `{}` for conversationalHabits, and `""` for
-// `previewMessage` to go back to the default sentence. whoPrompt,
-// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-// schema (`422`), and so does blank selfIntroduction text under 51
-// characters; other blank text is `400 invalid_manifest`.
+//   - **Persona edits** rebuild the persona in the background and are
+//     moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+//     serving until the new persona is live.
+//   - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+//     new version with new candidates, like a new portrait or voice, while
+//     the serving candidate keeps serving. `blackoutRecovery` and
+//     `runtimeSeed` apply from the next session and rebuild nothing.
+//   - **Knowledge**: knowledge files stay; replace them with `PUT
+//     /v1/avatars/{avatarId}/knowledge`.
+//   - **Visibility**: `public` needs a title, a tag, a subtitle, a
+//     description and a thumbnail (`409 public_requirements_missing` lists
+//     what is missing). `public` and `unlisted` must pass moderation (`409
+//     moderation_blocked`).
+//   - **Atomicity**: every field is checked first. The name, description,
+//     share fields, statement, monetization and visibility are written
+//     together, and a refusal of any of them writes nothing. The rest is
+//     written after, so after a later error, send the same request again to
+//     retry.
 //
-// `personality` and `scenario` are older names of `whoPrompt` and
-// `whatPrompt` and still accepted, nested in `persona` or at the top
-// level. A field given twice (under both names, or both at the top
-// level and in `persona`) is `400 invalid_body`.
-//
-// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-// (`400 preview_message_too_long`); changing it captures new
-// candidates. Sending the current `previewMessage` again is no
-// rebuild, and `""` (the default sentence) rebuilds only when a custom
-// line was set.
-//
-// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-// sessions render: nothing is rebuilt or captured, and the serving
-// candidate stays. They are ignored for v1 avatars (the settings exist
-// only on the v2 renderer).
-//
-// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-// the frame size: it is a build input, so a new size builds a new
-// version (new candidates, as a new portrait does) while the serving
-// candidate keeps serving; the current size sent again builds nothing.
-//
-// `knowledge.facts` replaces the avatar's knowledge text (at most
-// 32,000 characters; `""` removes it), on either engine, as Creator
-// Studio's "Facts with context" box does: the text and its knowledge
-// file, which the knowledge stage processes again. Other knowledge
-// files stay. Nothing is captured.
-//
-// `knowledge.questionnaire` replaces the answers to Creator Studio's
-// knowledge questionnaire, question to answer, as Studio's Knowledge
-// step saves them: the answers and their knowledge file, which the
-// knowledge stage processes again (answers equal to the current ones
-// change nothing). `{}` removes them. The questions are the `questions`
-// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-//
-// The share fields are what Creator Studio's "Share to community" card
-// edits, written as Studio writes them and with its limits, on either
-// engine (nothing is rebuilt): `title` (at most 100 characters),
-// `subtitle` (200), `description` (280), `tags` (the whole set: at
-// most 5 after trimming and dropping case-insensitive duplicates, each
-// with a letter or digit; an existing tag of the same name is reused)
-// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-// twitter or youtube, each at most once, with an https URL of at most
-// 500 characters). `""` clears title and subtitle, `[]` clears tags
-// and socialLinks. A field Studio's rules refuse is
-// `400 invalid_body` naming it. The Explore thumbnail has its own
-// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-//
-// `visibility` follows Studio's rules: making an avatar `public` needs
-// a title, a tag, a subtitle, a description and a thumbnail (`409
-// public_requirements_missing`, with the `missing` fields), checked on
-// the state after the rest of the request. On an avatar already
-// public, only clearing one of them is refused (the same error, with
-// the cleared fields as `missing`); its other edits, and `public`
-// sent again, pass. Making it `public` or `unlisted` passes the
-// moderation publish gate (`409 moderation_blocked` while the avatar
-// is held or not yet checked, when the gate is enforced). A value
-// equal to the stored one is no change.
-//
-// `statementType` records who the avatar depicts, as Studio's
-// verification dialog does; `""` resets it (null leaves it unchanged).
-// It cannot change while the avatar is monetized (`409
-// avatar_is_earning`; turn monetization off in the same request
-// first), and changing or resetting it clears `verified`. The identity
-// check that verifies a self or representative statement runs in
-// Creator Studio only.
-//
-// `monetization.enabled` turns monetization on or off with Studio's
-// switch's preconditions: a verified avatar or the fictional
-// statement (`409 statement_required` / `identity_not_verified`), a
-// verified payout account (`409 payouts_not_ready`; payouts are set up
-// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-// eligibility (`409 monetization_eligibility_not_met`) and room under
-// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-// pool to the account. Turning it off always works.
-//
-// `name` and `description` are written with these fields, under the
-// same rules (`name` at most 100 characters once trimmed, counted in
-// UTF-16 units as Studio counts them; `description` at most 280).
-//
-// Every field of the request is checked before anything is written.
-// Then the name, description, share fields, statement, monetization
-// and visibility are written first, in one write: a refusal of any of
-// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-// leaves the whole request unwritten, including the persona, preview
-// message, knowledge and settings, and starts no rebuild. The rest is
-// written after it, so a later failure (a rebuild refused with `429`,
-// an outage) answers an error with that first write already made;
-// sending the same request again writes it as no change and retries
-// the rest.
+// | Field | Rule |
+// |---|---|
+// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7478,7 +6881,10 @@ func (c *Client) UpdateAvatar(ctx context.Context, avatarId AvatarIdPath, body U
 	return c.Client.Do(req)
 }
 
-// GetAvatarAppearance The avatar's portrait
+// GetAvatarAppearance Get the portrait
+//
+// Returns a presigned URL of the portrait last given. The URL expires
+// after about an hour.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/appearance (the `GetAvatarAppearance` operationId).
 func (c *Client) GetAvatarAppearance(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7493,24 +6899,22 @@ func (c *Client) GetAvatarAppearance(ctx context.Context, avatarId AvatarIdPath,
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarAppearanceWithBody Replace the avatar's portrait
+// ReplaceAvatarAppearanceWithBody Replace the portrait
 //
-// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-// front-facing, head and shoulders with some margin around the head (a face that
-// fills the frame cannot be animated), the face at least about a third of the
-// frame, in even light, with the **lips slightly parted as if about to speak**:
-// a v2 avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still).
-// The build refuses a clearly bad portrait at the `appearance` stage with a
-// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-// from `POST /v1/uploads`, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its portrait this way; on v2 it captures the first
-// candidate once the voice is there too.
+// Replaces the avatar's portrait and re-runs the build stages that depend
+// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+// portrait this way (on v2, the first candidate is captured once the voice
+// is there too).
+//
+//   - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+//     of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+//     `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+//     `portrait` upload consumed on success.
+//   - **Portrait**: front-facing, head and shoulders with some margin around
+//     the head, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7527,24 +6931,22 @@ func (c *Client) ReplaceAvatarAppearanceWithBody(ctx context.Context, avatarId A
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarAppearance Replace the avatar's portrait
+// ReplaceAvatarAppearance Replace the portrait
 //
-// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-// front-facing, head and shoulders with some margin around the head (a face that
-// fills the frame cannot be animated), the face at least about a third of the
-// frame, in even light, with the **lips slightly parted as if about to speak**:
-// a v2 avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still).
-// The build refuses a clearly bad portrait at the `appearance` stage with a
-// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-// from `POST /v1/uploads`, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its portrait this way; on v2 it captures the first
-// candidate once the voice is there too.
+// Replaces the avatar's portrait and re-runs the build stages that depend
+// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+// portrait this way (on v2, the first candidate is captured once the voice
+// is there too).
+//
+//   - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+//     of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+//     `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+//     `portrait` upload consumed on success.
+//   - **Portrait**: front-facing, head and shoulders with some margin around
+//     the head, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7681,23 +7083,21 @@ func (c *Client) CreateAvatarSession(ctx context.Context, avatarId AvatarIdPath,
 	return c.Client.Do(req)
 }
 
-// ListAvatarCandidates List the candidates and versions of a v2 avatar
+// ListAvatarCandidates List candidates
 //
-// v2 (`engine: v2`) avatars only. A candidate (a take) is one capture: a
-// sink latent that decides lip sync and motion for this image and voice
-// pair, plus a ~3 s talking preview of the avatar saying the preview
-// message. Candidates are identified by `candidateId`; the `seed` is
-// informational (the same seed does not reproduce a capture). Promote one
-// with `PUT /selected_candidate`; with `seedSelection: auto` the first
-// completed candidate of the current version is promoted for you.
+// Lists a v2 avatar's candidates and versions. A candidate (a take) is one
+// capture of the avatar's lip sync and motion, with a short talking
+// preview to compare. A version is one set of capture inputs: the
+// portrait, the voice sample and the preview message.
 //
-// A version is one set of capture inputs: the portrait, the voice
-// sample and the preview message. Replacing any of them starts a new
-// version; the takes of older versions are kept. `versions` always
-// lists every version (oldest first) with what going back to it brings
-// back. `items` lists the takes of the current version, plus the
-// serving take if it is older; pass `versions=all` for the takes of
-// every version.
+//   - `items` lists the current version's takes and the serving take;
+//     `versions=all` adds every older version's.
+//   - `versions` always lists every version, oldest first, with what going
+//     back to it restores.
+//   - Pick one with `PUT /v1/avatars/{avatarId}/selected_candidate`. With
+//     `seedSelection: auto`, the first completed take of the current version
+//     is picked for you.
+//   - `seed` is informational: the same seed does not reproduce a capture.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/candidates (the `ListAvatarCandidates` operationId).
 func (c *Client) ListAvatarCandidates(ctx context.Context, avatarId AvatarIdPath, params *ListAvatarCandidatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7714,10 +7114,9 @@ func (c *Client) ListAvatarCandidates(ctx context.Context, avatarId AvatarIdPath
 
 // CreateAvatarCandidatesWithBody Capture more candidates
 //
-// Captures `count` more candidates from the avatar's current bundle and
-// prime clip without re-running preprocessing. Captures are free for now
-// but count against the account's limit: at most 10 queued or running
-// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+// Captures `count` more candidates of a v2 avatar from its current inputs,
+// without preprocessing again. Captures count against the account's limit
+// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -7736,10 +7135,9 @@ func (c *Client) CreateAvatarCandidatesWithBody(ctx context.Context, avatarId Av
 
 // CreateAvatarCandidates Capture more candidates
 //
-// Captures `count` more candidates from the avatar's current bundle and
-// prime clip without re-running preprocessing. Captures are free for now
-// but count against the account's limit: at most 10 queued or running
-// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+// Captures `count` more candidates of a v2 avatar from its current inputs,
+// without preprocessing again. Captures count against the account's limit
+// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7756,12 +7154,12 @@ func (c *Client) CreateAvatarCandidates(ctx context.Context, avatarId AvatarIdPa
 	return c.Client.Do(req)
 }
 
-// DeleteAvatarConductor Remove the graph conductor of a v2 avatar
+// DeleteAvatarConductor Remove the conductor
 //
-// The next session runs without a conductor, also one the avatar's own
-// config carries (a running session keeps the one it started with).
-// Nothing is rebuilt. Removing a conductor that is not set is no
-// error.
+// Removes a v2 avatar's conductor, including one its own configuration
+// carries: the next session runs without one, and a running session keeps
+// its own. Nothing is rebuilt. Removing a conductor that is not set is not
+// an error.
 //
 // Corresponds with DELETE /v1/avatars/{avatarId}/conductor (the `DeleteAvatarConductor` operationId).
 func (c *Client) DeleteAvatarConductor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7776,11 +7174,11 @@ func (c *Client) DeleteAvatarConductor(ctx context.Context, avatarId AvatarIdPat
 	return c.Client.Do(req)
 }
 
-// GetAvatarConductor Read the graph conductor of a v2 avatar
+// GetAvatarConductor Get the conductor
 //
-// The conductor as saved: the whole graph and `speakAfterS`. The
-// avatar detail (`GET /v1/avatars/{avatarId}`) reports only whether one
-// is set and its node count.
+// Returns a v2 avatar's conductor as saved: the whole graph and
+// `speakAfterS`. `GET /v1/avatars/{avatarId}` only reports whether one is
+// set and its node count.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/conductor (the `GetAvatarConductor` operationId).
 func (c *Client) GetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7795,46 +7193,29 @@ func (c *Client) GetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
-// SetAvatarConductorWithBody Set the graph conductor of a v2 avatar
+// SetAvatarConductorWithBody Set the conductor
 //
-// Gives the avatar's conversations an agenda: a graph of steps, each
-// with the avatar's instructions while the conversation is in it, and
-// edges that say when it moves on. At the end of every turn a judge
-// model gives each condition (`when`) of the current step the
-// probability that it holds; edges without a condition share the
-// probability that none holds, by `weight`. The step then takes its
-// likeliest edge (or, marked `random`, draws one). A step without
-// edges is the end. An edge marked `speak`, taken after an avatar
-// turn, has the avatar go on under the next step without waiting for
-// the user (`speakAfterS` seconds later; absent, Causeur's default).
+// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+// instructions for the avatar and edges that say when to move on. It
+// replaces any earlier conductor, including one the avatar's own
+// configuration carries, and applies from the next session. Nothing is
+// rebuilt.
 //
-// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-// conductor runs on Causeur, the conversation runtime v2 sessions are
-// moving to; it has no effect on a session the behavior module runs.
-// It replaces any earlier conductor, and any conductor the avatar's
-// own config carries, and applies from the next session (a running
-// session keeps what it started with). Nothing is rebuilt or captured,
-// and the serving candidate stays. A session whose whole payload would
-// exceed Causeur's limit (262,144 characters, the avatar's persona and
-// config included) starts without the conductor.
-//
-// The graph is checked before it is saved, with Causeur's own rules
-// and limits; a refusal names the field (`400 invalid_conductor`,
-// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-// 1000 characters; a condition at most 300; a weight above 0 and at
-// most 1000, and only on an edge without a condition (default 1); one
-// edge with a condition and one without per target at most; every
-// node reachable from `start`, every edge to a node of the graph, a
-// `speak` edge only into a step with instructions. Not accepted here:
-// `replan` steps (the graph runs as given), text holding a
-// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-// 150,000 characters of JSON (non-ASCII characters count as their
-// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-// of the session (a v2 avatar's own config is typically under 15,000).
-// Only `graph` and `speakAfterS` are accepted at the top level. The
-// request body may be up to 512 KiB.
+//   - **How it runs**: after each turn, a judge model scores each edge's
+//     `when` condition. Edges without a condition share the chance that none
+//     holds, by `weight`. The step takes its likeliest edge, or draws one
+//     when `random`. A step without edges is the end. A `speak` edge lets
+//     the avatar go on without waiting for the user, `speakAfterS` seconds
+//     later.
+//   - **Validation**: the graph is checked before it is saved. `400
+//     invalid_conductor` names the field (e.g.
+//     `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+//     `422`. Per-field limits are on the schema.
+//   - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+//     graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+//     request body may be up to 512 KiB. A session whose whole configuration
+//     would be too large starts without the conductor.
+//   - v1 avatars are refused (`409 not_v2_avatar`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -7851,46 +7232,29 @@ func (c *Client) SetAvatarConductorWithBody(ctx context.Context, avatarId Avatar
 	return c.Client.Do(req)
 }
 
-// SetAvatarConductor Set the graph conductor of a v2 avatar
+// SetAvatarConductor Set the conductor
 //
-// Gives the avatar's conversations an agenda: a graph of steps, each
-// with the avatar's instructions while the conversation is in it, and
-// edges that say when it moves on. At the end of every turn a judge
-// model gives each condition (`when`) of the current step the
-// probability that it holds; edges without a condition share the
-// probability that none holds, by `weight`. The step then takes its
-// likeliest edge (or, marked `random`, draws one). A step without
-// edges is the end. An edge marked `speak`, taken after an avatar
-// turn, has the avatar go on under the next step without waiting for
-// the user (`speakAfterS` seconds later; absent, Causeur's default).
+// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+// instructions for the avatar and edges that say when to move on. It
+// replaces any earlier conductor, including one the avatar's own
+// configuration carries, and applies from the next session. Nothing is
+// rebuilt.
 //
-// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-// conductor runs on Causeur, the conversation runtime v2 sessions are
-// moving to; it has no effect on a session the behavior module runs.
-// It replaces any earlier conductor, and any conductor the avatar's
-// own config carries, and applies from the next session (a running
-// session keeps what it started with). Nothing is rebuilt or captured,
-// and the serving candidate stays. A session whose whole payload would
-// exceed Causeur's limit (262,144 characters, the avatar's persona and
-// config included) starts without the conductor.
-//
-// The graph is checked before it is saved, with Causeur's own rules
-// and limits; a refusal names the field (`400 invalid_conductor`,
-// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-// 1000 characters; a condition at most 300; a weight above 0 and at
-// most 1000, and only on an edge without a condition (default 1); one
-// edge with a condition and one without per target at most; every
-// node reachable from `start`, every edge to a node of the graph, a
-// `speak` edge only into a step with instructions. Not accepted here:
-// `replan` steps (the graph runs as given), text holding a
-// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-// 150,000 characters of JSON (non-ASCII characters count as their
-// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-// of the session (a v2 avatar's own config is typically under 15,000).
-// Only `graph` and `speakAfterS` are accepted at the top level. The
-// request body may be up to 512 KiB.
+//   - **How it runs**: after each turn, a judge model scores each edge's
+//     `when` condition. Edges without a condition share the chance that none
+//     holds, by `weight`. The step takes its likeliest edge, or draws one
+//     when `random`. A step without edges is the end. A `speak` edge lets
+//     the avatar go on without waiting for the user, `speakAfterS` seconds
+//     later.
+//   - **Validation**: the graph is checked before it is saved. `400
+//     invalid_conductor` names the field (e.g.
+//     `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+//     `422`. Per-field limits are on the schema.
+//   - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+//     graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+//     request body may be up to 512 KiB. A session whose whole configuration
+//     would be too large starts without the conductor.
+//   - v1 avatars are refused (`409 not_v2_avatar`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7907,7 +7271,10 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
-// GetAvatarKnowledge The avatar's facts and knowledge files
+// GetAvatarKnowledge Get the knowledge
+//
+// Returns the facts text, the knowledge questionnaire's questions and
+// answers, and the knowledge files with presigned URLs.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/knowledge (the `GetAvatarKnowledge` operationId).
 func (c *Client) GetAvatarKnowledge(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7922,23 +7289,23 @@ func (c *Client) GetAvatarKnowledge(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarKnowledgeWithBody Replace the avatar's knowledge files
+// ReplaceAvatarKnowledgeWithBody Replace the knowledge files
 //
-// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-// `descriptions` is an optional JSON object mapping a filename to a short description.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-// list clears the set). A URL's file is named by its last path segment, an
-// upload's by the `fileName` it was created with; `descriptions` uses those
-// names. The uploads are consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-// keep their own files: replacing the files leaves them (change them
-// with PATCH). Knowledge is not used in v2
-// conversations yet.
+// Replaces the avatar's whole set of knowledge files and re-runs the build
+// stages that depend on them; send none to clear the set. The
+// `knowledge.facts` text and the questionnaire answers are kept (change
+// them with `PATCH /v1/avatars/{avatarId}`).
+//
+//   - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+//     txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+//     `descriptions` JSON object of file name to description. Where `POST
+//     /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+//     {...}}` also works, with https URLs or `knowledge` uploads consumed on
+//     success.
+//   - A URL's file is named by its last path segment, an upload's by its
+//     `fileName`; `descriptions` uses those names.
+//   - v2 conversations do not use knowledge yet.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7955,23 +7322,23 @@ func (c *Client) ReplaceAvatarKnowledgeWithBody(ctx context.Context, avatarId Av
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarKnowledge Replace the avatar's knowledge files
+// ReplaceAvatarKnowledge Replace the knowledge files
 //
-// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-// `descriptions` is an optional JSON object mapping a filename to a short description.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-// list clears the set). A URL's file is named by its last path segment, an
-// upload's by the `fileName` it was created with; `descriptions` uses those
-// names. The uploads are consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-// keep their own files: replacing the files leaves them (change them
-// with PATCH). Knowledge is not used in v2
-// conversations yet.
+// Replaces the avatar's whole set of knowledge files and re-runs the build
+// stages that depend on them; send none to clear the set. The
+// `knowledge.facts` text and the questionnaire answers are kept (change
+// them with `PATCH /v1/avatars/{avatarId}`).
+//
+//   - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+//     txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+//     `descriptions` JSON object of file name to description. Where `POST
+//     /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+//     {...}}` also works, with https URLs or `knowledge` uploads consumed on
+//     success.
+//   - A URL's file is named by its last path segment, an upload's by its
+//     `fileName`; `descriptions` uses those names.
+//   - v2 conversations do not use knowledge yet.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7988,15 +7355,12 @@ func (c *Client) ReplaceAvatarKnowledge(ctx context.Context, avatarId AvatarIdPa
 	return c.Client.Do(req)
 }
 
-// GetAvatarMonetization The avatar's monetization eligibility and earnings
+// GetAvatarMonetization Get monetization
 //
-// What Creator Studio's monetization panel shows: whether the avatar is
-// monetized, its last 30 days against the eligibility requirements, the
-// account's cap on monetizing avatars, and what it has earned. The 30-day
-// numbers leave out the account's own conversations. Earnings are in
-// microcredits (100 = 1 credit); the current cycle is the account's
-// billing cycle. Requires `avatars:read`; an avatar-scoped key reads only
-// its own avatar.
+// Returns whether the avatar is monetized, its last 30 days against the
+// eligibility requirements (the account's own conversations left out), the
+// account's cap on monetized avatars, and what the avatar earned, in
+// microcredits (100 = 1 credit). Requires `avatars:read`.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
 func (c *Client) GetAvatarMonetization(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8011,27 +7375,23 @@ func (c *Client) GetAvatarMonetization(ctx context.Context, avatarId AvatarIdPat
 	return c.Client.Do(req)
 }
 
-// SelectAvatarCandidateWithBody Promote the candidate a v2 avatar renders with
+// SelectAvatarCandidateWithBody Select a candidate
 //
-// Picks a completed candidate. The pick is recorded at once
-// (`selectedCandidateId`); the avatar serves it once its config is
-// built, a few seconds later (`servingCandidateId`). The first pick
-// makes the avatar `ready`; a later one switches without downtime, with
-// `rebuilding` true until it serves.
+// Picks the completed candidate a v2 avatar serves. The pick is recorded
+// at once (`selectedCandidateId`) and served a few seconds later
+// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+// one switches without downtime, with `rebuilding` true until it serves.
 //
-// A completed candidate of an older version (`current: false`,
-// `restorable: true`) goes back to that version -- also when it is
-// still the pick from before an edit: its portrait, voice sample and
-// preview message, and the language its default sentence speaks,
-// become the avatar's again, in one step, and every other setting
-// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-// Nothing is captured again and nothing is charged: that version's
-// takes are already built. Takes of the newer version still queued or
-// being captured are cancelled. Moderation is not run again for
-// inputs already checked together; a combination never checked (the
-// old portrait with a name or description edited since) is moderated
-// like any edit. Re-selecting the current pick is always allowed.
-// Queued, failed and superseded candidates cannot be selected.
+//   - **Older versions**: picking a restorable take of an older version
+//     (`current: false`, `restorable: true`) restores that version's
+//     portrait, voice sample, preview message and default-sentence language
+//     in one step. Other settings stay as they are, nothing is captured or
+//     charged, and the newer version's unfinished takes are cancelled.
+//   - **Moderation**: inputs already checked together are not checked again;
+//     a combination never checked is moderated like an edit.
+//   - Queued, failed and superseded candidates cannot be selected (`409
+//     candidate_not_ready`). Selecting the current pick again is always
+//     allowed.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8048,27 +7408,23 @@ func (c *Client) SelectAvatarCandidateWithBody(ctx context.Context, avatarId Ava
 	return c.Client.Do(req)
 }
 
-// SelectAvatarCandidate Promote the candidate a v2 avatar renders with
+// SelectAvatarCandidate Select a candidate
 //
-// Picks a completed candidate. The pick is recorded at once
-// (`selectedCandidateId`); the avatar serves it once its config is
-// built, a few seconds later (`servingCandidateId`). The first pick
-// makes the avatar `ready`; a later one switches without downtime, with
-// `rebuilding` true until it serves.
+// Picks the completed candidate a v2 avatar serves. The pick is recorded
+// at once (`selectedCandidateId`) and served a few seconds later
+// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+// one switches without downtime, with `rebuilding` true until it serves.
 //
-// A completed candidate of an older version (`current: false`,
-// `restorable: true`) goes back to that version -- also when it is
-// still the pick from before an edit: its portrait, voice sample and
-// preview message, and the language its default sentence speaks,
-// become the avatar's again, in one step, and every other setting
-// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-// Nothing is captured again and nothing is charged: that version's
-// takes are already built. Takes of the newer version still queued or
-// being captured are cancelled. Moderation is not run again for
-// inputs already checked together; a combination never checked (the
-// old portrait with a name or description edited since) is moderated
-// like any edit. Re-selecting the current pick is always allowed.
-// Queued, failed and superseded candidates cannot be selected.
+//   - **Older versions**: picking a restorable take of an older version
+//     (`current: false`, `restorable: true`) restores that version's
+//     portrait, voice sample, preview message and default-sentence language
+//     in one step. Other settings stay as they are, nothing is captured or
+//     charged, and the newer version's unfinished takes are cancelled.
+//   - **Moderation**: inputs already checked together are not checked again;
+//     a combination never checked is moderated like an edit.
+//   - Queued, failed and superseded candidates cannot be selected (`409
+//     candidate_not_ready`). Selecting the current pick again is always
+//     allowed.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8085,12 +7441,11 @@ func (c *Client) SelectAvatarCandidate(ctx context.Context, avatarId AvatarIdPat
 	return c.Client.Do(req)
 }
 
-// GetAvatarSponsor Sponsor pool balance and settings
+// GetAvatarSponsor Get the sponsor pool
 //
-// Callable by an API key (`avatars:read`) or a signed-in user acting for
-// the account. Sponsoring otherwise takes an API key with
-// `billing:write` or a signed-in user, who sponsors the account's
-// avatars as in Studio without holding that scope.
+// Returns the avatar's sponsor pool balance and settings. Readable by an
+// API key with `avatars:read` or a signed-in user of the account. Changing
+// the pool takes an API key with `billing:write` or a signed-in user.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8107,14 +7462,17 @@ func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, re
 
 // UpdateAvatarSponsorWithBody Update sponsor settings
 //
-// One request applies all of its fields or none. `anonymousAccess: true`
-// lets visitors without an account spend the pool, so it needs an avatar
-// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-// or turn on auto top-up) and is public or unlisted (`409
-// avatar_not_shared`: change its visibility first). A monetized avatar
-// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-// already stored (`400 auto_topup_incomplete`).
+// Changes who may spend the avatar's sponsor pool, and when. The request
+// applies all of its fields or none.
+//
+//   - `anonymousAccess: true` lets visitors without an account spend the
+//     pool. The avatar must be funded first (`409
+//     avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+//     public or unlisted (`409 avatar_not_shared`).
+//   - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+//     already stored (`400 auto_topup_incomplete`).
+//   - A monetized avatar cannot be sponsored (`409
+//     monetized_avatar_cannot_be_sponsored`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -8133,14 +7491,17 @@ func (c *Client) UpdateAvatarSponsorWithBody(ctx context.Context, avatarId Avata
 
 // UpdateAvatarSponsor Update sponsor settings
 //
-// One request applies all of its fields or none. `anonymousAccess: true`
-// lets visitors without an account spend the pool, so it needs an avatar
-// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-// or turn on auto top-up) and is public or unlisted (`409
-// avatar_not_shared`: change its visibility first). A monetized avatar
-// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-// already stored (`400 auto_topup_incomplete`).
+// Changes who may spend the avatar's sponsor pool, and when. The request
+// applies all of its fields or none.
+//
+//   - `anonymousAccess: true` lets visitors without an account spend the
+//     pool. The avatar must be funded first (`409
+//     avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+//     public or unlisted (`409 avatar_not_shared`).
+//   - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+//     already stored (`400 auto_topup_incomplete`).
+//   - A monetized avatar cannot be sponsored (`409
+//     monetized_avatar_cannot_be_sponsored`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8157,10 +7518,11 @@ func (c *Client) UpdateAvatarSponsor(ctx context.Context, avatarId AvatarIdPath,
 	return c.Client.Do(req)
 }
 
-// GrantAvatarSponsorWithBody Move credits from the account into the avatar's sponsor pool
+// GrantAvatarSponsorWithBody Fund the sponsor pool
 //
-// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-// first successful result instead of granting twice.
+// Moves credits from the account into the avatar's sponsor pool. Send an
+// `Idempotency-Key` to retry safely: the same key replays the first result
+// instead of granting twice.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8177,10 +7539,11 @@ func (c *Client) GrantAvatarSponsorWithBody(ctx context.Context, avatarId Avatar
 	return c.Client.Do(req)
 }
 
-// GrantAvatarSponsor Move credits from the account into the avatar's sponsor pool
+// GrantAvatarSponsor Fund the sponsor pool
 //
-// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-// first successful result instead of granting twice.
+// Moves credits from the account into the avatar's sponsor pool. Send an
+// `Idempotency-Key` to retry safely: the same key replays the first result
+// instead of granting twice.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8197,7 +7560,9 @@ func (c *Client) GrantAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
-// WithdrawAvatarSponsorWithBody Return unreserved sponsor credits to the account
+// WithdrawAvatarSponsorWithBody Withdraw sponsor credits
+//
+// Returns the sponsor pool's unreserved credits to the account.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8214,7 +7579,9 @@ func (c *Client) WithdrawAvatarSponsorWithBody(ctx context.Context, avatarId Ava
 	return c.Client.Do(req)
 }
 
-// WithdrawAvatarSponsor Return unreserved sponsor credits to the account
+// WithdrawAvatarSponsor Withdraw sponsor credits
+//
+// Returns the sponsor pool's unreserved credits to the account.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8231,14 +7598,14 @@ func (c *Client) WithdrawAvatarSponsor(ctx context.Context, avatarId AvatarIdPat
 	return c.Client.Do(req)
 }
 
-// DeleteAvatarThumbnail Remove the avatar's Explore thumbnail
+// DeleteAvatarThumbnail Remove the thumbnail
 //
-// Removes the thumbnail, custom or automatic: Explore shows the
-// portrait in its place, and an automatic thumbnail may be made for
-// the avatar again. A public avatar keeps needing a thumbnail, so
-// removing it is `409 public_requirements_missing`; make the avatar
-// unlisted or private first. Answers the detail. Requires
-// `avatars:write`.
+// Removes the thumbnail, custom or automatic: Explore shows the portrait
+// instead, and an automatic thumbnail may be made again. Returns the
+// avatar. Requires `avatars:write`.
+//
+// A public avatar needs a thumbnail, so this is `409
+// public_requirements_missing` until you make it unlisted or private.
 //
 // Corresponds with DELETE /v1/avatars/{avatarId}/thumbnail (the `DeleteAvatarThumbnail` operationId).
 func (c *Client) DeleteAvatarThumbnail(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8253,19 +7620,17 @@ func (c *Client) DeleteAvatarThumbnail(ctx context.Context, avatarId AvatarIdPat
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarThumbnailWithBody Set the avatar's Explore thumbnail
+// ReplaceAvatarThumbnailWithBody Set the thumbnail
 //
-// A custom thumbnail for the avatar's card on Explore, as Creator
-// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-// MB) as the `file` part, or, on an instance that keeps uploads,
-// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-// `portrait` upload from `POST /v1/uploads`, consumed when the
-// thumbnail is set). It replaces any thumbnail, and automatic ones are
-// no longer made for the avatar. Nothing is rebuilt. Answers the
-// detail, whose `profile.thumbnailSource` reads `custom` and whose
-// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-// is one of what public needs (removing it is refused; setting one
-// never is). Requires `avatars:write`.
+// Sets a custom thumbnail for the avatar's Explore card, replacing any
+// other; automatic thumbnails are no longer made for it. Nothing is
+// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+//
+//   - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+//     part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+//     URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+//     consumed on success.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8282,19 +7647,17 @@ func (c *Client) ReplaceAvatarThumbnailWithBody(ctx context.Context, avatarId Av
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarThumbnail Set the avatar's Explore thumbnail
+// ReplaceAvatarThumbnail Set the thumbnail
 //
-// A custom thumbnail for the avatar's card on Explore, as Creator
-// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-// MB) as the `file` part, or, on an instance that keeps uploads,
-// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-// `portrait` upload from `POST /v1/uploads`, consumed when the
-// thumbnail is set). It replaces any thumbnail, and automatic ones are
-// no longer made for the avatar. Nothing is rebuilt. Answers the
-// detail, whose `profile.thumbnailSource` reads `custom` and whose
-// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-// is one of what public needs (removing it is refused; setting one
-// never is). Requires `avatars:write`.
+// Sets a custom thumbnail for the avatar's Explore card, replacing any
+// other; automatic thumbnails are no longer made for it. Nothing is
+// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+//
+//   - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+//     part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+//     URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+//     consumed on success.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8311,20 +7674,17 @@ func (c *Client) ReplaceAvatarThumbnail(ctx context.Context, avatarId AvatarIdPa
 	return c.Client.Do(req)
 }
 
-// DeleteAvatarVersion Delete an older version of a v2 avatar
+// DeleteAvatarVersion Delete a version
 //
-// Deletes every take of an older version and the files only that
-// version uses: its takes' sink latents and preview clips, and its
-// portrait, voice sample, voice clone, prime clip and bundle unless a
-// kept take or the current inputs still use them. Files that any kept
-// take or the current inputs reference are never deleted. The version
-// cannot be restored afterwards. The current version, and a version
-// holding the serving or selected take, cannot be deleted; nor can a
-// version whose capture is still running (retry when it ends). When
-// storage cannot delete the files now, the takes are still gone and
-// `pendingFiles` counts what is left: repeat the DELETE to retry.
-// Deleting the avatar deletes all of its files, every version's
-// included.
+// Deletes an older version of a v2 avatar: its takes and the files only it
+// uses. It can no longer be restored.
+//
+//   - Files that a kept take or the current inputs use are never deleted.
+//   - The current version, a version holding the serving or selected take
+//     (`409 version_in_use`) and one whose capture is still running (`409
+//     version_busy`) cannot be deleted.
+//   - If storage cannot delete every file now, the takes are still gone and
+//     `pendingFiles` counts what is left: call again to retry.
 //
 // Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
 func (c *Client) DeleteAvatarVersion(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8339,7 +7699,9 @@ func (c *Client) DeleteAvatarVersion(ctx context.Context, avatarId AvatarIdPath,
 	return c.Client.Do(req)
 }
 
-// GetAvatarVoice The avatar's voice sample and engine
+// GetAvatarVoice Get the voice
+//
+// Returns a presigned URL of the voice sample last given, and the voice engine.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/voice (the `GetAvatarVoice` operationId).
 func (c *Client) GetAvatarVoice(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8354,17 +7716,20 @@ func (c *Client) GetAvatarVoice(ctx context.Context, avatarId AvatarIdPath, reqE
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarVoiceWithBody Replace the avatar's voice sample
+// ReplaceAvatarVoiceWithBody Replace the voice
 //
-// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its voice this way; on v2 it captures the first
-// candidate once the portrait is there too.
+// Replaces the avatar's voice sample and re-runs the build stages that
+// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+// gets its voice this way (on v2, the first candidate is captured once the
+// portrait is there too).
+//
+//   - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+//     m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+//     Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+//     upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+//     success.
+//   - Silence, pure tones or heavy noise fail the voice stage.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8381,17 +7746,20 @@ func (c *Client) ReplaceAvatarVoiceWithBody(ctx context.Context, avatarId Avatar
 	return c.Client.Do(req)
 }
 
-// ReplaceAvatarVoice Replace the avatar's voice sample
+// ReplaceAvatarVoice Replace the voice
 //
-// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its voice this way; on v2 it captures the first
-// candidate once the portrait is there too.
+// Replaces the avatar's voice sample and re-runs the build stages that
+// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+// gets its voice this way (on v2, the first candidate is captured once the
+// portrait is there too).
+//
+//   - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+//     m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+//     Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+//     upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+//     success.
+//   - Silence, pure tones or heavy noise fail the voice stage.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8408,45 +7776,45 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
-// GenerateClipWithBody Render a video clip from an image and a prompt
+// GenerateClipWithBody Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-// character in `image`, moving as `prompt` describes, optionally
-// speaking `audio`. No avatar is made or needed: the clip is rendered
-// directly by Atmee's v2 renderer.
+// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// in `image`, moving as `prompt` describes and optionally speaking
+// `audio`. No avatar is needed.
 //
-// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-// usable afterwards) or a public https link to a jpg, png or webp of at
-// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-// webm, ...). The audio plays once from the start of the clip, padded
-// with silence and cut at its end. `durationSeconds` is required with
-// `audio` (the audio's own length is not read: set it to the audio's
-// length, at most 15; without it the request is `400 invalid_input`)
-// and defaults to 8 for a silent clip; `resolution` defaults to
-// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-// are moderated first. If the image shows a real person other than the
-// creator, have that person's permission first.
+//   - **Inputs**: `image` is a `portrait` upload or a public https link
+//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+//     The audio plays once from the start, padded with silence or cut at the
+//     end. The prompt and the image are moderated; if the image shows a real
+//     person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio` (set it to
+//     the audio's length; the file is not measured) and defaults to 8 for a
+//     silent clip. At most 15 seconds where clips render on the sessions'
+//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
+//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+//     side rounded up to 32 and the centre is cropped. Where
+//     `clipAnySize` is false the render size must be one of
+//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+//     short-lived `url` to download it.
+//   - **Billing**: the per-15-second price from `GET /v1/account`
+//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+//     `durationSeconds` and rounded up, charged only when the clip comes
+//     back.
+//   - **Slow starts**: a cold render can take minutes. After about 45
+//     seconds the call answers `409 request_in_progress`; retry with the
+//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
+//     once.
+//   - **Access**: needs v2 access (`403 v2_access_required`) and the
+//     `generation:write` and `avatars:write` scopes.
 //
-// The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per 15 seconds
-// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-// credit for a 15-second clip), charged only when the clip comes back; a
-// flagged, failed or refused call costs nothing. Clips use the v2
-// renderer, so an account without v2 access gets
-// `403 v2_access_required`. A render can take
-// minutes when the renderer starts cold: past about 45 seconds the
-// request answers `409 request_in_progress`, and a retry with the same
-// `Idempotency-Key` after `Retry-After` returns the clip once it is
-// done, charged once. An image or audio the renderer cannot use (no
-// face, an unreadable file) is `400 invalid_input` naming
-// `input_failure image` or `input_failure audio`. Where clips are not
-// offered the route answers `503 generation_unavailable`. A size this
-// deployment offers but its render pool does not serve is `400
-// invalid_input` naming `input_failure resolution` ("the render pool
-// does not serve WxH"), not an image error. Requires
-// `generation:write` and `avatars:write`.
+// | Error | When |
+// |---|---|
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type.
 //
@@ -8463,45 +7831,45 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 	return c.Client.Do(req)
 }
 
-// GenerateClip Render a video clip from an image and a prompt
+// GenerateClip Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-// character in `image`, moving as `prompt` describes, optionally
-// speaking `audio`. No avatar is made or needed: the clip is rendered
-// directly by Atmee's v2 renderer.
+// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// in `image`, moving as `prompt` describes and optionally speaking
+// `audio`. No avatar is needed.
 //
-// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-// usable afterwards) or a public https link to a jpg, png or webp of at
-// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-// webm, ...). The audio plays once from the start of the clip, padded
-// with silence and cut at its end. `durationSeconds` is required with
-// `audio` (the audio's own length is not read: set it to the audio's
-// length, at most 15; without it the request is `400 invalid_input`)
-// and defaults to 8 for a silent clip; `resolution` defaults to
-// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-// are moderated first. If the image shows a real person other than the
-// creator, have that person's permission first.
+//   - **Inputs**: `image` is a `portrait` upload or a public https link
+//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+//     The audio plays once from the start, padded with silence or cut at the
+//     end. The prompt and the image are moderated; if the image shows a real
+//     person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio` (set it to
+//     the audio's length; the file is not measured) and defaults to 8 for a
+//     silent clip. At most 15 seconds where clips render on the sessions'
+//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
+//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+//     side rounded up to 32 and the centre is cropped. Where
+//     `clipAnySize` is false the render size must be one of
+//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+//     short-lived `url` to download it.
+//   - **Billing**: the per-15-second price from `GET /v1/account`
+//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+//     `durationSeconds` and rounded up, charged only when the clip comes
+//     back.
+//   - **Slow starts**: a cold render can take minutes. After about 45
+//     seconds the call answers `409 request_in_progress`; retry with the
+//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
+//     once.
+//   - **Access**: needs v2 access (`403 v2_access_required`) and the
+//     `generation:write` and `avatars:write` scopes.
 //
-// The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per 15 seconds
-// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-// credit for a 15-second clip), charged only when the clip comes back; a
-// flagged, failed or refused call costs nothing. Clips use the v2
-// renderer, so an account without v2 access gets
-// `403 v2_access_required`. A render can take
-// minutes when the renderer starts cold: past about 45 seconds the
-// request answers `409 request_in_progress`, and a retry with the same
-// `Idempotency-Key` after `Retry-After` returns the clip once it is
-// done, charged once. An image or audio the renderer cannot use (no
-// face, an unreadable file) is `400 invalid_input` naming
-// `input_failure image` or `input_failure audio`. Where clips are not
-// offered the route answers `503 generation_unavailable`. A size this
-// deployment offers but its render pool does not serve is `400
-// invalid_input` naming `input_failure resolution` ("the render pool
-// does not serve WxH"), not an image error. Requires
-// `generation:write` and `avatars:write`.
+// | Error | When |
+// |---|---|
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8518,22 +7886,21 @@ func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, b
 	return c.Client.Do(req)
 }
 
-// EnhancePortraitWithBody Enhance or restyle a portrait photo
+// EnhancePortraitWithBody Enhance a portrait
 //
-// Crops the caller's own photo to a square and returns up to four square
-// portraits, one per image provider. Without `prompt` they are enhanced
-// versions that keep the subject's identity. With `prompt` they restyle
-// the photo as the prompt asks ("this person as a 1920s detective"): the
-// person is kept unless the prompt asks otherwise. The prompt and the
-// photo are each moderated before any provider is called. `image` is
-// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-// stays usable afterwards) or a public https link to a jpg, png or webp of
-// at most 10 MB. If the photo shows a real person other than the creator,
-// have that person's permission first.
+// Crops your photo to a square and returns up to four enhanced portraits
+// that keep the subject's identity. With `prompt`, they restyle the photo
+// as the prompt asks ("this person as a 1920s detective"), keeping the
+// person unless the prompt says otherwise.
 //
-// The outputs, price, charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+//     usable afterwards) or a public https link to a jpg, png or webp of at
+//     most 10 MB. The prompt and the photo are moderated first.
+//   - **Consent**: if the photo shows a real person other than you, get
+//     their permission first.
+//   - **Output, billing and idempotency**: as for `POST
+//     /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8550,22 +7917,21 @@ func (c *Client) EnhancePortraitWithBody(ctx context.Context, params *EnhancePor
 	return c.Client.Do(req)
 }
 
-// EnhancePortrait Enhance or restyle a portrait photo
+// EnhancePortrait Enhance a portrait
 //
-// Crops the caller's own photo to a square and returns up to four square
-// portraits, one per image provider. Without `prompt` they are enhanced
-// versions that keep the subject's identity. With `prompt` they restyle
-// the photo as the prompt asks ("this person as a 1920s detective"): the
-// person is kept unless the prompt asks otherwise. The prompt and the
-// photo are each moderated before any provider is called. `image` is
-// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-// stays usable afterwards) or a public https link to a jpg, png or webp of
-// at most 10 MB. If the photo shows a real person other than the creator,
-// have that person's permission first.
+// Crops your photo to a square and returns up to four enhanced portraits
+// that keep the subject's identity. With `prompt`, they restyle the photo
+// as the prompt asks ("this person as a 1920s detective"), keeping the
+// person unless the prompt says otherwise.
 //
-// The outputs, price, charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+//     usable afterwards) or a public https link to a jpg, png or webp of at
+//     most 10 MB. The prompt and the photo are moderated first.
+//   - **Consent**: if the photo shows a real person other than you, get
+//     their permission first.
+//   - **Output, billing and idempotency**: as for `POST
+//     /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8582,24 +7948,24 @@ func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitPar
 	return c.Client.Do(req)
 }
 
-// GeneratePortraitsWithBody Generate portraits from a description
+// GeneratePortraitsWithBody Generate portraits
 //
-// Generates up to four square portraits from a text description, one from
-// each configured image provider, with Atmee Studio's portrait prompt. For
-// an invented character only: never use it to depict a real person from a
-// description. For a real person, enhance their own photo with
-// `POST /v1/generation/enhancements`, with their permission.
+// Generates up to four square portraits of an invented character from a
+// text description. Never use it to depict a real person: for a real
+// person, enhance their own photo with `POST /v1/generation/enhancements`,
+// with their permission.
 //
-// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-// take as they are (an upload works once and expires 24 hours after it was
-// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-//
-// Costs the operation's price (`GET /v1/account`), charged only when at least
-// one portrait comes back; a flagged, failed or refused call costs nothing.
-// The `Idempotency-Key` is required: a retry with the same key never charges
-// twice and returns the first result (`replayed: true`). Requires
-// `generation:write` and `avatars:write`.
+//   - **Output**: each portrait is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.image`) and `PUT
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+//     hours), with a short-lived `url` and a small JPEG `preview`.
+//   - **Billing**: the operation's price from `GET /v1/account`, charged
+//     only when at least one portrait comes back. A flagged, failed or
+//     refused call costs nothing.
+//   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+//     key never charges twice and returns the first result (`replayed:
+//     true`).
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8616,24 +7982,24 @@ func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *Generate
 	return c.Client.Do(req)
 }
 
-// GeneratePortraits Generate portraits from a description
+// GeneratePortraits Generate portraits
 //
-// Generates up to four square portraits from a text description, one from
-// each configured image provider, with Atmee Studio's portrait prompt. For
-// an invented character only: never use it to depict a real person from a
-// description. For a real person, enhance their own photo with
-// `POST /v1/generation/enhancements`, with their permission.
+// Generates up to four square portraits of an invented character from a
+// text description. Never use it to depict a real person: for a real
+// person, enhance their own photo with `POST /v1/generation/enhancements`,
+// with their permission.
 //
-// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-// take as they are (an upload works once and expires 24 hours after it was
-// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-//
-// Costs the operation's price (`GET /v1/account`), charged only when at least
-// one portrait comes back; a flagged, failed or refused call costs nothing.
-// The `Idempotency-Key` is required: a retry with the same key never charges
-// twice and returns the first result (`replayed: true`). Requires
-// `generation:write` and `avatars:write`.
+//   - **Output**: each portrait is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.image`) and `PUT
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+//     hours), with a short-lived `url` and a small JPEG `preview`.
+//   - **Billing**: the operation's price from `GET /v1/account`, charged
+//     only when at least one portrait comes back. A flagged, failed or
+//     refused call costs nothing.
+//   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+//     key never charges twice and returns the first result (`replayed:
+//     true`).
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8650,27 +8016,22 @@ func (c *Client) GeneratePortraits(ctx context.Context, params *GeneratePortrait
 	return c.Client.Do(req)
 }
 
-// DesignVoiceWithBody Design a voice from a description
+// DesignVoiceWithBody Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
-// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-// sample needs: a preview under 10 seconds is made once more with a longer
-// read and dropped if it is still short, and one over 60 seconds is
-// dropped. A preview whose length the provider did not report has
-// `durationSeconds: null`.
+// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+// needs: a short one is made once more with a longer read, and one still
+// outside that range is dropped.
 //
-// `sampleText`, when given, is what every preview says, in `language`:
-// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-// greeting from the description, long enough for 10 seconds. Each preview
-// reports the text it actually speaks (`spokenText`).
-//
-// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-// take as they are, plus a short-lived `url` to play it. The price,
-// charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Text**: `sampleText` is what every preview says, in `language`;
+//     without it, a greeting is written from the description. Each preview
+//     reports what it actually says in `spokenText`.
+//   - **Output**: each preview is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     `null` when the length is unknown.
+//   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8687,27 +8048,22 @@ func (c *Client) DesignVoiceWithBody(ctx context.Context, params *DesignVoicePar
 	return c.Client.Do(req)
 }
 
-// DesignVoice Design a voice from a description
+// DesignVoice Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
-// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-// sample needs: a preview under 10 seconds is made once more with a longer
-// read and dropped if it is still short, and one over 60 seconds is
-// dropped. A preview whose length the provider did not report has
-// `durationSeconds: null`.
+// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+// needs: a short one is made once more with a longer read, and one still
+// outside that range is dropped.
 //
-// `sampleText`, when given, is what every preview says, in `language`:
-// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-// greeting from the description, long enough for 10 seconds. Each preview
-// reports the text it actually speaks (`spokenText`).
-//
-// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-// take as they are, plus a short-lived `url` to play it. The price,
-// charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Text**: `sampleText` is what every preview says, in `language`;
+//     without it, a greeting is written from the description. Each preview
+//     reports what it actually says in `spokenText`.
+//   - **Output**: each preview is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     `null` when the length is unknown.
+//   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8840,56 +8196,35 @@ func (c *Client) StartEmbedSession(ctx context.Context, body StartEmbedSessionJS
 	return c.Client.Do(req)
 }
 
-// CreateSpeechSessionWithBody Start a speech-to-speech session (audio only, no video)
+// CreateSpeechSessionWithBody Start a speech session
 //
-// Reserves a **speech session** with an avatar: a realtime
-// speech-to-speech conversation over a WebSocket, without video. The
-// answer carries the WebSocket `url` and a short-lived `token`:
-// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-// token either as `Authorization: Bearer <token>` or as the WebSocket
-// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-// admits the connection. The session ends at its `endsAt` (the
-// reservation plus `actualDurationSeconds`), whenever the connection
-// opened. The first connection holds the session for good: no other
-// connection can use it, so a client that lost its connection starts a
-// new session.
+// Starts a realtime speech-to-speech conversation with an avatar over a
+// WebSocket, without video. The answer carries the WebSocket `url` and a
+// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 //
-// `avatarId` is required: the conversation uses that avatar's persona
-// (name, personality, facts, self-introduction) and always its voice;
-// an avatar without a voice (a Fish Audio voice ID) answers `422
-// avatar_has_no_voice`.
-//
-// `settings` pins `session.start` fields from your backend: the speech
-// server applies them over the client's, refuses a client
-// `session.start` / `session.update` that sets a pinned field (naming
-// it), and leaves them out of the session it echoes. Unpinned fields
-// stay the client's to set. Pinned persona fields override the
-// avatar's. Appends (`session.instructions.append` and the like) stay
-// allowed: they add to the pinned instructions, never replace them.
-//
-// Billing runs by the minute from the speech server's first usage report
-// (within 30 s of the connection) until the session ends, at the
-// plan's speech rate. A session nobody connects to costs nothing and is
-// closed (`failed`, `no_user_joined`) by the first read, or start of
-// the account, 30 seconds after its token expired, otherwise by the
-// stale-session cleanup: 120 seconds without a heartbeat (the
-// reservation sets the first), checked every minute.
-//
-// **Who pays.** Always the account that owns the avatar:
-//
-//   - **API key** (`X-Api-Key`) — your backend, billed to the key's
-//     account. Requires the `sessions` scope; an avatar-scoped key may
-//     only start sessions on its avatar (it must name it).
-//   - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-//     deployment accepts user tokens) — billed to the account the user
-//     acts for (`X-Account-Id` when there are several). An avatar of
-//     another account answers `403 avatar_not_allowed`.
-//   - **No credential** — `401`. There is no anonymous or visitor-paid
-//     speech session.
-//
-// With both an API key and a bearer token, the key's start applies,
-// as on `POST /v1/sessions`. Read and end a session with either
-// credential of its account.
+//   - **Connecting**: present the token as `Authorization: Bearer <token>`
+//     or as the WebSocket subprotocols `atmee-live` and
+//     `atmee-token.<token>`. The first connection holds the session for
+//     good; a client that loses it starts a new session.
+//   - **Avatar**: `avatarId` is required, and the session uses that avatar's
+//     persona and voice. An avatar without a voice is `422
+//     avatar_has_no_voice`.
+//   - **Pinned settings**: `settings` pins `session.start` fields from your
+//     backend, over the client's. A client `session.start` or
+//     `session.update` that sets a pinned field is refused, naming it;
+//     appends such as `session.instructions.append` still add to it. Pinned
+//     persona fields override the avatar's.
+//   - **Length**: the session ends at `endsAt` (the reservation plus
+//     `actualDurationSeconds`), whenever the connection opened.
+//   - **Billing**: by the minute from the first usage report (within 30
+//     seconds of connecting) until the end, always to the account that owns
+//     the avatar. A session nobody connects to costs nothing and is closed
+//     as `failed` (`no_user_joined`).
+//   - **Credentials**: an API key with the `sessions` scope (an
+//     avatar-scoped key must name its avatar), or the owner's signed-in user
+//     token where the deployment accepts one (`X-Account-Id` picks among
+//     several accounts). There are no anonymous speech sessions. Read and
+//     end a session with either credential of its account.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8906,56 +8241,35 @@ func (c *Client) CreateSpeechSessionWithBody(ctx context.Context, contentType st
 	return c.Client.Do(req)
 }
 
-// CreateSpeechSession Start a speech-to-speech session (audio only, no video)
+// CreateSpeechSession Start a speech session
 //
-// Reserves a **speech session** with an avatar: a realtime
-// speech-to-speech conversation over a WebSocket, without video. The
-// answer carries the WebSocket `url` and a short-lived `token`:
-// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-// token either as `Authorization: Bearer <token>` or as the WebSocket
-// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-// admits the connection. The session ends at its `endsAt` (the
-// reservation plus `actualDurationSeconds`), whenever the connection
-// opened. The first connection holds the session for good: no other
-// connection can use it, so a client that lost its connection starts a
-// new session.
+// Starts a realtime speech-to-speech conversation with an avatar over a
+// WebSocket, without video. The answer carries the WebSocket `url` and a
+// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 //
-// `avatarId` is required: the conversation uses that avatar's persona
-// (name, personality, facts, self-introduction) and always its voice;
-// an avatar without a voice (a Fish Audio voice ID) answers `422
-// avatar_has_no_voice`.
-//
-// `settings` pins `session.start` fields from your backend: the speech
-// server applies them over the client's, refuses a client
-// `session.start` / `session.update` that sets a pinned field (naming
-// it), and leaves them out of the session it echoes. Unpinned fields
-// stay the client's to set. Pinned persona fields override the
-// avatar's. Appends (`session.instructions.append` and the like) stay
-// allowed: they add to the pinned instructions, never replace them.
-//
-// Billing runs by the minute from the speech server's first usage report
-// (within 30 s of the connection) until the session ends, at the
-// plan's speech rate. A session nobody connects to costs nothing and is
-// closed (`failed`, `no_user_joined`) by the first read, or start of
-// the account, 30 seconds after its token expired, otherwise by the
-// stale-session cleanup: 120 seconds without a heartbeat (the
-// reservation sets the first), checked every minute.
-//
-// **Who pays.** Always the account that owns the avatar:
-//
-//   - **API key** (`X-Api-Key`) — your backend, billed to the key's
-//     account. Requires the `sessions` scope; an avatar-scoped key may
-//     only start sessions on its avatar (it must name it).
-//   - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-//     deployment accepts user tokens) — billed to the account the user
-//     acts for (`X-Account-Id` when there are several). An avatar of
-//     another account answers `403 avatar_not_allowed`.
-//   - **No credential** — `401`. There is no anonymous or visitor-paid
-//     speech session.
-//
-// With both an API key and a bearer token, the key's start applies,
-// as on `POST /v1/sessions`. Read and end a session with either
-// credential of its account.
+//   - **Connecting**: present the token as `Authorization: Bearer <token>`
+//     or as the WebSocket subprotocols `atmee-live` and
+//     `atmee-token.<token>`. The first connection holds the session for
+//     good; a client that loses it starts a new session.
+//   - **Avatar**: `avatarId` is required, and the session uses that avatar's
+//     persona and voice. An avatar without a voice is `422
+//     avatar_has_no_voice`.
+//   - **Pinned settings**: `settings` pins `session.start` fields from your
+//     backend, over the client's. A client `session.start` or
+//     `session.update` that sets a pinned field is refused, naming it;
+//     appends such as `session.instructions.append` still add to it. Pinned
+//     persona fields override the avatar's.
+//   - **Length**: the session ends at `endsAt` (the reservation plus
+//     `actualDurationSeconds`), whenever the connection opened.
+//   - **Billing**: by the minute from the first usage report (within 30
+//     seconds of connecting) until the end, always to the account that owns
+//     the avatar. A session nobody connects to costs nothing and is closed
+//     as `failed` (`no_user_joined`).
+//   - **Credentials**: an API key with the `sessions` scope (an
+//     avatar-scoped key must name its avatar), or the owner's signed-in user
+//     token where the deployment accepts one (`X-Account-Id` picks among
+//     several accounts). There are no anonymous speech sessions. Read and
+//     end a session with either credential of its account.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8972,15 +8286,17 @@ func (c *Client) CreateSpeechSession(ctx context.Context, body CreateSpeechSessi
 	return c.Client.Do(req)
 }
 
-// GetSpeechSession Read a speech session's state, end reason and cost
+// GetSpeechSession Get a speech session
 //
-// `status` is `active` while the session is reserved or connected,
-// then `completed` or `failed`. `connectedAt` is when billing started
-// (the speech server's first usage report), `endsAt` when the session's
-// time runs out, `endRequestedAt` when you ended it while a connection
-// was open (until its next usage report settles it). Once it ended,
-// `endReason` says why and `billedSeconds` / `chargedMicrocredits` what
-// it cost (100 microcredits = 1 credit).
+// Reads a speech session's state and, once it ended, why and what it cost.
+//
+//   - `status` is `active` while the session is reserved or connected, then
+//     `completed` or `failed`.
+//   - `connectedAt` is when billing started, `endsAt` when the session's
+//     time runs out, and `endRequestedAt` when you ended it with a
+//     connection open.
+//   - Once it ended, `endReason` says why, and `billedSeconds` and
+//     `chargedMicrocredits` what it cost (100 microcredits = 1 credit).
 //
 // Corresponds with GET /v1/speech_sessions/{session_id} (the `GetSpeechSession` operationId).
 func (c *Client) GetSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8997,13 +8313,14 @@ func (c *Client) GetSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 
 // EndSpeechSession End a speech session
 //
-// Ends the session (`completed`, `endReason: ended_by_api`). With no
-// connection open it settles now. With a connection open, the session
-// ends at its next usage report (within 30 s) and is billed until
-// then: the answer is `status: active` with `endRequestedAt` set, and
-// `GET` reads it `completed` once it settled. **Idempotent**: a repeat
-// keeps the first request; ending a settled session answers
-// `alreadyEnded: true`.
+// Ends the session with `endReason: ended_by_api`. With no connection open
+// it settles at once. With one open, it ends at the next usage report
+// (within 30 seconds) and is billed until then: the answer reads `status:
+// active` with `endRequestedAt` set, and `GET` reads it `completed` once
+// settled.
+//
+// Idempotent: a repeat keeps the first request, and ending a settled
+// session answers `alreadyEnded: true`.
 //
 // Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9018,29 +8335,32 @@ func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 	return c.Client.Do(req)
 }
 
-// CreateUploadWithBody Start a file upload
+// CreateUploadWithBody Create an upload
 //
-// Gets a file to the Avatar API ahead of the create or replace that uses it,
-// for clients that cannot send a file in the same request (an MCP tool, a
-// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+// Creates a one-time upload for a file you cannot send in the same
+// request, for example from an MCP tool or a chat assistant. Once it is
+// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+// a file URL.
+//
+// | `kind` | Accepts |
+// |---|---|
+// | `portrait` | jpg, png or webp, up to 10 MB |
+// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 //
 // Send the file one of two ways:
 //
 //   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-//     `allowedTypes` when none was declared), at most `maxBytes`:
-//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
-//     uploaded and how it will be used, takes the file (or, for a voice, records
-//     one in the browser) and sends it. The link works for 15 minutes
-//     (`uploadPageExpiresAt`) and until the file has arrived.
+//     `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+//     -H 'Content-Type: image/png' --data-binary @portrait.png
+//     '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl`, a page that takes the file (or
+//     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+//     until the file arrives.
 //
-// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-// upload works once and expires an hour after it was created. Requires
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+// upload is used once and expires an hour after it was created.
+// `contentType`, when given, is the only type accepted. Requires
 // `avatars:write`.
 //
 // Takes any type of body and a specified content type.
@@ -9058,29 +8378,32 @@ func (c *Client) CreateUploadWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateUpload Start a file upload
+// CreateUpload Create an upload
 //
-// Gets a file to the Avatar API ahead of the create or replace that uses it,
-// for clients that cannot send a file in the same request (an MCP tool, a
-// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+// Creates a one-time upload for a file you cannot send in the same
+// request, for example from an MCP tool or a chat assistant. Once it is
+// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+// a file URL.
+//
+// | `kind` | Accepts |
+// |---|---|
+// | `portrait` | jpg, png or webp, up to 10 MB |
+// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 //
 // Send the file one of two ways:
 //
 //   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-//     `allowedTypes` when none was declared), at most `maxBytes`:
-//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
-//     uploaded and how it will be used, takes the file (or, for a voice, records
-//     one in the browser) and sends it. The link works for 15 minutes
-//     (`uploadPageExpiresAt`) and until the file has arrived.
+//     `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+//     -H 'Content-Type: image/png' --data-binary @portrait.png
+//     '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl`, a page that takes the file (or
+//     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+//     until the file arrives.
 //
-// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-// upload works once and expires an hour after it was created. Requires
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+// upload is used once and expires an hour after it was created.
+// `contentType`, when given, is the only type accepted. Requires
 // `avatars:write`.
 //
 // Takes a body of the `application/json` content type.
@@ -9098,12 +8421,12 @@ func (c *Client) CreateUpload(ctx context.Context, body CreateUploadJSONRequestB
 	return c.Client.Do(req)
 }
 
-// GetUpload Upload status
+// GetUpload Get an upload
 //
-// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
-// once a create or replace used it, or `expired` an hour after it was
-// created. Only the account that created it sees it. Requires
-// `avatars:read` or `avatars:write`.
+// Returns the upload's `status`: `pending` until the file arrives, then
+// `uploaded` (usable once), `consumed` once a create or replace used it,
+// or `expired` an hour after it was created. Only the account that created
+// it can read it. Requires `avatars:read` or `avatars:write`.
 //
 // Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 func (c *Client) GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11148,102 +10471,94 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// GetAccountWithResponse The account's plan, limits, prices and capture quota
+	// GetAccountWithResponse Get the account
 	//
-	// The plan the account is on (and the one it changes to at the end of
-	// the cycle, if any), the limits that apply to its API usage, what a
-	// session minute, a preview clip and (where generation is offered,
-	// `pricing.generation`) one generation call cost, and how many v2 captures are
-	// queued or running against the pending cap. Prices are in
-	// microcredits (100 microcredits = 1 credit). A conversation
-	// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
-	// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
-	// avatar session (render only) the avatar engine's render rate
-	// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
-	// field, that is absent is not set (a limit absent is not capped by the
-	// plan). `payouts` says whether the account can be paid out, which
-	// monetizing an avatar needs.
+	// Returns the account's plan, its API limits, its prices and its v2
+	// capture quota. Prices are in microcredits (100 microcredits = 1 credit).
 	//
-	// Readable by the same callers as `GET /v1/account/balance`.
+	// - **Plan**: the current plan, and the one it changes to at the end of
+	//   the cycle, if any.
+	// - **Pricing**: the per-minute price of each kind of session (a
+	//   conversation or a render, by avatar engine, and a speech session), a
+	//   preview clip, and each generation call where generation is offered
+	//   (`pricing.generation`).
+	// - **Limits**: an absent limit or plan field is not set (an absent limit
+	//   is not capped by the plan).
+	// - **v2**: `v2Access` says whether the account may build v2 avatars;
+	//   `captureQuota` counts v2 captures queued or running against the cap.
+	// - **Payouts**: `payouts` says whether the account can be paid out, which
+	//   monetizing an avatar needs.
+	// - Readable by the same callers as `GET /v1/account/balance`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/account (the `GetAccount` operationId).
 	GetAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountResponse, error)
 
-	// GetAccountBalanceWithResponse The account's credit balance
+	// GetAccountBalanceWithResponse Get the balance
 	//
-	// What the calling key's account has to spend on sessions, from the
-	// account's direct wallet (the only one API usage draws on). Every
-	// amount is in microcredits (100 microcredits = 1 credit).
+	// Returns the credits the account can spend on sessions, in microcredits
+	// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
+	// (see `GET /v1/avatars/{avatarId}/sponsor`).
 	//
-	// `spendableMicrocredits` is the amount a session is admitted on: every
-	// positive bucket for a reserve-mode key or a signed-in user; the plan
-	// and top-up buckets only for a metered key, which never spends coupon
-	// credits (`couponSpendable: false`). Live sessions' reservations are
-	// already taken out of the buckets and are reported on their own as
-	// `heldByLiveSessionsMicrocredits`. `unlimited` is true when sessions
-	// are not charged (an unlimited plan, or billing switched off), whatever
-	// the buckets say. `nextExpiry` lists the credits that will expire,
-	// soonest first. An avatar's sponsor pool is not part of this balance
-	// (`GET /v1/avatars/{avatarId}/sponsor`).
-	//
-	// Any key with the `sessions` or `avatars:read` scope may read it, an
-	// avatar-scoped key included, and so may a signed-in user acting for the
-	// account.
+	// - `spendableMicrocredits` is what a session is admitted on: every bucket
+	//   for a reserve-mode key or a signed-in user, only the plan and top-up
+	//   buckets for a metered key (`couponSpendable: false`).
+	// - Live sessions' reservations are already taken out, and reported as
+	//   `heldByLiveSessionsMicrocredits`.
+	// - `unlimited` is true when sessions are not charged, whatever the
+	//   buckets say.
+	// - `nextExpiry` lists the credits that will expire, soonest first.
+	// - Readable by any key with `sessions` or `avatars:read` (an
+	//   avatar-scoped key included), or a signed-in user of the account.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/account/balance (the `GetAccountBalance` operationId).
 	GetAccountBalanceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
 
-	// GetAccountEarningsWithResponse The account's creator wallet and earnings
+	// GetAccountEarningsWithResponse Get earnings
 	//
-	// What the account's monetized avatars earned, what was paid out, and
-	// the wallet balance between the two, in microcredits (100 microcredits
-	// = 1 credit), as Studio's billing page shows them. This is not the
-	// credit balance sessions spend (`GET /v1/account/balance`). One
-	// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+	// Returns what the account's monetized avatars earned, what was paid out,
+	// and the wallet balance between them, in microcredits (100 microcredits =
+	// 1 credit). This is not the balance sessions spend (`GET
+	// /v1/account/balance`); one avatar's earnings are in `GET
+	// /v1/avatars/{avatarId}/monetization`.
 	//
-	// Any account-wide key with `avatars:read` may read it, and so may a
-	// signed-in user acting for the account; an avatar-scoped key is
-	// answered `403 avatar_not_allowed`.
+	// Readable by an account-wide key with `avatars:read` or a signed-in user
+	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
 	GetAccountEarningsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountEarningsResponse, error)
 
-	// RedeemAccountCodeWithBodyWithResponse Redeem an invite or credit code
+	// RedeemAccountCodeWithBodyWithResponse Redeem a code
 	//
-	// Redeems a code for the account, as Creator Studio's Billing page
-	// does. A code can add credits, let the account into v2 avatars (v2
-	// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-	// the answer says what it gave and where v2 access stands after it.
-	// Each account redeems a code at most once.
+	// Redeems an invite or credit code for the account. A code can add
+	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+	// /v1/account`), or both, and the answer says what it gave. Each account
+	// redeems a code at most once.
 	//
-	// Only a signed-in user may redeem (the MCP server's sign-in, or
-	// `atmee login`); an API key gets 403 `login_required`, so a leaked
-	// key cannot spend the account's codes. Once v2 is let in, v2 creates
-	// work on the next request.
+	// Only a signed-in user may redeem: an API key gets `403 login_required`,
+	// so a leaked key cannot spend the account's codes. v2 access applies from
+	// the next request.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/account/redeem (the `RedeemAccountCode` operationId).
 	RedeemAccountCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RedeemAccountCodeResponse, error)
 
-	// RedeemAccountCodeWithResponse Redeem an invite or credit code
+	// RedeemAccountCodeWithResponse Redeem a code
 	//
-	// Redeems a code for the account, as Creator Studio's Billing page
-	// does. A code can add credits, let the account into v2 avatars (v2
-	// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-	// the answer says what it gave and where v2 access stands after it.
-	// Each account redeems a code at most once.
+	// Redeems an invite or credit code for the account. A code can add
+	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+	// /v1/account`), or both, and the answer says what it gave. Each account
+	// redeems a code at most once.
 	//
-	// Only a signed-in user may redeem (the MCP server's sign-in, or
-	// `atmee login`); an API key gets 403 `login_required`, so a leaked
-	// key cannot spend the account's codes. Once v2 is let in, v2 creates
-	// work on the next request.
+	// Only a signed-in user may redeem: an API key gets `403 login_required`,
+	// so a leaked key cannot spend the account's codes. v2 access applies from
+	// the next request.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11308,22 +10623,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/api_keys (the `CreateApiKey` operationId).
 	CreateApiKeyWithResponse(ctx context.Context, body CreateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateApiKeyResponse, error)
 
-	// GetCurrentApiKeyWithResponse The credential making this call
+	// GetCurrentApiKeyWithResponse Get the current credential
 	//
-	// For an API key (`kind: api_key`): its name, scopes, the avatar it is
-	// restricted to, its billing mode, its own session caps and how much of
-	// its spend cap the current window has used. The secret is never
-	// returned. `spendCap.enforced` is false when the cap is not applied
-	// (an unlimited plan, or billing switched off); `windowResetsAt` is
-	// absent for a cap over the key's whole life (`window: total`), and
-	// `limitMicrocredits` and `remainingMicrocredits` are absent when the
-	// key has no cap (`spentMicrocredits` is still reported).
+	// Describes the credential making this call. Readable by the same callers
+	// as `GET /v1/account/balance`.
 	//
-	// For a signed-in user (`kind: user`): the user and the account it acts
-	// for; a user has no key, no scopes beyond the avatar ones and no spend
-	// cap.
-	//
-	// Readable by the same callers as `GET /v1/account/balance`.
+	// - **API key** (`kind: api_key`): its name, scopes, the avatar it is
+	//   restricted to, its billing mode, its session caps and how much of its
+	//   spend cap the current window used. The secret is never returned.
+	//   `spendCap.enforced` is false when the cap is not applied;
+	//   `limitMicrocredits` and `remainingMicrocredits` are absent when the
+	//   key has no cap, and `windowResetsAt` for a lifetime cap (`window:
+	//   total`).
+	// - **Signed-in user** (`kind: user`): the user and the account it acts
+	//   for. A user has no key, no scopes beyond the avatar ones and no spend
+	//   cap.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11389,586 +10703,328 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/api_keys/{apiKeyId}/rotate (the `RotateApiKey` operationId).
 	RotateApiKeyWithResponse(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*RotateApiKeyResponse, error)
 
-	// GetAvatarSessionWithResponse Read a session's state, end reason and cost
+	// GetAvatarSessionWithResponse Get an avatar session
 	//
-	// Reads either kind of API session: a conversation (`POST /v1/session`,
-	// `kind: conversation`) or a render into your own room (`POST
-	// /v1/avatars/{avatarId}/avatar_sessions`, `kind: render`).
+	// Reads an API session's state, end reason and cost: a conversation (`POST
+	// /v1/sessions`, `kind: conversation`) or a render (`POST
+	// /v1/avatar_sessions`, `kind: render`).
 	//
-	// `status` is `pending` (starting), `active` (live), `completed` (it
-	// ran and ended normally, including when you ended it) or `failed` (it
-	// never really started: nobody joined, the avatar did not join, or an
-	// error; nothing is billed for the time it did not run). Once it
-	// ended, `endReason` says why, `failureCode` names the failure of a
-	// failed session, and `billedSeconds` / `chargedMicrocredits` say what
-	// it cost (100 microcredits = 1 credit). Billing runs only while both
-	// the avatar and the visitor (or your agent) are in the room:
-	// `userJoinedAt` and `avatarJoinedAt` show when each joined.
+	// - `status` is `pending` (starting), `active` (live), `completed` (ended
+	//   normally, including by you) or `failed` (it never really started;
+	//   nothing is billed for time it did not run).
+	// - Once it ended, `endReason` says why, `failureCode` names the failure
+	//   of a failed session, and `billedSeconds` and `chargedMicrocredits` say
+	//   what it cost (100 microcredits = 1 credit).
+	// - Billing runs only while both the avatar and the visitor (or your
+	//   agent) are in the room; `userJoinedAt` and `avatarJoinedAt` say when
+	//   each joined.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatar_sessions/{id} (the `GetAvatarSession` operationId).
 	GetAvatarSessionWithResponse(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*GetAvatarSessionResponse, error)
 
-	// EndAvatarSessionWithResponse End an avatar session (optional explicit stop)
+	// EndAvatarSessionWithResponse End an avatar session
 	//
-	// Ends either kind of API session; for a conversation, `POST
-	// /v1/sessions/{id}/end` with an API key is the same call. It settles `completed` with
-	// `endReason: ended_by_api`, never `failed`.
+	// Ends an API session now and stops billing. It settles `completed` with
+	// `endReason: ended_by_api`. For a conversation, this is the same as `POST
+	// /v1/sessions/{id}/end` with an API key.
 	//
-	// Stops billing for the session now. **Idempotent**: ending a session that
-	// already ended answers `200` with `alreadyEnded: true`, so the plugin can
-	// call it from every teardown path without checking first. The primary end
-	// signal is the rendering worker's own report when your agent leaves, the
-	// room closes, or you remove the avatar participant — this call is the
-	// fallback for a worker that could not report, and the way to stop paying
-	// for an avatar you are done with while your room stays open. For a
-	// render it does not remove the avatar from your room; remove the
-	// participant yourself (the plugin does so on close). A conversation's room is closed, as by
-	// `POST /v1/sessions/{id}/end`. Acts only on sessions started through
-	// the API (the account's website sessions are `404`), and for an
-	// avatar-scoped key only on its avatar's.
+	// - **Idempotent**: a session that already ended answers `200` with
+	//   `alreadyEnded: true`, so it is safe to call from every teardown path.
+	// - **Renders** usually end on their own when your agent leaves, the room
+	//   closes or you remove the avatar participant. Call this to stop paying
+	//   while your room stays open; it does not remove the avatar from your
+	//   room, so remove the participant yourself.
+	// - **Conversations**: the room is closed.
+	// - Only sessions started through the API can be ended here (website
+	//   sessions are `404`), and an avatar-scoped key ends only its avatar's.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatar_sessions/{id}/end (the `EndAvatarSession` operationId).
 	EndAvatarSessionWithResponse(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*EndAvatarSessionResponse, error)
 
-	// ListAvatarsWithResponse List the account's avatars
+	// ListAvatarsWithResponse List avatars
+	//
+	// Lists the account's avatars, newest first. Page with `before`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars (the `ListAvatars` operationId).
 	ListAvatarsWithResponse(ctx context.Context, params *ListAvatarsParams, reqEditors ...RequestEditorFn) (*ListAvatarsResponse, error)
 
-	// CreateAvatarWithBodyWithResponse Create an avatar (Avatar Import API)
+	// CreateAvatarWithBodyWithResponse Create an avatar
 	//
-	// Three body shapes, one result.
+	// Creates an avatar from a portrait, a voice sample, a persona and
+	// knowledge. A complete avatar builds in the background (`202`, `status:
+	// building`): follow it with `GET /v1/avatars/{avatarId}`.
 	//
-	// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-	// <= 10 MB) as the `file` part and the avatar `name` as a second field
-	// (`description` optional). Creates a **render-only** avatar: no voice, no
-	// persona, nothing to build -- the response is `201` with `status: ready`
-	// and the avatar can be rendered for an external agent at once. Add a voice
-	// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+	// Send one of three body shapes:
 	//
-	// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-	// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-	// optional; without it the result is render-only as above. With a voice the
-	// avatar is created exactly as the studio would: the row, the files under
-	// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-	// pipeline builds it asynchronously (`202`, `status: building`), poll
-	// `GET /v1/avatars/{avatarId}`.
-	// The manifest's `persona` block carries the character: `whoPrompt` (who the
-	// avatar is: the main character description), `whatPrompt` (what the avatar is
-	// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-	// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-	// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-	// `conversationalHabits`. `personality` and `scenario` are older names of
-	// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-	// names is `400 invalid_manifest`.
-	// **JSON.** The manifest as `application/json` with an `assets` block naming
-	// the image, the voice sample, prompt text and knowledge files by https URL;
-	// the service downloads them (public hosts only, same size and type rules as
-	// the zip) and continues identically.
+	// | Body | Content type | Contents |
+	// |---|---|---|
+	// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+	// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+	// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 	//
-	// **A draft.** The image and the voice are both optional on the zip and JSON
-	// bodies (and `assets` itself on JSON), on either engine. An avatar created
-	// without its portrait, or without its voice (other than a v1 avatar with a
-	// portrait, which is render-only), is a **draft**: `status: draft` with
-	// `missingInputs` naming what it lacks. Its persona and knowledge build;
-	// nothing that needs the missing input does. Give them with
-	// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-	// in either order; the build continues once both are there (on v2, the input
-	// that completes it captures the first candidate). `seedPreviews` and
-	// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-	// selected automatically.
-	// Where `assets` takes a URL for the image, the voice sample or a knowledge
-	// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-	// (the prompt stays a URL). The upload must be this account's, of the matching
-	// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-	// type, and the same size and type rules apply. A create that succeeds
-	// consumes its uploads; one that fails leaves them usable for a retry.
+	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
+	//   (default), serves the first that completes. v2 is invite-only (`403
+	//   v2_access_required`).
+	// - **Drafts**: the portrait and the voice are optional in zip and JSON
+	//   bodies. Without either (other than a v1 avatar with a portrait, which
+	//   is render-only) the avatar is a `draft`, and `missingInputs` names
+	//   what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
+	// - **Portrait**: use a front-facing photo of one person, head and
+	//   shoulders, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Uploads**: a create that succeeds consumes its uploads; one that
+	//   fails leaves them usable for a retry.
+	// - **Captures** count against the account's limit of 10 queued or
+	//   running. A v2 create returns `X-RateLimit-Limit` and
+	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+	//   not fit.
+	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+	//   block.
 	//
-	// **The portrait** (every body shape) decides whether the avatar can be
-	// animated. Use a front-facing photo of one person, head and shoulders with
-	// some margin around the head, the face at least about a third of the frame,
-	// in even light, with the **lips slightly parted as if about to speak**. A v2
-	// avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still);
-	// lips slightly parted work far more often. The build refuses a clearly bad
-	// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-	// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-	// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-	// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-	// Preview clips are not generated unless the manifest sets `previews: true`
-	// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-	// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-	// `sponsor` block. Behind the `avatar_import_api` feature flag.
+	// | Manifest field | Rule |
+	// |---|---|
+	// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+	// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+	// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+	// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
-	// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-	// is cloned from its sample; a v2 create with the portrait and the voice
-	// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-	// the first completed candidate is promoted) or `manual`. Both are v2 only.
-	// A portrait, voice or preview message changed outside the API (Creator
-	// Studio) captures one candidate of the new inputs by itself.
-	// Captures count against the account's limit of 10 queued or running; a v2
-	// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-	// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-	// `previewMessage` is the line the preview clips speak; omit it for a default
-	// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-	// candidate is captured from, so at most 60 Unicode code points
-	// (`400 preview_message_too_long`).
-	// `knowledge.descriptions` maps a knowledge file name to a short description.
-	// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-	// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-	// as Creator Studio saves its "Facts with context" box (shown there) and as a
-	// knowledge file the knowledge base reads; change it with PATCH.
-	// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-	// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-	// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-	// change it with PATCH. Knowledge
-	// (files and facts) is used in conversations by v1 avatars; v2 conversations
-	// do not use it yet.
-	// `blackoutRecovery` tunes how v2 sessions recover from frames that
-	// fade to black; it is on by default, so omit it unless a setting
-	// should differ. It is ignored for v1 avatars (the setting exists only
-	// on the v2 renderer).
-	// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-	// the renderer default, 42. Ignored for v1 avatars, like
-	// `blackoutRecovery`.
-	// `resolution` (v2) is the frame size the avatar renders at, e.g.
-	// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-	// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-	// avatars (`400 invalid_input`).
+	// v2 conversations do not use knowledge yet.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars (the `CreateAvatar` operationId).
 	CreateAvatarWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAvatarResponse, error)
 
-	// CreateAvatarWithResponse Create an avatar (Avatar Import API)
+	// CreateAvatarWithResponse Create an avatar
 	//
-	// Three body shapes, one result.
+	// Creates an avatar from a portrait, a voice sample, a persona and
+	// knowledge. A complete avatar builds in the background (`202`, `status:
+	// building`): follow it with `GET /v1/avatars/{avatarId}`.
 	//
-	// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-	// <= 10 MB) as the `file` part and the avatar `name` as a second field
-	// (`description` optional). Creates a **render-only** avatar: no voice, no
-	// persona, nothing to build -- the response is `201` with `status: ready`
-	// and the avatar can be rendered for an external agent at once. Add a voice
-	// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+	// Send one of three body shapes:
 	//
-	// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-	// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-	// optional; without it the result is render-only as above. With a voice the
-	// avatar is created exactly as the studio would: the row, the files under
-	// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-	// pipeline builds it asynchronously (`202`, `status: building`), poll
-	// `GET /v1/avatars/{avatarId}`.
-	// The manifest's `persona` block carries the character: `whoPrompt` (who the
-	// avatar is: the main character description), `whatPrompt` (what the avatar is
-	// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-	// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-	// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-	// `conversationalHabits`. `personality` and `scenario` are older names of
-	// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-	// names is `400 invalid_manifest`.
-	// **JSON.** The manifest as `application/json` with an `assets` block naming
-	// the image, the voice sample, prompt text and knowledge files by https URL;
-	// the service downloads them (public hosts only, same size and type rules as
-	// the zip) and continues identically.
+	// | Body | Content type | Contents |
+	// |---|---|---|
+	// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+	// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+	// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 	//
-	// **A draft.** The image and the voice are both optional on the zip and JSON
-	// bodies (and `assets` itself on JSON), on either engine. An avatar created
-	// without its portrait, or without its voice (other than a v1 avatar with a
-	// portrait, which is render-only), is a **draft**: `status: draft` with
-	// `missingInputs` naming what it lacks. Its persona and knowledge build;
-	// nothing that needs the missing input does. Give them with
-	// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-	// in either order; the build continues once both are there (on v2, the input
-	// that completes it captures the first candidate). `seedPreviews` and
-	// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-	// selected automatically.
-	// Where `assets` takes a URL for the image, the voice sample or a knowledge
-	// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-	// (the prompt stays a URL). The upload must be this account's, of the matching
-	// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-	// type, and the same size and type rules apply. A create that succeeds
-	// consumes its uploads; one that fails leaves them usable for a retry.
+	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
+	//   (default), serves the first that completes. v2 is invite-only (`403
+	//   v2_access_required`).
+	// - **Drafts**: the portrait and the voice are optional in zip and JSON
+	//   bodies. Without either (other than a v1 avatar with a portrait, which
+	//   is render-only) the avatar is a `draft`, and `missingInputs` names
+	//   what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+	//   `PUT /v1/avatars/{avatarId}/voice`.
+	// - **Portrait**: use a front-facing photo of one person, head and
+	//   shoulders, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Uploads**: a create that succeeds consumes its uploads; one that
+	//   fails leaves them usable for a retry.
+	// - **Captures** count against the account's limit of 10 queued or
+	//   running. A v2 create returns `X-RateLimit-Limit` and
+	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+	//   not fit.
+	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+	//   block.
 	//
-	// **The portrait** (every body shape) decides whether the avatar can be
-	// animated. Use a front-facing photo of one person, head and shoulders with
-	// some margin around the head, the face at least about a third of the frame,
-	// in even light, with the **lips slightly parted as if about to speak**. A v2
-	// avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still);
-	// lips slightly parted work far more often. The build refuses a clearly bad
-	// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-	// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-	// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-	// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-	// Preview clips are not generated unless the manifest sets `previews: true`
-	// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-	// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-	// `sponsor` block. Behind the `avatar_import_api` feature flag.
+	// | Manifest field | Rule |
+	// |---|---|
+	// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+	// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+	// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+	// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+	// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+	// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+	// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+	// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 	//
-	// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-	// is cloned from its sample; a v2 create with the portrait and the voice
-	// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-	// the first completed candidate is promoted) or `manual`. Both are v2 only.
-	// A portrait, voice or preview message changed outside the API (Creator
-	// Studio) captures one candidate of the new inputs by itself.
-	// Captures count against the account's limit of 10 queued or running; a v2
-	// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-	// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-	// `previewMessage` is the line the preview clips speak; omit it for a default
-	// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-	// candidate is captured from, so at most 60 Unicode code points
-	// (`400 preview_message_too_long`).
-	// `knowledge.descriptions` maps a knowledge file name to a short description.
-	// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-	// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-	// as Creator Studio saves its "Facts with context" box (shown there) and as a
-	// knowledge file the knowledge base reads; change it with PATCH.
-	// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-	// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-	// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-	// change it with PATCH. Knowledge
-	// (files and facts) is used in conversations by v1 avatars; v2 conversations
-	// do not use it yet.
-	// `blackoutRecovery` tunes how v2 sessions recover from frames that
-	// fade to black; it is on by default, so omit it unless a setting
-	// should differ. It is ignored for v1 avatars (the setting exists only
-	// on the v2 renderer).
-	// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-	// the renderer default, 42. Ignored for v1 avatars, like
-	// `blackoutRecovery`.
-	// `resolution` (v2) is the frame size the avatar renders at, e.g.
-	// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-	// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-	// avatars (`400 invalid_input`).
+	// v2 conversations do not use knowledge yet.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars (the `CreateAvatar` operationId).
 	CreateAvatarWithResponse(ctx context.Context, body CreateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAvatarResponse, error)
 
-	// DeleteAvatarWithResponse Delete (soft) an avatar
+	// DeleteAvatarWithResponse Delete an avatar
 	//
-	// Soft-deletes the avatar: it disappears from the API at once and its
-	// unfinished captures are cancelled. After the retention period every
-	// file of the avatar -- every version's portrait, voice sample and
-	// takes included -- is removed permanently.
+	// Deletes the avatar: it disappears from the API at once and its
+	// unfinished captures are cancelled. Its files, every version's included,
+	// are removed permanently after the retention period.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId} (the `DeleteAvatar` operationId).
 	DeleteAvatarWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*DeleteAvatarResponse, error)
 
-	// GetAvatarWithResponse Avatar detail and build status
+	// GetAvatarWithResponse Get an avatar
+	//
+	// Returns the avatar's settings and its build status, stage by stage.
+	// Poll it after a create or a change: `stages` and `rebuilding` show
+	// progress, and `status` says when it needs you (`failed`,
+	// `awaiting_selection`, `stalled`, `draft`). A v2 avatar stays `ready`
+	// while a new version builds; when that build needs a candidate picked,
+	// `selectionRequired` turns true while `status` stays `ready`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId} (the `GetAvatar` operationId).
 	GetAvatarWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarResponse, error)
 
-	// UpdateAvatarWithBodyWithResponse Update name, description, visibility, language or preview message
+	// UpdateAvatarWithBodyWithResponse Update an avatar
 	//
-	// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-	// guardrails, habits, aliases, name) rebuild the persona in the
-	// background. A v1 avatar is briefly not ready; a v2 avatar stays
-	// `ready` and keeps serving its current config while `stages.persona`
-	// shows the rebuild, and serves the new persona a few seconds after
-	// that stage completes. A persona edit captures nothing, so
-	// `rebuilding` (which is about candidates) does not change. Every
-	// persona edit is moderated again, on both engines: a `clean` avatar
-	// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-	// rebuild already under way waits: its candidates stay queued and
-	// are not captured until the check passes; the serving candidate
-	// keeps serving.
-	// On v2, a changed `previewMessage`, portrait or voice captures new
-	// candidates.
+	// Changes an avatar's settings, persona, knowledge or share card, and
+	// returns the avatar. Send only the fields to change: an absent or `null`
+	// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+	// optional one.
 	//
-	// Send only the fields to change: an absent or `null` field is left
-	// unchanged. To remove a value, send it empty: `""` for description,
-	// greeting, preferredAlias and spokenName, `[]` for guardrails and
-	// knownAliases, `{}` for conversationalHabits, and `""` for
-	// `previewMessage` to go back to the default sentence. whoPrompt,
-	// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-	// schema (`422`), and so does blank selfIntroduction text under 51
-	// characters; other blank text is `400 invalid_manifest`.
+	// - **Persona edits** rebuild the persona in the background and are
+	//   moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+	//   serving until the new persona is live.
+	// - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+	//   new version with new candidates, like a new portrait or voice, while
+	//   the serving candidate keeps serving. `blackoutRecovery` and
+	//   `runtimeSeed` apply from the next session and rebuild nothing.
+	// - **Knowledge**: knowledge files stay; replace them with `PUT
+	//   /v1/avatars/{avatarId}/knowledge`.
+	// - **Visibility**: `public` needs a title, a tag, a subtitle, a
+	//   description and a thumbnail (`409 public_requirements_missing` lists
+	//   what is missing). `public` and `unlisted` must pass moderation (`409
+	//   moderation_blocked`).
+	// - **Atomicity**: every field is checked first. The name, description,
+	//   share fields, statement, monetization and visibility are written
+	//   together, and a refusal of any of them writes nothing. The rest is
+	//   written after, so after a later error, send the same request again to
+	//   retry.
 	//
-	// `personality` and `scenario` are older names of `whoPrompt` and
-	// `whatPrompt` and still accepted, nested in `persona` or at the top
-	// level. A field given twice (under both names, or both at the top
-	// level and in `persona`) is `400 invalid_body`.
-	//
-	// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-	// (`400 preview_message_too_long`); changing it captures new
-	// candidates. Sending the current `previewMessage` again is no
-	// rebuild, and `""` (the default sentence) rebuilds only when a custom
-	// line was set.
-	//
-	// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-	// sessions render: nothing is rebuilt or captured, and the serving
-	// candidate stays. They are ignored for v1 avatars (the settings exist
-	// only on the v2 renderer).
-	//
-	// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-	// the frame size: it is a build input, so a new size builds a new
-	// version (new candidates, as a new portrait does) while the serving
-	// candidate keeps serving; the current size sent again builds nothing.
-	//
-	// `knowledge.facts` replaces the avatar's knowledge text (at most
-	// 32,000 characters; `""` removes it), on either engine, as Creator
-	// Studio's "Facts with context" box does: the text and its knowledge
-	// file, which the knowledge stage processes again. Other knowledge
-	// files stay. Nothing is captured.
-	//
-	// `knowledge.questionnaire` replaces the answers to Creator Studio's
-	// knowledge questionnaire, question to answer, as Studio's Knowledge
-	// step saves them: the answers and their knowledge file, which the
-	// knowledge stage processes again (answers equal to the current ones
-	// change nothing). `{}` removes them. The questions are the `questions`
-	// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-	// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-	//
-	// The share fields are what Creator Studio's "Share to community" card
-	// edits, written as Studio writes them and with its limits, on either
-	// engine (nothing is rebuilt): `title` (at most 100 characters),
-	// `subtitle` (200), `description` (280), `tags` (the whole set: at
-	// most 5 after trimming and dropping case-insensitive duplicates, each
-	// with a letter or digit; an existing tag of the same name is reused)
-	// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-	// twitter or youtube, each at most once, with an https URL of at most
-	// 500 characters). `""` clears title and subtitle, `[]` clears tags
-	// and socialLinks. A field Studio's rules refuse is
-	// `400 invalid_body` naming it. The Explore thumbnail has its own
-	// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-	//
-	// `visibility` follows Studio's rules: making an avatar `public` needs
-	// a title, a tag, a subtitle, a description and a thumbnail (`409
-	// public_requirements_missing`, with the `missing` fields), checked on
-	// the state after the rest of the request. On an avatar already
-	// public, only clearing one of them is refused (the same error, with
-	// the cleared fields as `missing`); its other edits, and `public`
-	// sent again, pass. Making it `public` or `unlisted` passes the
-	// moderation publish gate (`409 moderation_blocked` while the avatar
-	// is held or not yet checked, when the gate is enforced). A value
-	// equal to the stored one is no change.
-	//
-	// `statementType` records who the avatar depicts, as Studio's
-	// verification dialog does; `""` resets it (null leaves it unchanged).
-	// It cannot change while the avatar is monetized (`409
-	// avatar_is_earning`; turn monetization off in the same request
-	// first), and changing or resetting it clears `verified`. The identity
-	// check that verifies a self or representative statement runs in
-	// Creator Studio only.
-	//
-	// `monetization.enabled` turns monetization on or off with Studio's
-	// switch's preconditions: a verified avatar or the fictional
-	// statement (`409 statement_required` / `identity_not_verified`), a
-	// verified payout account (`409 payouts_not_ready`; payouts are set up
-	// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-	// eligibility (`409 monetization_eligibility_not_met`) and room under
-	// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-	// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-	// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-	// pool to the account. Turning it off always works.
-	//
-	// `name` and `description` are written with these fields, under the
-	// same rules (`name` at most 100 characters once trimmed, counted in
-	// UTF-16 units as Studio counts them; `description` at most 280).
-	//
-	// Every field of the request is checked before anything is written.
-	// Then the name, description, share fields, statement, monetization
-	// and visibility are written first, in one write: a refusal of any of
-	// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-	// leaves the whole request unwritten, including the persona, preview
-	// message, knowledge and settings, and starts no rebuild. The rest is
-	// written after it, so a later failure (a rebuild refused with `429`,
-	// an outage) answers an error with that first write already made;
-	// sending the same request again writes it as no change and retries
-	// the rest.
+	// | Field | Rule |
+	// |---|---|
+	// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+	// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+	// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+	// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+	// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId} (the `UpdateAvatar` operationId).
 	UpdateAvatarWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAvatarResponse, error)
 
-	// UpdateAvatarWithResponse Update name, description, visibility, language or preview message
+	// UpdateAvatarWithResponse Update an avatar
 	//
-	// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-	// guardrails, habits, aliases, name) rebuild the persona in the
-	// background. A v1 avatar is briefly not ready; a v2 avatar stays
-	// `ready` and keeps serving its current config while `stages.persona`
-	// shows the rebuild, and serves the new persona a few seconds after
-	// that stage completes. A persona edit captures nothing, so
-	// `rebuilding` (which is about candidates) does not change. Every
-	// persona edit is moderated again, on both engines: a `clean` avatar
-	// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-	// rebuild already under way waits: its candidates stay queued and
-	// are not captured until the check passes; the serving candidate
-	// keeps serving.
-	// On v2, a changed `previewMessage`, portrait or voice captures new
-	// candidates.
+	// Changes an avatar's settings, persona, knowledge or share card, and
+	// returns the avatar. Send only the fields to change: an absent or `null`
+	// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+	// optional one.
 	//
-	// Send only the fields to change: an absent or `null` field is left
-	// unchanged. To remove a value, send it empty: `""` for description,
-	// greeting, preferredAlias and spokenName, `[]` for guardrails and
-	// knownAliases, `{}` for conversationalHabits, and `""` for
-	// `previewMessage` to go back to the default sentence. whoPrompt,
-	// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-	// schema (`422`), and so does blank selfIntroduction text under 51
-	// characters; other blank text is `400 invalid_manifest`.
+	// - **Persona edits** rebuild the persona in the background and are
+	//   moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+	//   serving until the new persona is live.
+	// - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+	//   new version with new candidates, like a new portrait or voice, while
+	//   the serving candidate keeps serving. `blackoutRecovery` and
+	//   `runtimeSeed` apply from the next session and rebuild nothing.
+	// - **Knowledge**: knowledge files stay; replace them with `PUT
+	//   /v1/avatars/{avatarId}/knowledge`.
+	// - **Visibility**: `public` needs a title, a tag, a subtitle, a
+	//   description and a thumbnail (`409 public_requirements_missing` lists
+	//   what is missing). `public` and `unlisted` must pass moderation (`409
+	//   moderation_blocked`).
+	// - **Atomicity**: every field is checked first. The name, description,
+	//   share fields, statement, monetization and visibility are written
+	//   together, and a refusal of any of them writes nothing. The rest is
+	//   written after, so after a later error, send the same request again to
+	//   retry.
 	//
-	// `personality` and `scenario` are older names of `whoPrompt` and
-	// `whatPrompt` and still accepted, nested in `persona` or at the top
-	// level. A field given twice (under both names, or both at the top
-	// level and in `persona`) is `400 invalid_body`.
-	//
-	// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-	// (`400 preview_message_too_long`); changing it captures new
-	// candidates. Sending the current `previewMessage` again is no
-	// rebuild, and `""` (the default sentence) rebuilds only when a custom
-	// line was set.
-	//
-	// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-	// sessions render: nothing is rebuilt or captured, and the serving
-	// candidate stays. They are ignored for v1 avatars (the settings exist
-	// only on the v2 renderer).
-	//
-	// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-	// the frame size: it is a build input, so a new size builds a new
-	// version (new candidates, as a new portrait does) while the serving
-	// candidate keeps serving; the current size sent again builds nothing.
-	//
-	// `knowledge.facts` replaces the avatar's knowledge text (at most
-	// 32,000 characters; `""` removes it), on either engine, as Creator
-	// Studio's "Facts with context" box does: the text and its knowledge
-	// file, which the knowledge stage processes again. Other knowledge
-	// files stay. Nothing is captured.
-	//
-	// `knowledge.questionnaire` replaces the answers to Creator Studio's
-	// knowledge questionnaire, question to answer, as Studio's Knowledge
-	// step saves them: the answers and their knowledge file, which the
-	// knowledge stage processes again (answers equal to the current ones
-	// change nothing). `{}` removes them. The questions are the `questions`
-	// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-	// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-	//
-	// The share fields are what Creator Studio's "Share to community" card
-	// edits, written as Studio writes them and with its limits, on either
-	// engine (nothing is rebuilt): `title` (at most 100 characters),
-	// `subtitle` (200), `description` (280), `tags` (the whole set: at
-	// most 5 after trimming and dropping case-insensitive duplicates, each
-	// with a letter or digit; an existing tag of the same name is reused)
-	// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-	// twitter or youtube, each at most once, with an https URL of at most
-	// 500 characters). `""` clears title and subtitle, `[]` clears tags
-	// and socialLinks. A field Studio's rules refuse is
-	// `400 invalid_body` naming it. The Explore thumbnail has its own
-	// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-	//
-	// `visibility` follows Studio's rules: making an avatar `public` needs
-	// a title, a tag, a subtitle, a description and a thumbnail (`409
-	// public_requirements_missing`, with the `missing` fields), checked on
-	// the state after the rest of the request. On an avatar already
-	// public, only clearing one of them is refused (the same error, with
-	// the cleared fields as `missing`); its other edits, and `public`
-	// sent again, pass. Making it `public` or `unlisted` passes the
-	// moderation publish gate (`409 moderation_blocked` while the avatar
-	// is held or not yet checked, when the gate is enforced). A value
-	// equal to the stored one is no change.
-	//
-	// `statementType` records who the avatar depicts, as Studio's
-	// verification dialog does; `""` resets it (null leaves it unchanged).
-	// It cannot change while the avatar is monetized (`409
-	// avatar_is_earning`; turn monetization off in the same request
-	// first), and changing or resetting it clears `verified`. The identity
-	// check that verifies a self or representative statement runs in
-	// Creator Studio only.
-	//
-	// `monetization.enabled` turns monetization on or off with Studio's
-	// switch's preconditions: a verified avatar or the fictional
-	// statement (`409 statement_required` / `identity_not_verified`), a
-	// verified payout account (`409 payouts_not_ready`; payouts are set up
-	// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-	// eligibility (`409 monetization_eligibility_not_met`) and room under
-	// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-	// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-	// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-	// pool to the account. Turning it off always works.
-	//
-	// `name` and `description` are written with these fields, under the
-	// same rules (`name` at most 100 characters once trimmed, counted in
-	// UTF-16 units as Studio counts them; `description` at most 280).
-	//
-	// Every field of the request is checked before anything is written.
-	// Then the name, description, share fields, statement, monetization
-	// and visibility are written first, in one write: a refusal of any of
-	// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-	// leaves the whole request unwritten, including the persona, preview
-	// message, knowledge and settings, and starts no rebuild. The rest is
-	// written after it, so a later failure (a rebuild refused with `429`,
-	// an outage) answers an error with that first write already made;
-	// sending the same request again writes it as no change and retries
-	// the rest.
+	// | Field | Rule |
+	// |---|---|
+	// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+	// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+	// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+	// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+	// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+	// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId} (the `UpdateAvatar` operationId).
 	UpdateAvatarWithResponse(ctx context.Context, avatarId AvatarIdPath, body UpdateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAvatarResponse, error)
 
-	// GetAvatarAppearanceWithResponse The avatar's portrait
+	// GetAvatarAppearanceWithResponse Get the portrait
+	//
+	// Returns a presigned URL of the portrait last given. The URL expires
+	// after about an hour.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/appearance (the `GetAvatarAppearance` operationId).
 	GetAvatarAppearanceWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarAppearanceResponse, error)
 
-	// ReplaceAvatarAppearanceWithBodyWithResponse Replace the avatar's portrait
+	// ReplaceAvatarAppearanceWithBodyWithResponse Replace the portrait
 	//
-	// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-	// front-facing, head and shoulders with some margin around the head (a face that
-	// fills the frame cannot be animated), the face at least about a third of the
-	// frame, in even light, with the **lips slightly parted as if about to speak**:
-	// a v2 avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still).
-	// The build refuses a clearly bad portrait at the `appearance` stage with a
-	// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-	// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-	// from `POST /v1/uploads`, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its portrait this way; on v2 it captures the first
-	// candidate once the voice is there too.
+	// Replaces the avatar's portrait and re-runs the build stages that depend
+	// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+	// portrait this way (on v2, the first candidate is captured once the voice
+	// is there too).
+	//
+	// - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+	//   of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+	//   `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+	//   `portrait` upload consumed on success.
+	// - **Portrait**: front-facing, head and shoulders with some margin around
+	//   the head, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/appearance (the `ReplaceAvatarAppearance` operationId).
 	ReplaceAvatarAppearanceWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAvatarAppearanceResponse, error)
 
-	// ReplaceAvatarAppearanceWithResponse Replace the avatar's portrait
+	// ReplaceAvatarAppearanceWithResponse Replace the portrait
 	//
-	// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-	// front-facing, head and shoulders with some margin around the head (a face that
-	// fills the frame cannot be animated), the face at least about a third of the
-	// frame, in even light, with the **lips slightly parted as if about to speak**:
-	// a v2 avatar animates its first moments from the portrait itself, so a closed
-	// mouth usually makes the first second of speech fail (the lips stay still).
-	// The build refuses a clearly bad portrait at the `appearance` stage with a
-	// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-	// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-	// from `POST /v1/uploads`, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its portrait this way; on v2 it captures the first
-	// candidate once the voice is there too.
+	// Replaces the avatar's portrait and re-runs the build stages that depend
+	// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+	// portrait this way (on v2, the first candidate is captured once the voice
+	// is there too).
+	//
+	// - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+	//   of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+	//   `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+	//   `portrait` upload consumed on success.
+	// - **Portrait**: front-facing, head and shoulders with some margin around
+	//   the head, the face at least a third of the frame, in even light, with
+	//   the lips slightly parted. A clearly bad portrait fails the
+	//   `appearance` stage with a `portrait_*` reason.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12077,23 +11133,21 @@ type ClientWithResponsesInterface interface {
 	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CreateAvatarSessionWithResponse(ctx context.Context, avatarId AvatarIdPath, params *CreateAvatarSessionParams, body CreateAvatarSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAvatarSessionResponse, error)
 
-	// ListAvatarCandidatesWithResponse List the candidates and versions of a v2 avatar
+	// ListAvatarCandidatesWithResponse List candidates
 	//
-	// v2 (`engine: v2`) avatars only. A candidate (a take) is one capture: a
-	// sink latent that decides lip sync and motion for this image and voice
-	// pair, plus a ~3 s talking preview of the avatar saying the preview
-	// message. Candidates are identified by `candidateId`; the `seed` is
-	// informational (the same seed does not reproduce a capture). Promote one
-	// with `PUT /selected_candidate`; with `seedSelection: auto` the first
-	// completed candidate of the current version is promoted for you.
+	// Lists a v2 avatar's candidates and versions. A candidate (a take) is one
+	// capture of the avatar's lip sync and motion, with a short talking
+	// preview to compare. A version is one set of capture inputs: the
+	// portrait, the voice sample and the preview message.
 	//
-	// A version is one set of capture inputs: the portrait, the voice
-	// sample and the preview message. Replacing any of them starts a new
-	// version; the takes of older versions are kept. `versions` always
-	// lists every version (oldest first) with what going back to it brings
-	// back. `items` lists the takes of the current version, plus the
-	// serving take if it is older; pass `versions=all` for the takes of
-	// every version.
+	// - `items` lists the current version's takes and the serving take;
+	//   `versions=all` adds every older version's.
+	// - `versions` always lists every version, oldest first, with what going
+	//   back to it restores.
+	// - Pick one with `PUT /v1/avatars/{avatarId}/selected_candidate`. With
+	//   `seedSelection: auto`, the first completed take of the current version
+	//   is picked for you.
+	// - `seed` is informational: the same seed does not reproduce a capture.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12102,10 +11156,9 @@ type ClientWithResponsesInterface interface {
 
 	// CreateAvatarCandidatesWithBodyWithResponse Capture more candidates
 	//
-	// Captures `count` more candidates from the avatar's current bundle and
-	// prime clip without re-running preprocessing. Captures are free for now
-	// but count against the account's limit: at most 10 queued or running
-	// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+	// Captures `count` more candidates of a v2 avatar from its current inputs,
+	// without preprocessing again. Captures count against the account's limit
+	// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12114,259 +11167,215 @@ type ClientWithResponsesInterface interface {
 
 	// CreateAvatarCandidatesWithResponse Capture more candidates
 	//
-	// Captures `count` more candidates from the avatar's current bundle and
-	// prime clip without re-running preprocessing. Captures are free for now
-	// but count against the account's limit: at most 10 queued or running
-	// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+	// Captures `count` more candidates of a v2 avatar from its current inputs,
+	// without preprocessing again. Captures count against the account's limit
+	// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/candidates (the `CreateAvatarCandidates` operationId).
 	CreateAvatarCandidatesWithResponse(ctx context.Context, avatarId AvatarIdPath, body CreateAvatarCandidatesJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAvatarCandidatesResponse, error)
 
-	// DeleteAvatarConductorWithResponse Remove the graph conductor of a v2 avatar
+	// DeleteAvatarConductorWithResponse Remove the conductor
 	//
-	// The next session runs without a conductor, also one the avatar's own
-	// config carries (a running session keeps the one it started with).
-	// Nothing is rebuilt. Removing a conductor that is not set is no
-	// error.
+	// Removes a v2 avatar's conductor, including one its own configuration
+	// carries: the next session runs without one, and a running session keeps
+	// its own. Nothing is rebuilt. Removing a conductor that is not set is not
+	// an error.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/conductor (the `DeleteAvatarConductor` operationId).
 	DeleteAvatarConductorWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*DeleteAvatarConductorResponse, error)
 
-	// GetAvatarConductorWithResponse Read the graph conductor of a v2 avatar
+	// GetAvatarConductorWithResponse Get the conductor
 	//
-	// The conductor as saved: the whole graph and `speakAfterS`. The
-	// avatar detail (`GET /v1/avatars/{avatarId}`) reports only whether one
-	// is set and its node count.
+	// Returns a v2 avatar's conductor as saved: the whole graph and
+	// `speakAfterS`. `GET /v1/avatars/{avatarId}` only reports whether one is
+	// set and its node count.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/conductor (the `GetAvatarConductor` operationId).
 	GetAvatarConductorWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarConductorResponse, error)
 
-	// SetAvatarConductorWithBodyWithResponse Set the graph conductor of a v2 avatar
+	// SetAvatarConductorWithBodyWithResponse Set the conductor
 	//
-	// Gives the avatar's conversations an agenda: a graph of steps, each
-	// with the avatar's instructions while the conversation is in it, and
-	// edges that say when it moves on. At the end of every turn a judge
-	// model gives each condition (`when`) of the current step the
-	// probability that it holds; edges without a condition share the
-	// probability that none holds, by `weight`. The step then takes its
-	// likeliest edge (or, marked `random`, draws one). A step without
-	// edges is the end. An edge marked `speak`, taken after an avatar
-	// turn, has the avatar go on under the next step without waiting for
-	// the user (`speakAfterS` seconds later; absent, Causeur's default).
+	// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+	// instructions for the avatar and edges that say when to move on. It
+	// replaces any earlier conductor, including one the avatar's own
+	// configuration carries, and applies from the next session. Nothing is
+	// rebuilt.
 	//
-	// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-	// conductor runs on Causeur, the conversation runtime v2 sessions are
-	// moving to; it has no effect on a session the behavior module runs.
-	// It replaces any earlier conductor, and any conductor the avatar's
-	// own config carries, and applies from the next session (a running
-	// session keeps what it started with). Nothing is rebuilt or captured,
-	// and the serving candidate stays. A session whose whole payload would
-	// exceed Causeur's limit (262,144 characters, the avatar's persona and
-	// config included) starts without the conductor.
-	//
-	// The graph is checked before it is saved, with Causeur's own rules
-	// and limits; a refusal names the field (`400 invalid_conductor`,
-	// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-	// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-	// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-	// 1000 characters; a condition at most 300; a weight above 0 and at
-	// most 1000, and only on an edge without a condition (default 1); one
-	// edge with a condition and one without per target at most; every
-	// node reachable from `start`, every edge to a node of the graph, a
-	// `speak` edge only into a step with instructions. Not accepted here:
-	// `replan` steps (the graph runs as given), text holding a
-	// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-	// 150,000 characters of JSON (non-ASCII characters count as their
-	// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-	// of the session (a v2 avatar's own config is typically under 15,000).
-	// Only `graph` and `speakAfterS` are accepted at the top level. The
-	// request body may be up to 512 KiB.
+	// - **How it runs**: after each turn, a judge model scores each edge's
+	//   `when` condition. Edges without a condition share the chance that none
+	//   holds, by `weight`. The step takes its likeliest edge, or draws one
+	//   when `random`. A step without edges is the end. A `speak` edge lets
+	//   the avatar go on without waiting for the user, `speakAfterS` seconds
+	//   later.
+	// - **Validation**: the graph is checked before it is saved. `400
+	//   invalid_conductor` names the field (e.g.
+	//   `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+	//   `422`. Per-field limits are on the schema.
+	// - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+	//   graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+	//   request body may be up to 512 KiB. A session whose whole configuration
+	//   would be too large starts without the conductor.
+	// - v1 avatars are refused (`409 not_v2_avatar`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductorWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAvatarConductorResponse, error)
 
-	// SetAvatarConductorWithResponse Set the graph conductor of a v2 avatar
+	// SetAvatarConductorWithResponse Set the conductor
 	//
-	// Gives the avatar's conversations an agenda: a graph of steps, each
-	// with the avatar's instructions while the conversation is in it, and
-	// edges that say when it moves on. At the end of every turn a judge
-	// model gives each condition (`when`) of the current step the
-	// probability that it holds; edges without a condition share the
-	// probability that none holds, by `weight`. The step then takes its
-	// likeliest edge (or, marked `random`, draws one). A step without
-	// edges is the end. An edge marked `speak`, taken after an avatar
-	// turn, has the avatar go on under the next step without waiting for
-	// the user (`speakAfterS` seconds later; absent, Causeur's default).
+	// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+	// instructions for the avatar and edges that say when to move on. It
+	// replaces any earlier conductor, including one the avatar's own
+	// configuration carries, and applies from the next session. Nothing is
+	// rebuilt.
 	//
-	// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-	// conductor runs on Causeur, the conversation runtime v2 sessions are
-	// moving to; it has no effect on a session the behavior module runs.
-	// It replaces any earlier conductor, and any conductor the avatar's
-	// own config carries, and applies from the next session (a running
-	// session keeps what it started with). Nothing is rebuilt or captured,
-	// and the serving candidate stays. A session whose whole payload would
-	// exceed Causeur's limit (262,144 characters, the avatar's persona and
-	// config included) starts without the conductor.
-	//
-	// The graph is checked before it is saved, with Causeur's own rules
-	// and limits; a refusal names the field (`400 invalid_conductor`,
-	// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-	// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-	// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-	// 1000 characters; a condition at most 300; a weight above 0 and at
-	// most 1000, and only on an edge without a condition (default 1); one
-	// edge with a condition and one without per target at most; every
-	// node reachable from `start`, every edge to a node of the graph, a
-	// `speak` edge only into a step with instructions. Not accepted here:
-	// `replan` steps (the graph runs as given), text holding a
-	// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-	// 150,000 characters of JSON (non-ASCII characters count as their
-	// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-	// of the session (a v2 avatar's own config is typically under 15,000).
-	// Only `graph` and `speakAfterS` are accepted at the top level. The
-	// request body may be up to 512 KiB.
+	// - **How it runs**: after each turn, a judge model scores each edge's
+	//   `when` condition. Edges without a condition share the chance that none
+	//   holds, by `weight`. The step takes its likeliest edge, or draws one
+	//   when `random`. A step without edges is the end. A `speak` edge lets
+	//   the avatar go on without waiting for the user, `speakAfterS` seconds
+	//   later.
+	// - **Validation**: the graph is checked before it is saved. `400
+	//   invalid_conductor` names the field (e.g.
+	//   `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+	//   `422`. Per-field limits are on the schema.
+	// - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+	//   graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+	//   request body may be up to 512 KiB. A session whose whole configuration
+	//   would be too large starts without the conductor.
+	// - v1 avatars are refused (`409 not_v2_avatar`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductorWithResponse(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAvatarConductorResponse, error)
 
-	// GetAvatarKnowledgeWithResponse The avatar's facts and knowledge files
+	// GetAvatarKnowledgeWithResponse Get the knowledge
+	//
+	// Returns the facts text, the knowledge questionnaire's questions and
+	// answers, and the knowledge files with presigned URLs.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/knowledge (the `GetAvatarKnowledge` operationId).
 	GetAvatarKnowledgeWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarKnowledgeResponse, error)
 
-	// ReplaceAvatarKnowledgeWithBodyWithResponse Replace the avatar's knowledge files
+	// ReplaceAvatarKnowledgeWithBodyWithResponse Replace the knowledge files
 	//
-	// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-	// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-	// `descriptions` is an optional JSON object mapping a filename to a short description.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-	// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-	// list clears the set). A URL's file is named by its last path segment, an
-	// upload's by the `fileName` it was created with; `descriptions` uses those
-	// names. The uploads are consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-	// keep their own files: replacing the files leaves them (change them
-	// with PATCH). Knowledge is not used in v2
-	// conversations yet.
+	// Replaces the avatar's whole set of knowledge files and re-runs the build
+	// stages that depend on them; send none to clear the set. The
+	// `knowledge.facts` text and the questionnaire answers are kept (change
+	// them with `PATCH /v1/avatars/{avatarId}`).
+	//
+	// - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+	//   txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+	//   `descriptions` JSON object of file name to description. Where `POST
+	//   /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+	//   {...}}` also works, with https URLs or `knowledge` uploads consumed on
+	//   success.
+	// - A URL's file is named by its last path segment, an upload's by its
+	//   `fileName`; `descriptions` uses those names.
+	// - v2 conversations do not use knowledge yet.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/knowledge (the `ReplaceAvatarKnowledge` operationId).
 	ReplaceAvatarKnowledgeWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAvatarKnowledgeResponse, error)
 
-	// ReplaceAvatarKnowledgeWithResponse Replace the avatar's knowledge files
+	// ReplaceAvatarKnowledgeWithResponse Replace the knowledge files
 	//
-	// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-	// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-	// `descriptions` is an optional JSON object mapping a filename to a short description.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-	// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-	// list clears the set). A URL's file is named by its last path segment, an
-	// upload's by the `fileName` it was created with; `descriptions` uses those
-	// names. The uploads are consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-	// keep their own files: replacing the files leaves them (change them
-	// with PATCH). Knowledge is not used in v2
-	// conversations yet.
+	// Replaces the avatar's whole set of knowledge files and re-runs the build
+	// stages that depend on them; send none to clear the set. The
+	// `knowledge.facts` text and the questionnaire answers are kept (change
+	// them with `PATCH /v1/avatars/{avatarId}`).
+	//
+	// - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+	//   txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+	//   `descriptions` JSON object of file name to description. Where `POST
+	//   /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+	//   {...}}` also works, with https URLs or `knowledge` uploads consumed on
+	//   success.
+	// - A URL's file is named by its last path segment, an upload's by its
+	//   `fileName`; `descriptions` uses those names.
+	// - v2 conversations do not use knowledge yet.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/knowledge (the `ReplaceAvatarKnowledge` operationId).
 	ReplaceAvatarKnowledgeWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarKnowledgeJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarKnowledgeResponse, error)
 
-	// GetAvatarMonetizationWithResponse The avatar's monetization eligibility and earnings
+	// GetAvatarMonetizationWithResponse Get monetization
 	//
-	// What Creator Studio's monetization panel shows: whether the avatar is
-	// monetized, its last 30 days against the eligibility requirements, the
-	// account's cap on monetizing avatars, and what it has earned. The 30-day
-	// numbers leave out the account's own conversations. Earnings are in
-	// microcredits (100 = 1 credit); the current cycle is the account's
-	// billing cycle. Requires `avatars:read`; an avatar-scoped key reads only
-	// its own avatar.
+	// Returns whether the avatar is monetized, its last 30 days against the
+	// eligibility requirements (the account's own conversations left out), the
+	// account's cap on monetized avatars, and what the avatar earned, in
+	// microcredits (100 = 1 credit). Requires `avatars:read`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
 	GetAvatarMonetizationWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarMonetizationResponse, error)
 
-	// SelectAvatarCandidateWithBodyWithResponse Promote the candidate a v2 avatar renders with
+	// SelectAvatarCandidateWithBodyWithResponse Select a candidate
 	//
-	// Picks a completed candidate. The pick is recorded at once
-	// (`selectedCandidateId`); the avatar serves it once its config is
-	// built, a few seconds later (`servingCandidateId`). The first pick
-	// makes the avatar `ready`; a later one switches without downtime, with
-	// `rebuilding` true until it serves.
+	// Picks the completed candidate a v2 avatar serves. The pick is recorded
+	// at once (`selectedCandidateId`) and served a few seconds later
+	// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+	// one switches without downtime, with `rebuilding` true until it serves.
 	//
-	// A completed candidate of an older version (`current: false`,
-	// `restorable: true`) goes back to that version -- also when it is
-	// still the pick from before an edit: its portrait, voice sample and
-	// preview message, and the language its default sentence speaks,
-	// become the avatar's again, in one step, and every other setting
-	// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-	// Nothing is captured again and nothing is charged: that version's
-	// takes are already built. Takes of the newer version still queued or
-	// being captured are cancelled. Moderation is not run again for
-	// inputs already checked together; a combination never checked (the
-	// old portrait with a name or description edited since) is moderated
-	// like any edit. Re-selecting the current pick is always allowed.
-	// Queued, failed and superseded candidates cannot be selected.
+	// - **Older versions**: picking a restorable take of an older version
+	//   (`current: false`, `restorable: true`) restores that version's
+	//   portrait, voice sample, preview message and default-sentence language
+	//   in one step. Other settings stay as they are, nothing is captured or
+	//   charged, and the newer version's unfinished takes are cancelled.
+	// - **Moderation**: inputs already checked together are not checked again;
+	//   a combination never checked is moderated like an edit.
+	// - Queued, failed and superseded candidates cannot be selected (`409
+	//   candidate_not_ready`). Selecting the current pick again is always
+	//   allowed.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/selected_candidate (the `SelectAvatarCandidate` operationId).
 	SelectAvatarCandidateWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SelectAvatarCandidateResponse, error)
 
-	// SelectAvatarCandidateWithResponse Promote the candidate a v2 avatar renders with
+	// SelectAvatarCandidateWithResponse Select a candidate
 	//
-	// Picks a completed candidate. The pick is recorded at once
-	// (`selectedCandidateId`); the avatar serves it once its config is
-	// built, a few seconds later (`servingCandidateId`). The first pick
-	// makes the avatar `ready`; a later one switches without downtime, with
-	// `rebuilding` true until it serves.
+	// Picks the completed candidate a v2 avatar serves. The pick is recorded
+	// at once (`selectedCandidateId`) and served a few seconds later
+	// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+	// one switches without downtime, with `rebuilding` true until it serves.
 	//
-	// A completed candidate of an older version (`current: false`,
-	// `restorable: true`) goes back to that version -- also when it is
-	// still the pick from before an edit: its portrait, voice sample and
-	// preview message, and the language its default sentence speaks,
-	// become the avatar's again, in one step, and every other setting
-	// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-	// Nothing is captured again and nothing is charged: that version's
-	// takes are already built. Takes of the newer version still queued or
-	// being captured are cancelled. Moderation is not run again for
-	// inputs already checked together; a combination never checked (the
-	// old portrait with a name or description edited since) is moderated
-	// like any edit. Re-selecting the current pick is always allowed.
-	// Queued, failed and superseded candidates cannot be selected.
+	// - **Older versions**: picking a restorable take of an older version
+	//   (`current: false`, `restorable: true`) restores that version's
+	//   portrait, voice sample, preview message and default-sentence language
+	//   in one step. Other settings stay as they are, nothing is captured or
+	//   charged, and the newer version's unfinished takes are cancelled.
+	// - **Moderation**: inputs already checked together are not checked again;
+	//   a combination never checked is moderated like an edit.
+	// - Queued, failed and superseded candidates cannot be selected (`409
+	//   candidate_not_ready`). Selecting the current pick again is always
+	//   allowed.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/selected_candidate (the `SelectAvatarCandidate` operationId).
 	SelectAvatarCandidateWithResponse(ctx context.Context, avatarId AvatarIdPath, body SelectAvatarCandidateJSONRequestBody, reqEditors ...RequestEditorFn) (*SelectAvatarCandidateResponse, error)
 
-	// GetAvatarSponsorWithResponse Sponsor pool balance and settings
+	// GetAvatarSponsorWithResponse Get the sponsor pool
 	//
-	// Callable by an API key (`avatars:read`) or a signed-in user acting for
-	// the account. Sponsoring otherwise takes an API key with
-	// `billing:write` or a signed-in user, who sponsors the account's
-	// avatars as in Studio without holding that scope.
+	// Returns the avatar's sponsor pool balance and settings. Readable by an
+	// API key with `avatars:read` or a signed-in user of the account. Changing
+	// the pool takes an API key with `billing:write` or a signed-in user.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12375,14 +11384,17 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 	//
-	// One request applies all of its fields or none. `anonymousAccess: true`
-	// lets visitors without an account spend the pool, so it needs an avatar
-	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-	// or turn on auto top-up) and is public or unlisted (`409
-	// avatar_not_shared`: change its visibility first). A monetized avatar
-	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-	// already stored (`400 auto_topup_incomplete`).
+	// Changes who may spend the avatar's sponsor pool, and when. The request
+	// applies all of its fields or none.
+	//
+	// - `anonymousAccess: true` lets visitors without an account spend the
+	//   pool. The avatar must be funded first (`409
+	//   avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+	//   public or unlisted (`409 avatar_not_shared`).
+	// - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+	//   already stored (`400 auto_topup_incomplete`).
+	// - A monetized avatar cannot be sponsored (`409
+	//   monetized_avatar_cannot_be_sponsored`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12391,397 +11403,395 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateAvatarSponsorWithResponse Update sponsor settings
 	//
-	// One request applies all of its fields or none. `anonymousAccess: true`
-	// lets visitors without an account spend the pool, so it needs an avatar
-	// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-	// or turn on auto top-up) and is public or unlisted (`409
-	// avatar_not_shared`: change its visibility first). A monetized avatar
-	// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-	// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-	// already stored (`400 auto_topup_incomplete`).
+	// Changes who may spend the avatar's sponsor pool, and when. The request
+	// applies all of its fields or none.
+	//
+	// - `anonymousAccess: true` lets visitors without an account spend the
+	//   pool. The avatar must be funded first (`409
+	//   avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+	//   public or unlisted (`409 avatar_not_shared`).
+	// - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+	//   already stored (`400 auto_topup_incomplete`).
+	// - A monetized avatar cannot be sponsored (`409
+	//   monetized_avatar_cannot_be_sponsored`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /v1/avatars/{avatarId}/sponsor (the `UpdateAvatarSponsor` operationId).
 	UpdateAvatarSponsorWithResponse(ctx context.Context, avatarId AvatarIdPath, body UpdateAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAvatarSponsorResponse, error)
 
-	// GrantAvatarSponsorWithBodyWithResponse Move credits from the account into the avatar's sponsor pool
+	// GrantAvatarSponsorWithBodyWithResponse Fund the sponsor pool
 	//
-	// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-	// first successful result instead of granting twice.
+	// Moves credits from the account into the avatar's sponsor pool. Send an
+	// `Idempotency-Key` to retry safely: the same key replays the first result
+	// instead of granting twice.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/grants (the `GrantAvatarSponsor` operationId).
 	GrantAvatarSponsorWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, params *GrantAvatarSponsorParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GrantAvatarSponsorResponse, error)
 
-	// GrantAvatarSponsorWithResponse Move credits from the account into the avatar's sponsor pool
+	// GrantAvatarSponsorWithResponse Fund the sponsor pool
 	//
-	// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-	// first successful result instead of granting twice.
+	// Moves credits from the account into the avatar's sponsor pool. Send an
+	// `Idempotency-Key` to retry safely: the same key replays the first result
+	// instead of granting twice.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/grants (the `GrantAvatarSponsor` operationId).
 	GrantAvatarSponsorWithResponse(ctx context.Context, avatarId AvatarIdPath, params *GrantAvatarSponsorParams, body GrantAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*GrantAvatarSponsorResponse, error)
 
-	// WithdrawAvatarSponsorWithBodyWithResponse Return unreserved sponsor credits to the account
+	// WithdrawAvatarSponsorWithBodyWithResponse Withdraw sponsor credits
+	//
+	// Returns the sponsor pool's unreserved credits to the account.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/withdrawals (the `WithdrawAvatarSponsor` operationId).
 	WithdrawAvatarSponsorWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*WithdrawAvatarSponsorResponse, error)
 
-	// WithdrawAvatarSponsorWithResponse Return unreserved sponsor credits to the account
+	// WithdrawAvatarSponsorWithResponse Withdraw sponsor credits
+	//
+	// Returns the sponsor pool's unreserved credits to the account.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/avatars/{avatarId}/sponsor/withdrawals (the `WithdrawAvatarSponsor` operationId).
 	WithdrawAvatarSponsorWithResponse(ctx context.Context, avatarId AvatarIdPath, body WithdrawAvatarSponsorJSONRequestBody, reqEditors ...RequestEditorFn) (*WithdrawAvatarSponsorResponse, error)
 
-	// DeleteAvatarThumbnailWithResponse Remove the avatar's Explore thumbnail
+	// DeleteAvatarThumbnailWithResponse Remove the thumbnail
 	//
-	// Removes the thumbnail, custom or automatic: Explore shows the
-	// portrait in its place, and an automatic thumbnail may be made for
-	// the avatar again. A public avatar keeps needing a thumbnail, so
-	// removing it is `409 public_requirements_missing`; make the avatar
-	// unlisted or private first. Answers the detail. Requires
-	// `avatars:write`.
+	// Removes the thumbnail, custom or automatic: Explore shows the portrait
+	// instead, and an automatic thumbnail may be made again. Returns the
+	// avatar. Requires `avatars:write`.
+	//
+	// A public avatar needs a thumbnail, so this is `409
+	// public_requirements_missing` until you make it unlisted or private.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/thumbnail (the `DeleteAvatarThumbnail` operationId).
 	DeleteAvatarThumbnailWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*DeleteAvatarThumbnailResponse, error)
 
-	// ReplaceAvatarThumbnailWithBodyWithResponse Set the avatar's Explore thumbnail
+	// ReplaceAvatarThumbnailWithBodyWithResponse Set the thumbnail
 	//
-	// A custom thumbnail for the avatar's card on Explore, as Creator
-	// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-	// MB) as the `file` part, or, on an instance that keeps uploads,
-	// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-	// `portrait` upload from `POST /v1/uploads`, consumed when the
-	// thumbnail is set). It replaces any thumbnail, and automatic ones are
-	// no longer made for the avatar. Nothing is rebuilt. Answers the
-	// detail, whose `profile.thumbnailSource` reads `custom` and whose
-	// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-	// is one of what public needs (removing it is refused; setting one
-	// never is). Requires `avatars:write`.
+	// Sets a custom thumbnail for the avatar's Explore card, replacing any
+	// other; automatic thumbnails are no longer made for it. Nothing is
+	// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+	//
+	// - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+	//   part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+	//   URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+	//   consumed on success.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnailWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAvatarThumbnailResponse, error)
 
-	// ReplaceAvatarThumbnailWithResponse Set the avatar's Explore thumbnail
+	// ReplaceAvatarThumbnailWithResponse Set the thumbnail
 	//
-	// A custom thumbnail for the avatar's card on Explore, as Creator
-	// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-	// MB) as the `file` part, or, on an instance that keeps uploads,
-	// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-	// `portrait` upload from `POST /v1/uploads`, consumed when the
-	// thumbnail is set). It replaces any thumbnail, and automatic ones are
-	// no longer made for the avatar. Nothing is rebuilt. Answers the
-	// detail, whose `profile.thumbnailSource` reads `custom` and whose
-	// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-	// is one of what public needs (removing it is refused; setting one
-	// never is). Requires `avatars:write`.
+	// Sets a custom thumbnail for the avatar's Explore card, replacing any
+	// other; automatic thumbnails are no longer made for it. Nothing is
+	// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+	//
+	// - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+	//   part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+	//   URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+	//   consumed on success.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/thumbnail (the `ReplaceAvatarThumbnail` operationId).
 	ReplaceAvatarThumbnailWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarThumbnailJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarThumbnailResponse, error)
 
-	// DeleteAvatarVersionWithResponse Delete an older version of a v2 avatar
+	// DeleteAvatarVersionWithResponse Delete a version
 	//
-	// Deletes every take of an older version and the files only that
-	// version uses: its takes' sink latents and preview clips, and its
-	// portrait, voice sample, voice clone, prime clip and bundle unless a
-	// kept take or the current inputs still use them. Files that any kept
-	// take or the current inputs reference are never deleted. The version
-	// cannot be restored afterwards. The current version, and a version
-	// holding the serving or selected take, cannot be deleted; nor can a
-	// version whose capture is still running (retry when it ends). When
-	// storage cannot delete the files now, the takes are still gone and
-	// `pendingFiles` counts what is left: repeat the DELETE to retry.
-	// Deleting the avatar deletes all of its files, every version's
-	// included.
+	// Deletes an older version of a v2 avatar: its takes and the files only it
+	// uses. It can no longer be restored.
+	//
+	// - Files that a kept take or the current inputs use are never deleted.
+	// - The current version, a version holding the serving or selected take
+	//   (`409 version_in_use`) and one whose capture is still running (`409
+	//   version_busy`) cannot be deleted.
+	// - If storage cannot delete every file now, the takes are still gone and
+	//   `pendingFiles` counts what is left: call again to retry.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /v1/avatars/{avatarId}/versions/{versionId} (the `DeleteAvatarVersion` operationId).
 	DeleteAvatarVersionWithResponse(ctx context.Context, avatarId AvatarIdPath, versionId string, reqEditors ...RequestEditorFn) (*DeleteAvatarVersionResponse, error)
 
-	// GetAvatarVoiceWithResponse The avatar's voice sample and engine
+	// GetAvatarVoiceWithResponse Get the voice
+	//
+	// Returns a presigned URL of the voice sample last given, and the voice engine.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/voice (the `GetAvatarVoice` operationId).
 	GetAvatarVoiceWithResponse(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*GetAvatarVoiceResponse, error)
 
-	// ReplaceAvatarVoiceWithBodyWithResponse Replace the avatar's voice sample
+	// ReplaceAvatarVoiceWithBodyWithResponse Replace the voice
 	//
-	// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-	// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-	// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its voice this way; on v2 it captures the first
-	// candidate once the portrait is there too.
+	// Replaces the avatar's voice sample and re-runs the build stages that
+	// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+	// gets its voice this way (on v2, the first candidate is captured once the
+	// portrait is there too).
+	//
+	// - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+	//   m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+	//   Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+	//   upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+	//   success.
+	// - Silence, pure tones or heavy noise fail the voice stage.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoiceWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAvatarVoiceResponse, error)
 
-	// ReplaceAvatarVoiceWithResponse Replace the avatar's voice sample
+	// ReplaceAvatarVoiceWithResponse Replace the voice
 	//
-	// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-	// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-	// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-	// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-	// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-	// Re-runs only the build stages that depend on this part; poll
-	// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-	// A draft is given its voice this way; on v2 it captures the first
-	// candidate once the portrait is there too.
+	// Replaces the avatar's voice sample and re-runs the build stages that
+	// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+	// gets its voice this way (on v2, the first candidate is captured once the
+	// portrait is there too).
+	//
+	// - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+	//   m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+	//   Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+	//   upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+	//   success.
+	// - Silence, pure tones or heavy noise fail the voice stage.
+	// - **Scope**: `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoiceWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarVoiceResponse, error)
 
-	// GenerateClipWithBodyWithResponse Render a video clip from an image and a prompt
+	// GenerateClipWithBodyWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-	// character in `image`, moving as `prompt` describes, optionally
-	// speaking `audio`. No avatar is made or needed: the clip is rendered
-	// directly by Atmee's v2 renderer.
+	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// in `image`, moving as `prompt` describes and optionally speaking
+	// `audio`. No avatar is needed.
 	//
-	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-	// usable afterwards) or a public https link to a jpg, png or webp of at
-	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-	// webm, ...). The audio plays once from the start of the clip, padded
-	// with silence and cut at its end. `durationSeconds` is required with
-	// `audio` (the audio's own length is not read: set it to the audio's
-	// length, at most 15; without it the request is `400 invalid_input`)
-	// and defaults to 8 for a silent clip; `resolution` defaults to
-	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-	// are moderated first. If the image shows a real person other than the
-	// creator, have that person's permission first.
+	// - **Inputs**: `image` is a `portrait` upload or a public https link
+	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+	//   The audio plays once from the start, padded with silence or cut at the
+	//   end. The prompt and the image are moderated; if the image shows a real
+	//   person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio` (set it to
+	//   the audio's length; the file is not measured) and defaults to 8 for a
+	//   silent clip. At most 15 seconds where clips render on the sessions'
+	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
+	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+	//   side rounded up to 32 and the centre is cropped. Where
+	//   `clipAnySize` is false the render size must be one of
+	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+	//   short-lived `url` to download it.
+	// - **Billing**: the per-15-second price from `GET /v1/account`
+	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+	//   `durationSeconds` and rounded up, charged only when the clip comes
+	//   back.
+	// - **Slow starts**: a cold render can take minutes. After about 45
+	//   seconds the call answers `409 request_in_progress`; retry with the
+	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
+	//   once.
+	// - **Access**: needs v2 access (`403 v2_access_required`) and the
+	//   `generation:write` and `avatars:write` scopes.
 	//
-	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per 15 seconds
-	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-	// credit for a 15-second clip), charged only when the clip comes back; a
-	// flagged, failed or refused call costs nothing. Clips use the v2
-	// renderer, so an account without v2 access gets
-	// `403 v2_access_required`. A render can take
-	// minutes when the renderer starts cold: past about 45 seconds the
-	// request answers `409 request_in_progress`, and a retry with the same
-	// `Idempotency-Key` after `Retry-After` returns the clip once it is
-	// done, charged once. An image or audio the renderer cannot use (no
-	// face, an unreadable file) is `400 invalid_input` naming
-	// `input_failure image` or `input_failure audio`. Where clips are not
-	// offered the route answers `503 generation_unavailable`. A size this
-	// deployment offers but its render pool does not serve is `400
-	// invalid_input` naming `input_failure resolution` ("the render pool
-	// does not serve WxH"), not an image error. Requires
-	// `generation:write` and `avatars:write`.
+	// | Error | When |
+	// |---|---|
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClipWithBodyWithResponse(ctx context.Context, params *GenerateClipParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error)
 
-	// GenerateClipWithResponse Render a video clip from an image and a prompt
+	// GenerateClipWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-	// character in `image`, moving as `prompt` describes, optionally
-	// speaking `audio`. No avatar is made or needed: the clip is rendered
-	// directly by Atmee's v2 renderer.
+	// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+	// in `image`, moving as `prompt` describes and optionally speaking
+	// `audio`. No avatar is needed.
 	//
-	// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-	// usable afterwards) or a public https link to a jpg, png or webp of at
-	// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-	// webm, ...). The audio plays once from the start of the clip, padded
-	// with silence and cut at its end. `durationSeconds` is required with
-	// `audio` (the audio's own length is not read: set it to the audio's
-	// length, at most 15; without it the request is `400 invalid_input`)
-	// and defaults to 8 for a silent clip; `resolution` defaults to
-	// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-	// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-	// are moderated first. If the image shows a real person other than the
-	// creator, have that person's permission first.
+	// - **Inputs**: `image` is a `portrait` upload or a public https link
+	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+	//   The audio plays once from the start, padded with silence or cut at the
+	//   end. The prompt and the image are moderated; if the image shows a real
+	//   person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio` (set it to
+	//   the audio's length; the file is not measured) and defaults to 8 for a
+	//   silent clip. At most 15 seconds where clips render on the sessions'
+	//   pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+	//   the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+	// - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+	//   output size (see `ClipResolution`), or `aspectRatio` (`square`,
+	//   `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+	//   side rounded up to 32 and the centre is cropped. Where
+	//   `clipAnySize` is false the render size must be one of
+	//   `pricing.generation.clipResolutions` on `GET /v1/account`.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+	//   short-lived `url` to download it.
+	// - **Billing**: the per-15-second price from `GET /v1/account`
+	//   (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+	//   `durationSeconds` and rounded up, charged only when the clip comes
+	//   back.
+	// - **Slow starts**: a cold render can take minutes. After about 45
+	//   seconds the call answers `409 request_in_progress`; retry with the
+	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
+	//   once.
+	// - **Access**: needs v2 access (`403 v2_access_required`) and the
+	//   `generation:write` and `avatars:write` scopes.
 	//
-	// The clip is returned as `upload:<uploadId>` (24 hours) with a
-	// short-lived `url` to download it. It costs the price per 15 seconds
-	// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-	// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-	// credit for a 15-second clip), charged only when the clip comes back; a
-	// flagged, failed or refused call costs nothing. Clips use the v2
-	// renderer, so an account without v2 access gets
-	// `403 v2_access_required`. A render can take
-	// minutes when the renderer starts cold: past about 45 seconds the
-	// request answers `409 request_in_progress`, and a retry with the same
-	// `Idempotency-Key` after `Retry-After` returns the clip once it is
-	// done, charged once. An image or audio the renderer cannot use (no
-	// face, an unreadable file) is `400 invalid_input` naming
-	// `input_failure image` or `input_failure audio`. Where clips are not
-	// offered the route answers `503 generation_unavailable`. A size this
-	// deployment offers but its render pool does not serve is `400
-	// invalid_input` naming `input_failure resolution` ("the render pool
-	// does not serve WxH"), not an image error. Requires
-	// `generation:write` and `avatars:write`.
+	// | Error | When |
+	// |---|---|
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClipWithResponse(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error)
 
-	// EnhancePortraitWithBodyWithResponse Enhance or restyle a portrait photo
+	// EnhancePortraitWithBodyWithResponse Enhance a portrait
 	//
-	// Crops the caller's own photo to a square and returns up to four square
-	// portraits, one per image provider. Without `prompt` they are enhanced
-	// versions that keep the subject's identity. With `prompt` they restyle
-	// the photo as the prompt asks ("this person as a 1920s detective"): the
-	// person is kept unless the prompt asks otherwise. The prompt and the
-	// photo are each moderated before any provider is called. `image` is
-	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-	// stays usable afterwards) or a public https link to a jpg, png or webp of
-	// at most 10 MB. If the photo shows a real person other than the creator,
-	// have that person's permission first.
+	// Crops your photo to a square and returns up to four enhanced portraits
+	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// as the prompt asks ("this person as a 1920s detective"), keeping the
+	// person unless the prompt says otherwise.
 	//
-	// The outputs, price, charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+	//   usable afterwards) or a public https link to a jpg, png or webp of at
+	//   most 10 MB. The prompt and the photo are moderated first.
+	// - **Consent**: if the photo shows a real person other than you, get
+	//   their permission first.
+	// - **Output, billing and idempotency**: as for `POST
+	//   /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
 	EnhancePortraitWithBodyWithResponse(ctx context.Context, params *EnhancePortraitParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error)
 
-	// EnhancePortraitWithResponse Enhance or restyle a portrait photo
+	// EnhancePortraitWithResponse Enhance a portrait
 	//
-	// Crops the caller's own photo to a square and returns up to four square
-	// portraits, one per image provider. Without `prompt` they are enhanced
-	// versions that keep the subject's identity. With `prompt` they restyle
-	// the photo as the prompt asks ("this person as a 1920s detective"): the
-	// person is kept unless the prompt asks otherwise. The prompt and the
-	// photo are each moderated before any provider is called. `image` is
-	// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-	// stays usable afterwards) or a public https link to a jpg, png or webp of
-	// at most 10 MB. If the photo shows a real person other than the creator,
-	// have that person's permission first.
+	// Crops your photo to a square and returns up to four enhanced portraits
+	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// as the prompt asks ("this person as a 1920s detective"), keeping the
+	// person unless the prompt says otherwise.
 	//
-	// The outputs, price, charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+	//   usable afterwards) or a public https link to a jpg, png or webp of at
+	//   most 10 MB. The prompt and the photo are moderated first.
+	// - **Consent**: if the photo shows a real person other than you, get
+	//   their permission first.
+	// - **Output, billing and idempotency**: as for `POST
+	//   /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/enhancements (the `EnhancePortrait` operationId).
 	EnhancePortraitWithResponse(ctx context.Context, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody, reqEditors ...RequestEditorFn) (*EnhancePortraitResponse, error)
 
-	// GeneratePortraitsWithBodyWithResponse Generate portraits from a description
+	// GeneratePortraitsWithBodyWithResponse Generate portraits
 	//
-	// Generates up to four square portraits from a text description, one from
-	// each configured image provider, with Atmee Studio's portrait prompt. For
-	// an invented character only: never use it to depict a real person from a
-	// description. For a real person, enhance their own photo with
-	// `POST /v1/generation/enhancements`, with their permission.
+	// Generates up to four square portraits of an invented character from a
+	// text description. Never use it to depict a real person: for a real
+	// person, enhance their own photo with `POST /v1/generation/enhancements`,
+	// with their permission.
 	//
-	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-	// take as they are (an upload works once and expires 24 hours after it was
-	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-	//
-	// Costs the operation's price (`GET /v1/account`), charged only when at least
-	// one portrait comes back; a flagged, failed or refused call costs nothing.
-	// The `Idempotency-Key` is required: a retry with the same key never charges
-	// twice and returns the first result (`replayed: true`). Requires
-	// `generation:write` and `avatars:write`.
+	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.image`) and `PUT
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	// - **Billing**: the operation's price from `GET /v1/account`, charged
+	//   only when at least one portrait comes back. A flagged, failed or
+	//   refused call costs nothing.
+	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+	//   key never charges twice and returns the first result (`replayed:
+	//   true`).
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraitsWithBodyWithResponse(ctx context.Context, params *GeneratePortraitsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error)
 
-	// GeneratePortraitsWithResponse Generate portraits from a description
+	// GeneratePortraitsWithResponse Generate portraits
 	//
-	// Generates up to four square portraits from a text description, one from
-	// each configured image provider, with Atmee Studio's portrait prompt. For
-	// an invented character only: never use it to depict a real person from a
-	// description. For a real person, enhance their own photo with
-	// `POST /v1/generation/enhancements`, with their permission.
+	// Generates up to four square portraits of an invented character from a
+	// text description. Never use it to depict a real person: for a real
+	// person, enhance their own photo with `POST /v1/generation/enhancements`,
+	// with their permission.
 	//
-	// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-	// take as they are (an upload works once and expires 24 hours after it was
-	// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-	//
-	// Costs the operation's price (`GET /v1/account`), charged only when at least
-	// one portrait comes back; a flagged, failed or refused call costs nothing.
-	// The `Idempotency-Key` is required: a retry with the same key never charges
-	// twice and returns the first result (`replayed: true`). Requires
-	// `generation:write` and `avatars:write`.
+	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.image`) and `PUT
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	// - **Billing**: the operation's price from `GET /v1/account`, charged
+	//   only when at least one portrait comes back. A flagged, failed or
+	//   refused call costs nothing.
+	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+	//   key never charges twice and returns the first result (`replayed:
+	//   true`).
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraitsWithResponse(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error)
 
-	// DesignVoiceWithBodyWithResponse Design a voice from a description
+	// DesignVoiceWithBodyWithResponse Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
-	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-	// sample needs: a preview under 10 seconds is made once more with a longer
-	// read and dropped if it is still short, and one over 60 seconds is
-	// dropped. A preview whose length the provider did not report has
-	// `durationSeconds: null`.
+	// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+	// needs: a short one is made once more with a longer read, and one still
+	// outside that range is dropped.
 	//
-	// `sampleText`, when given, is what every preview says, in `language`:
-	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-	// greeting from the description, long enough for 10 seconds. Each preview
-	// reports the text it actually speaks (`spokenText`).
-	//
-	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-	// take as they are, plus a short-lived `url` to play it. The price,
-	// charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Text**: `sampleText` is what every preview says, in `language`;
+	//   without it, a greeting is written from the description. Each preview
+	//   reports what it actually says in `spokenText`.
+	// - **Output**: each preview is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   `null` when the length is unknown.
+	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
 	DesignVoiceWithBodyWithResponse(ctx context.Context, params *DesignVoiceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error)
 
-	// DesignVoiceWithResponse Design a voice from a description
+	// DesignVoiceWithResponse Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
-	// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-	// sample needs: a preview under 10 seconds is made once more with a longer
-	// read and dropped if it is still short, and one over 60 seconds is
-	// dropped. A preview whose length the provider did not report has
-	// `durationSeconds: null`.
+	// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+	// needs: a short one is made once more with a longer read, and one still
+	// outside that range is dropped.
 	//
-	// `sampleText`, when given, is what every preview says, in `language`:
-	// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-	// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-	// greeting from the description, long enough for 10 seconds. Each preview
-	// reports the text it actually speaks (`spokenText`).
-	//
-	// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-	// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-	// take as they are, plus a short-lived `url` to play it. The price,
-	// charging and `Idempotency-Key` work as for
-	// `POST /v1/generation/portraits`. Requires `generation:write` and
-	// `avatars:write`.
+	// - **Text**: `sampleText` is what every preview says, in `language`;
+	//   without it, a greeting is written from the description. Each preview
+	//   reports what it actually says in `spokenText`.
+	// - **Output**: each preview is an `upload:<uploadId>` that `POST
+	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   `null` when the length is unknown.
+	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+	// - **Scopes**: `generation:write` and `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12886,127 +11896,87 @@ type ClientWithResponsesInterface interface {
 	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	StartEmbedSessionWithResponse(ctx context.Context, body StartEmbedSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*StartEmbedSessionResponse, error)
 
-	// CreateSpeechSessionWithBodyWithResponse Start a speech-to-speech session (audio only, no video)
+	// CreateSpeechSessionWithBodyWithResponse Start a speech session
 	//
-	// Reserves a **speech session** with an avatar: a realtime
-	// speech-to-speech conversation over a WebSocket, without video. The
-	// answer carries the WebSocket `url` and a short-lived `token`:
-	// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-	// token either as `Authorization: Bearer <token>` or as the WebSocket
-	// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-	// admits the connection. The session ends at its `endsAt` (the
-	// reservation plus `actualDurationSeconds`), whenever the connection
-	// opened. The first connection holds the session for good: no other
-	// connection can use it, so a client that lost its connection starts a
-	// new session.
+	// Starts a realtime speech-to-speech conversation with an avatar over a
+	// WebSocket, without video. The answer carries the WebSocket `url` and a
+	// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 	//
-	// `avatarId` is required: the conversation uses that avatar's persona
-	// (name, personality, facts, self-introduction) and always its voice;
-	// an avatar without a voice (a Fish Audio voice ID) answers `422
-	// avatar_has_no_voice`.
-	//
-	// `settings` pins `session.start` fields from your backend: the speech
-	// server applies them over the client's, refuses a client
-	// `session.start` / `session.update` that sets a pinned field (naming
-	// it), and leaves them out of the session it echoes. Unpinned fields
-	// stay the client's to set. Pinned persona fields override the
-	// avatar's. Appends (`session.instructions.append` and the like) stay
-	// allowed: they add to the pinned instructions, never replace them.
-	//
-	// Billing runs by the minute from the speech server's first usage report
-	// (within 30 s of the connection) until the session ends, at the
-	// plan's speech rate. A session nobody connects to costs nothing and is
-	// closed (`failed`, `no_user_joined`) by the first read, or start of
-	// the account, 30 seconds after its token expired, otherwise by the
-	// stale-session cleanup: 120 seconds without a heartbeat (the
-	// reservation sets the first), checked every minute.
-	//
-	// **Who pays.** Always the account that owns the avatar:
-	//
-	// - **API key** (`X-Api-Key`) — your backend, billed to the key's
-	//   account. Requires the `sessions` scope; an avatar-scoped key may
-	//   only start sessions on its avatar (it must name it).
-	// - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-	//   deployment accepts user tokens) — billed to the account the user
-	//   acts for (`X-Account-Id` when there are several). An avatar of
-	//   another account answers `403 avatar_not_allowed`.
-	// - **No credential** — `401`. There is no anonymous or visitor-paid
-	//   speech session.
-	//
-	// With both an API key and a bearer token, the key's start applies,
-	// as on `POST /v1/sessions`. Read and end a session with either
-	// credential of its account.
+	// - **Connecting**: present the token as `Authorization: Bearer <token>`
+	//   or as the WebSocket subprotocols `atmee-live` and
+	//   `atmee-token.<token>`. The first connection holds the session for
+	//   good; a client that loses it starts a new session.
+	// - **Avatar**: `avatarId` is required, and the session uses that avatar's
+	//   persona and voice. An avatar without a voice is `422
+	//   avatar_has_no_voice`.
+	// - **Pinned settings**: `settings` pins `session.start` fields from your
+	//   backend, over the client's. A client `session.start` or
+	//   `session.update` that sets a pinned field is refused, naming it;
+	//   appends such as `session.instructions.append` still add to it. Pinned
+	//   persona fields override the avatar's.
+	// - **Length**: the session ends at `endsAt` (the reservation plus
+	//   `actualDurationSeconds`), whenever the connection opened.
+	// - **Billing**: by the minute from the first usage report (within 30
+	//   seconds of connecting) until the end, always to the account that owns
+	//   the avatar. A session nobody connects to costs nothing and is closed
+	//   as `failed` (`no_user_joined`).
+	// - **Credentials**: an API key with the `sessions` scope (an
+	//   avatar-scoped key must name its avatar), or the owner's signed-in user
+	//   token where the deployment accepts one (`X-Account-Id` picks among
+	//   several accounts). There are no anonymous speech sessions. Read and
+	//   end a session with either credential of its account.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/speech_sessions (the `CreateSpeechSession` operationId).
 	CreateSpeechSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSpeechSessionResponse, error)
 
-	// CreateSpeechSessionWithResponse Start a speech-to-speech session (audio only, no video)
+	// CreateSpeechSessionWithResponse Start a speech session
 	//
-	// Reserves a **speech session** with an avatar: a realtime
-	// speech-to-speech conversation over a WebSocket, without video. The
-	// answer carries the WebSocket `url` and a short-lived `token`:
-	// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-	// token either as `Authorization: Bearer <token>` or as the WebSocket
-	// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-	// admits the connection. The session ends at its `endsAt` (the
-	// reservation plus `actualDurationSeconds`), whenever the connection
-	// opened. The first connection holds the session for good: no other
-	// connection can use it, so a client that lost its connection starts a
-	// new session.
+	// Starts a realtime speech-to-speech conversation with an avatar over a
+	// WebSocket, without video. The answer carries the WebSocket `url` and a
+	// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 	//
-	// `avatarId` is required: the conversation uses that avatar's persona
-	// (name, personality, facts, self-introduction) and always its voice;
-	// an avatar without a voice (a Fish Audio voice ID) answers `422
-	// avatar_has_no_voice`.
-	//
-	// `settings` pins `session.start` fields from your backend: the speech
-	// server applies them over the client's, refuses a client
-	// `session.start` / `session.update` that sets a pinned field (naming
-	// it), and leaves them out of the session it echoes. Unpinned fields
-	// stay the client's to set. Pinned persona fields override the
-	// avatar's. Appends (`session.instructions.append` and the like) stay
-	// allowed: they add to the pinned instructions, never replace them.
-	//
-	// Billing runs by the minute from the speech server's first usage report
-	// (within 30 s of the connection) until the session ends, at the
-	// plan's speech rate. A session nobody connects to costs nothing and is
-	// closed (`failed`, `no_user_joined`) by the first read, or start of
-	// the account, 30 seconds after its token expired, otherwise by the
-	// stale-session cleanup: 120 seconds without a heartbeat (the
-	// reservation sets the first), checked every minute.
-	//
-	// **Who pays.** Always the account that owns the avatar:
-	//
-	// - **API key** (`X-Api-Key`) — your backend, billed to the key's
-	//   account. Requires the `sessions` scope; an avatar-scoped key may
-	//   only start sessions on its avatar (it must name it).
-	// - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-	//   deployment accepts user tokens) — billed to the account the user
-	//   acts for (`X-Account-Id` when there are several). An avatar of
-	//   another account answers `403 avatar_not_allowed`.
-	// - **No credential** — `401`. There is no anonymous or visitor-paid
-	//   speech session.
-	//
-	// With both an API key and a bearer token, the key's start applies,
-	// as on `POST /v1/sessions`. Read and end a session with either
-	// credential of its account.
+	// - **Connecting**: present the token as `Authorization: Bearer <token>`
+	//   or as the WebSocket subprotocols `atmee-live` and
+	//   `atmee-token.<token>`. The first connection holds the session for
+	//   good; a client that loses it starts a new session.
+	// - **Avatar**: `avatarId` is required, and the session uses that avatar's
+	//   persona and voice. An avatar without a voice is `422
+	//   avatar_has_no_voice`.
+	// - **Pinned settings**: `settings` pins `session.start` fields from your
+	//   backend, over the client's. A client `session.start` or
+	//   `session.update` that sets a pinned field is refused, naming it;
+	//   appends such as `session.instructions.append` still add to it. Pinned
+	//   persona fields override the avatar's.
+	// - **Length**: the session ends at `endsAt` (the reservation plus
+	//   `actualDurationSeconds`), whenever the connection opened.
+	// - **Billing**: by the minute from the first usage report (within 30
+	//   seconds of connecting) until the end, always to the account that owns
+	//   the avatar. A session nobody connects to costs nothing and is closed
+	//   as `failed` (`no_user_joined`).
+	// - **Credentials**: an API key with the `sessions` scope (an
+	//   avatar-scoped key must name its avatar), or the owner's signed-in user
+	//   token where the deployment accepts one (`X-Account-Id` picks among
+	//   several accounts). There are no anonymous speech sessions. Read and
+	//   end a session with either credential of its account.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/speech_sessions (the `CreateSpeechSession` operationId).
 	CreateSpeechSessionWithResponse(ctx context.Context, body CreateSpeechSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSpeechSessionResponse, error)
 
-	// GetSpeechSessionWithResponse Read a speech session's state, end reason and cost
+	// GetSpeechSessionWithResponse Get a speech session
 	//
-	// `status` is `active` while the session is reserved or connected,
-	// then `completed` or `failed`. `connectedAt` is when billing started
-	// (the speech server's first usage report), `endsAt` when the session's
-	// time runs out, `endRequestedAt` when you ended it while a connection
-	// was open (until its next usage report settles it). Once it ended,
-	// `endReason` says why and `billedSeconds` / `chargedMicrocredits` what
-	// it cost (100 microcredits = 1 credit).
+	// Reads a speech session's state and, once it ended, why and what it cost.
+	//
+	// - `status` is `active` while the session is reserved or connected, then
+	//   `completed` or `failed`.
+	// - `connectedAt` is when billing started, `endsAt` when the session's
+	//   time runs out, and `endRequestedAt` when you ended it with a
+	//   connection open.
+	// - Once it ended, `endReason` says why, and `billedSeconds` and
+	//   `chargedMicrocredits` what it cost (100 microcredits = 1 credit).
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13015,42 +11985,46 @@ type ClientWithResponsesInterface interface {
 
 	// EndSpeechSessionWithResponse End a speech session
 	//
-	// Ends the session (`completed`, `endReason: ended_by_api`). With no
-	// connection open it settles now. With a connection open, the session
-	// ends at its next usage report (within 30 s) and is billed until
-	// then: the answer is `status: active` with `endRequestedAt` set, and
-	// `GET` reads it `completed` once it settled. **Idempotent**: a repeat
-	// keeps the first request; ending a settled session answers
-	// `alreadyEnded: true`.
+	// Ends the session with `endReason: ended_by_api`. With no connection open
+	// it settles at once. With one open, it ends at the next usage report
+	// (within 30 seconds) and is billed until then: the answer reads `status:
+	// active` with `endRequestedAt` set, and `GET` reads it `completed` once
+	// settled.
+	//
+	// Idempotent: a repeat keeps the first request, and ending a settled
+	// session answers `alreadyEnded: true`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 	EndSpeechSessionWithResponse(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*EndSpeechSessionResponse, error)
 
-	// CreateUploadWithBodyWithResponse Start a file upload
+	// CreateUploadWithBodyWithResponse Create an upload
 	//
-	// Gets a file to the Avatar API ahead of the create or replace that uses it,
-	// for clients that cannot send a file in the same request (an MCP tool, a
-	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	// Creates a one-time upload for a file you cannot send in the same
+	// request, for example from an MCP tool or a chat assistant. Once it is
+	// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+	// a file URL.
+	//
+	// | `kind` | Accepts |
+	// |---|---|
+	// | `portrait` | jpg, png or webp, up to 10 MB |
+	// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+	// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 	//
 	// Send the file one of two ways:
 	//
 	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-	//   `allowedTypes` when none was declared), at most `maxBytes`:
-	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
-	//   uploaded and how it will be used, takes the file (or, for a voice, records
-	//   one in the browser) and sends it. The link works for 15 minutes
-	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//   `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+	//   -H 'Content-Type: image/png' --data-binary @portrait.png
+	//   '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl`, a page that takes the file (or
+	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+	//   until the file arrives.
 	//
-	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-	// upload works once and expires an hour after it was created. Requires
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+	// upload is used once and expires an hour after it was created.
+	// `contentType`, when given, is the only type accepted. Requires
 	// `avatars:write`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -13058,29 +12032,32 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
 	CreateUploadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
 
-	// CreateUploadWithResponse Start a file upload
+	// CreateUploadWithResponse Create an upload
 	//
-	// Gets a file to the Avatar API ahead of the create or replace that uses it,
-	// for clients that cannot send a file in the same request (an MCP tool, a
-	// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-	// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-	// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-	// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+	// Creates a one-time upload for a file you cannot send in the same
+	// request, for example from an MCP tool or a chat assistant. Once it is
+	// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+	// a file URL.
+	//
+	// | `kind` | Accepts |
+	// |---|---|
+	// | `portrait` | jpg, png or webp, up to 10 MB |
+	// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+	// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 	//
 	// Send the file one of two ways:
 	//
 	// - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-	//   `allowedTypes` when none was declared), at most `maxBytes`:
-	//   `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-	// - Or give a person `uploadPageUrl` to open: a page that shows what is being
-	//   uploaded and how it will be used, takes the file (or, for a voice, records
-	//   one in the browser) and sends it. The link works for 15 minutes
-	//   (`uploadPageExpiresAt`) and until the file has arrived.
+	//   `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+	//   -H 'Content-Type: image/png' --data-binary @portrait.png
+	//   '<uploadUrl>'`.
+	// - Or give a person `uploadPageUrl`, a page that takes the file (or
+	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+	//   until the file arrives.
 	//
-	// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-	// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-	// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-	// upload works once and expires an hour after it was created. Requires
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+	// upload is used once and expires an hour after it was created.
+	// `contentType`, when given, is the only type accepted. Requires
 	// `avatars:write`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -13088,12 +12065,12 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/uploads (the `CreateUpload` operationId).
 	CreateUploadWithResponse(ctx context.Context, body CreateUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUploadResponse, error)
 
-	// GetUploadWithResponse Upload status
+	// GetUploadWithResponse Get an upload
 	//
-	// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
-	// once a create or replace used it, or `expired` an hour after it was
-	// created. Only the account that created it sees it. Requires
-	// `avatars:read` or `avatars:write`.
+	// Returns the upload's `status`: `pending` until the file arrives, then
+	// `uploaded` (usable once), `consumed` once a create or replace used it,
+	// or `expired` an hour after it was created. Only the account that created
+	// it can read it. Requires `avatars:read` or `avatars:write`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16028,23 +15005,24 @@ func (r GetUploadResponse) ContentType() string {
 	return ""
 }
 
-// GetAccountWithResponse The account's plan, limits, prices and capture quota
+// GetAccountWithResponse Get the account
 //
-// The plan the account is on (and the one it changes to at the end of
-// the cycle, if any), the limits that apply to its API usage, what a
-// session minute, a preview clip and (where generation is offered,
-// `pricing.generation`) one generation call cost, and how many v2 captures are
-// queued or running against the pending cap. Prices are in
-// microcredits (100 microcredits = 1 credit). A conversation
-// (`POST /v1/session`) is charged `sessionPerMinuteMicrocredits` with a
-// v1 avatar and `sessionV2PerMinuteMicrocredits` with a v2 one; an
-// avatar session (render only) the avatar engine's render rate
-// (`renderV1PerMinuteMicrocredits` or `renderV2PerMinuteMicrocredits`). A limit, or a plan
-// field, that is absent is not set (a limit absent is not capped by the
-// plan). `payouts` says whether the account can be paid out, which
-// monetizing an avatar needs.
+// Returns the account's plan, its API limits, its prices and its v2
+// capture quota. Prices are in microcredits (100 microcredits = 1 credit).
 //
-// Readable by the same callers as `GET /v1/account/balance`.
+//   - **Plan**: the current plan, and the one it changes to at the end of
+//     the cycle, if any.
+//   - **Pricing**: the per-minute price of each kind of session (a
+//     conversation or a render, by avatar engine, and a speech session), a
+//     preview clip, and each generation call where generation is offered
+//     (`pricing.generation`).
+//   - **Limits**: an absent limit or plan field is not set (an absent limit
+//     is not capped by the plan).
+//   - **v2**: `v2Access` says whether the account may build v2 avatars;
+//     `captureQuota` counts v2 captures queued or running against the cap.
+//   - **Payouts**: `payouts` says whether the account can be paid out, which
+//     monetizing an avatar needs.
+//   - Readable by the same callers as `GET /v1/account/balance`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16057,26 +15035,22 @@ func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, reqEdi
 	return ParseGetAccountResponse(rsp)
 }
 
-// GetAccountBalanceWithResponse The account's credit balance
+// GetAccountBalanceWithResponse Get the balance
 //
-// What the calling key's account has to spend on sessions, from the
-// account's direct wallet (the only one API usage draws on). Every
-// amount is in microcredits (100 microcredits = 1 credit).
+// Returns the credits the account can spend on sessions, in microcredits
+// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
+// (see `GET /v1/avatars/{avatarId}/sponsor`).
 //
-// `spendableMicrocredits` is the amount a session is admitted on: every
-// positive bucket for a reserve-mode key or a signed-in user; the plan
-// and top-up buckets only for a metered key, which never spends coupon
-// credits (`couponSpendable: false`). Live sessions' reservations are
-// already taken out of the buckets and are reported on their own as
-// `heldByLiveSessionsMicrocredits`. `unlimited` is true when sessions
-// are not charged (an unlimited plan, or billing switched off), whatever
-// the buckets say. `nextExpiry` lists the credits that will expire,
-// soonest first. An avatar's sponsor pool is not part of this balance
-// (`GET /v1/avatars/{avatarId}/sponsor`).
-//
-// Any key with the `sessions` or `avatars:read` scope may read it, an
-// avatar-scoped key included, and so may a signed-in user acting for the
-// account.
+//   - `spendableMicrocredits` is what a session is admitted on: every bucket
+//     for a reserve-mode key or a signed-in user, only the plan and top-up
+//     buckets for a metered key (`couponSpendable: false`).
+//   - Live sessions' reservations are already taken out, and reported as
+//     `heldByLiveSessionsMicrocredits`.
+//   - `unlimited` is true when sessions are not charged, whatever the
+//     buckets say.
+//   - `nextExpiry` lists the credits that will expire, soonest first.
+//   - Readable by any key with `sessions` or `avatars:read` (an
+//     avatar-scoped key included), or a signed-in user of the account.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16089,17 +15063,16 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 	return ParseGetAccountBalanceResponse(rsp)
 }
 
-// GetAccountEarningsWithResponse The account's creator wallet and earnings
+// GetAccountEarningsWithResponse Get earnings
 //
-// What the account's monetized avatars earned, what was paid out, and
-// the wallet balance between the two, in microcredits (100 microcredits
-// = 1 credit), as Studio's billing page shows them. This is not the
-// credit balance sessions spend (`GET /v1/account/balance`). One
-// avatar's earnings are in `GET /v1/avatars/{avatarId}/monetization`.
+// Returns what the account's monetized avatars earned, what was paid out,
+// and the wallet balance between them, in microcredits (100 microcredits =
+// 1 credit). This is not the balance sessions spend (`GET
+// /v1/account/balance`); one avatar's earnings are in `GET
+// /v1/avatars/{avatarId}/monetization`.
 //
-// Any account-wide key with `avatars:read` may read it, and so may a
-// signed-in user acting for the account; an avatar-scoped key is
-// answered `403 avatar_not_allowed`.
+// Readable by an account-wide key with `avatars:read` or a signed-in user
+// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16112,18 +15085,16 @@ func (c *ClientWithResponses) GetAccountEarningsWithResponse(ctx context.Context
 	return ParseGetAccountEarningsResponse(rsp)
 }
 
-// RedeemAccountCodeWithBodyWithResponse Redeem an invite or credit code
+// RedeemAccountCodeWithBodyWithResponse Redeem a code
 //
-// Redeems a code for the account, as Creator Studio's Billing page
-// does. A code can add credits, let the account into v2 avatars (v2
-// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-// the answer says what it gave and where v2 access stands after it.
-// Each account redeems a code at most once.
+// Redeems an invite or credit code for the account. A code can add
+// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+// /v1/account`), or both, and the answer says what it gave. Each account
+// redeems a code at most once.
 //
-// Only a signed-in user may redeem (the MCP server's sign-in, or
-// `atmee login`); an API key gets 403 `login_required`, so a leaked
-// key cannot spend the account's codes. Once v2 is let in, v2 creates
-// work on the next request.
+// Only a signed-in user may redeem: an API key gets `403 login_required`,
+// so a leaked key cannot spend the account's codes. v2 access applies from
+// the next request.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16136,18 +15107,16 @@ func (c *ClientWithResponses) RedeemAccountCodeWithBodyWithResponse(ctx context.
 	return ParseRedeemAccountCodeResponse(rsp)
 }
 
-// RedeemAccountCodeWithResponse Redeem an invite or credit code
+// RedeemAccountCodeWithResponse Redeem a code
 //
-// Redeems a code for the account, as Creator Studio's Billing page
-// does. A code can add credits, let the account into v2 avatars (v2
-// is invite-only for now: `GET /v1/account`'s `v2Access`), or both;
-// the answer says what it gave and where v2 access stands after it.
-// Each account redeems a code at most once.
+// Redeems an invite or credit code for the account. A code can add
+// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
+// /v1/account`), or both, and the answer says what it gave. Each account
+// redeems a code at most once.
 //
-// Only a signed-in user may redeem (the MCP server's sign-in, or
-// `atmee login`); an API key gets 403 `login_required`, so a leaked
-// key cannot spend the account's codes. Once v2 is let in, v2 creates
-// work on the next request.
+// Only a signed-in user may redeem: an API key gets `403 login_required`,
+// so a leaked key cannot spend the account's codes. v2 access applies from
+// the next request.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16236,22 +15205,21 @@ func (c *ClientWithResponses) CreateApiKeyWithResponse(ctx context.Context, body
 	return ParseCreateApiKeyResponse(rsp)
 }
 
-// GetCurrentApiKeyWithResponse The credential making this call
+// GetCurrentApiKeyWithResponse Get the current credential
 //
-// For an API key (`kind: api_key`): its name, scopes, the avatar it is
-// restricted to, its billing mode, its own session caps and how much of
-// its spend cap the current window has used. The secret is never
-// returned. `spendCap.enforced` is false when the cap is not applied
-// (an unlimited plan, or billing switched off); `windowResetsAt` is
-// absent for a cap over the key's whole life (`window: total`), and
-// `limitMicrocredits` and `remainingMicrocredits` are absent when the
-// key has no cap (`spentMicrocredits` is still reported).
+// Describes the credential making this call. Readable by the same callers
+// as `GET /v1/account/balance`.
 //
-// For a signed-in user (`kind: user`): the user and the account it acts
-// for; a user has no key, no scopes beyond the avatar ones and no spend
-// cap.
-//
-// Readable by the same callers as `GET /v1/account/balance`.
+//   - **API key** (`kind: api_key`): its name, scopes, the avatar it is
+//     restricted to, its billing mode, its session caps and how much of its
+//     spend cap the current window used. The secret is never returned.
+//     `spendCap.enforced` is false when the cap is not applied;
+//     `limitMicrocredits` and `remainingMicrocredits` are absent when the
+//     key has no cap, and `windowResetsAt` for a lifetime cap (`window:
+//     total`).
+//   - **Signed-in user** (`kind: user`): the user and the account it acts
+//     for. A user has no key, no scopes beyond the avatar ones and no spend
+//     cap.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16347,21 +15315,21 @@ func (c *ClientWithResponses) RotateApiKeyWithResponse(ctx context.Context, apiK
 	return ParseRotateApiKeyResponse(rsp)
 }
 
-// GetAvatarSessionWithResponse Read a session's state, end reason and cost
+// GetAvatarSessionWithResponse Get an avatar session
 //
-// Reads either kind of API session: a conversation (`POST /v1/session`,
-// `kind: conversation`) or a render into your own room (`POST
-// /v1/avatars/{avatarId}/avatar_sessions`, `kind: render`).
+// Reads an API session's state, end reason and cost: a conversation (`POST
+// /v1/sessions`, `kind: conversation`) or a render (`POST
+// /v1/avatar_sessions`, `kind: render`).
 //
-// `status` is `pending` (starting), `active` (live), `completed` (it
-// ran and ended normally, including when you ended it) or `failed` (it
-// never really started: nobody joined, the avatar did not join, or an
-// error; nothing is billed for the time it did not run). Once it
-// ended, `endReason` says why, `failureCode` names the failure of a
-// failed session, and `billedSeconds` / `chargedMicrocredits` say what
-// it cost (100 microcredits = 1 credit). Billing runs only while both
-// the avatar and the visitor (or your agent) are in the room:
-// `userJoinedAt` and `avatarJoinedAt` show when each joined.
+//   - `status` is `pending` (starting), `active` (live), `completed` (ended
+//     normally, including by you) or `failed` (it never really started;
+//     nothing is billed for time it did not run).
+//   - Once it ended, `endReason` says why, `failureCode` names the failure
+//     of a failed session, and `billedSeconds` and `chargedMicrocredits` say
+//     what it cost (100 microcredits = 1 credit).
+//   - Billing runs only while both the avatar and the visitor (or your
+//     agent) are in the room; `userJoinedAt` and `avatarJoinedAt` say when
+//     each joined.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16374,24 +15342,21 @@ func (c *ClientWithResponses) GetAvatarSessionWithResponse(ctx context.Context, 
 	return ParseGetAvatarSessionResponse(rsp)
 }
 
-// EndAvatarSessionWithResponse End an avatar session (optional explicit stop)
+// EndAvatarSessionWithResponse End an avatar session
 //
-// Ends either kind of API session; for a conversation, `POST
-// /v1/sessions/{id}/end` with an API key is the same call. It settles `completed` with
-// `endReason: ended_by_api`, never `failed`.
+// Ends an API session now and stops billing. It settles `completed` with
+// `endReason: ended_by_api`. For a conversation, this is the same as `POST
+// /v1/sessions/{id}/end` with an API key.
 //
-// Stops billing for the session now. **Idempotent**: ending a session that
-// already ended answers `200` with `alreadyEnded: true`, so the plugin can
-// call it from every teardown path without checking first. The primary end
-// signal is the rendering worker's own report when your agent leaves, the
-// room closes, or you remove the avatar participant — this call is the
-// fallback for a worker that could not report, and the way to stop paying
-// for an avatar you are done with while your room stays open. For a
-// render it does not remove the avatar from your room; remove the
-// participant yourself (the plugin does so on close). A conversation's room is closed, as by
-// `POST /v1/sessions/{id}/end`. Acts only on sessions started through
-// the API (the account's website sessions are `404`), and for an
-// avatar-scoped key only on its avatar's.
+//   - **Idempotent**: a session that already ended answers `200` with
+//     `alreadyEnded: true`, so it is safe to call from every teardown path.
+//   - **Renders** usually end on their own when your agent leaves, the room
+//     closes or you remove the avatar participant. Call this to stop paying
+//     while your room stays open; it does not remove the avatar from your
+//     room, so remove the participant yourself.
+//   - **Conversations**: the room is closed.
+//   - Only sessions started through the API can be ended here (website
+//     sessions are `404`), and an avatar-scoped key ends only its avatar's.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16404,7 +15369,9 @@ func (c *ClientWithResponses) EndAvatarSessionWithResponse(ctx context.Context, 
 	return ParseEndAvatarSessionResponse(rsp)
 }
 
-// ListAvatarsWithResponse List the account's avatars
+// ListAvatarsWithResponse List avatars
+//
+// Lists the account's avatars, newest first. Page with `before`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16417,106 +15384,55 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 	return ParseListAvatarsResponse(rsp)
 }
 
-// CreateAvatarWithBodyWithResponse Create an avatar (Avatar Import API)
+// CreateAvatarWithBodyWithResponse Create an avatar
 //
-// Three body shapes, one result.
+// Creates an avatar from a portrait, a voice sample, a persona and
+// knowledge. A complete avatar builds in the background (`202`, `status:
+// building`): follow it with `GET /v1/avatars/{avatarId}`.
 //
-// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-// <= 10 MB) as the `file` part and the avatar `name` as a second field
-// (`description` optional). Creates a **render-only** avatar: no voice, no
-// persona, nothing to build -- the response is `201` with `status: ready`
-// and the avatar can be rendered for an external agent at once. Add a voice
-// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+// Send one of three body shapes:
 //
-// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-// optional; without it the result is render-only as above. With a voice the
-// avatar is created exactly as the studio would: the row, the files under
-// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-// pipeline builds it asynchronously (`202`, `status: building`), poll
-// `GET /v1/avatars/{avatarId}`.
-// The manifest's `persona` block carries the character: `whoPrompt` (who the
-// avatar is: the main character description), `whatPrompt` (what the avatar is
-// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-// `conversationalHabits`. `personality` and `scenario` are older names of
-// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-// names is `400 invalid_manifest`.
-// **JSON.** The manifest as `application/json` with an `assets` block naming
-// the image, the voice sample, prompt text and knowledge files by https URL;
-// the service downloads them (public hosts only, same size and type rules as
-// the zip) and continues identically.
+// | Body | Content type | Contents |
+// |---|---|---|
+// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 //
-// **A draft.** The image and the voice are both optional on the zip and JSON
-// bodies (and `assets` itself on JSON), on either engine. An avatar created
-// without its portrait, or without its voice (other than a v1 avatar with a
-// portrait, which is render-only), is a **draft**: `status: draft` with
-// `missingInputs` naming what it lacks. Its persona and knowledge build;
-// nothing that needs the missing input does. Give them with
-// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-// in either order; the build continues once both are there (on v2, the input
-// that completes it captures the first candidate). `seedPreviews` and
-// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-// selected automatically.
-// Where `assets` takes a URL for the image, the voice sample or a knowledge
-// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-// (the prompt stays a URL). The upload must be this account's, of the matching
-// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-// type, and the same size and type rules apply. A create that succeeds
-// consumes its uploads; one that fails leaves them usable for a retry.
+//   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+//     `seedPreviews.count` candidates and, with `seedSelection: auto`
+//     (default), serves the first that completes. v2 is invite-only (`403
+//     v2_access_required`).
+//   - **Drafts**: the portrait and the voice are optional in zip and JSON
+//     bodies. Without either (other than a v1 avatar with a portrait, which
+//     is render-only) the avatar is a `draft`, and `missingInputs` names
+//     what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
+//   - **Portrait**: use a front-facing photo of one person, head and
+//     shoulders, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Uploads**: a create that succeeds consumes its uploads; one that
+//     fails leaves them usable for a retry.
+//   - **Captures** count against the account's limit of 10 queued or
+//     running. A v2 create returns `X-RateLimit-Limit` and
+//     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+//     not fit.
+//   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+//     block.
 //
-// **The portrait** (every body shape) decides whether the avatar can be
-// animated. Use a front-facing photo of one person, head and shoulders with
-// some margin around the head, the face at least about a third of the frame,
-// in even light, with the **lips slightly parted as if about to speak**. A v2
-// avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still);
-// lips slightly parted work far more often. The build refuses a clearly bad
-// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-// Preview clips are not generated unless the manifest sets `previews: true`
-// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-// `sponsor` block. Behind the `avatar_import_api` feature flag.
+// | Manifest field | Rule |
+// |---|---|
+// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
-// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-// is cloned from its sample; a v2 create with the portrait and the voice
-// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-// the first completed candidate is promoted) or `manual`. Both are v2 only.
-// A portrait, voice or preview message changed outside the API (Creator
-// Studio) captures one candidate of the new inputs by itself.
-// Captures count against the account's limit of 10 queued or running; a v2
-// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-// `previewMessage` is the line the preview clips speak; omit it for a default
-// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-// candidate is captured from, so at most 60 Unicode code points
-// (`400 preview_message_too_long`).
-// `knowledge.descriptions` maps a knowledge file name to a short description.
-// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-// as Creator Studio saves its "Facts with context" box (shown there) and as a
-// knowledge file the knowledge base reads; change it with PATCH.
-// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-// change it with PATCH. Knowledge
-// (files and facts) is used in conversations by v1 avatars; v2 conversations
-// do not use it yet.
-// `blackoutRecovery` tunes how v2 sessions recover from frames that
-// fade to black; it is on by default, so omit it unless a setting
-// should differ. It is ignored for v1 avatars (the setting exists only
-// on the v2 renderer).
-// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-// the renderer default, 42. Ignored for v1 avatars, like
-// `blackoutRecovery`.
-// `resolution` (v2) is the frame size the avatar renders at, e.g.
-// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-// avatars (`400 invalid_input`).
+// v2 conversations do not use knowledge yet.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16529,106 +15445,55 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 	return ParseCreateAvatarResponse(rsp)
 }
 
-// CreateAvatarWithResponse Create an avatar (Avatar Import API)
+// CreateAvatarWithResponse Create an avatar
 //
-// Three body shapes, one result.
+// Creates an avatar from a portrait, a voice sample, a persona and
+// knowledge. A complete avatar builds in the background (`202`, `status:
+// building`): follow it with `GET /v1/avatars/{avatarId}`.
 //
-// **An image.** `multipart/form-data` with the portrait (jpg, png or webp,
-// <= 10 MB) as the `file` part and the avatar `name` as a second field
-// (`description` optional). Creates a **render-only** avatar: no voice, no
-// persona, nothing to build -- the response is `201` with `status: ready`
-// and the avatar can be rendered for an external agent at once. Add a voice
-// later with `PUT /v1/avatars/{avatarId}/voice` to make it conversational.
+// Send one of three body shapes:
 //
-// **A zip.** `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt`,
-// `knowledge/`, as the `file` part or a raw `application/zip` body. `voice/` is
-// optional; without it the result is render-only as above. With a voice the
-// avatar is created exactly as the studio would: the row, the files under
-// `<account>/<avatar>/`, and one `configs.latest` write; the creator-studio
-// pipeline builds it asynchronously (`202`, `status: building`), poll
-// `GET /v1/avatars/{avatarId}`.
-// The manifest's `persona` block carries the character: `whoPrompt` (who the
-// avatar is: the main character description), `whatPrompt` (what the avatar is
-// doing with the visitor; JSON alternative to `prompt/prompt.txt` -- providing
-// both is rejected), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`,
-// `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`,
-// `conversationalHabits`. `personality` and `scenario` are older names of
-// `whoPrompt` and `whatPrompt` and still accepted; a field given under both
-// names is `400 invalid_manifest`.
-// **JSON.** The manifest as `application/json` with an `assets` block naming
-// the image, the voice sample, prompt text and knowledge files by https URL;
-// the service downloads them (public hosts only, same size and type rules as
-// the zip) and continues identically.
+// | Body | Content type | Contents |
+// |---|---|---|
+// | Image | `multipart/form-data` | The portrait as the `file` part, plus `name` (and optional `description`). Makes a render-only avatar: `201`, `ready` at once. Add a voice later to make it talk. |
+// | Zip | `multipart/form-data` (`file`) or `application/zip` | `avatar.json` plus `image/`, `voice/`, `prompt/prompt.txt` and `knowledge/`. |
+// | JSON | `application/json` | The manifest, with an `assets` block naming each file by https URL or `upload:<uploadId>`. |
 //
-// **A draft.** The image and the voice are both optional on the zip and JSON
-// bodies (and `assets` itself on JSON), on either engine. An avatar created
-// without its portrait, or without its voice (other than a v1 avatar with a
-// portrait, which is render-only), is a **draft**: `status: draft` with
-// `missingInputs` naming what it lacks. Its persona and knowledge build;
-// nothing that needs the missing input does. Give them with
-// `PUT /v1/avatars/{avatarId}/appearance` and `PUT /v1/avatars/{avatarId}/voice`,
-// in either order; the build continues once both are there (on v2, the input
-// that completes it captures the first candidate). `seedPreviews` and
-// `seedSelection` need both inputs at create: a v2 draft takes one candidate,
-// selected automatically.
-// Where `assets` takes a URL for the image, the voice sample or a knowledge
-// file, `upload:<uploadId>` names a file sent with `POST /v1/uploads` instead
-// (the prompt stays a URL). The upload must be this account's, of the matching
-// kind (`portrait`, `voice`, `knowledge`) and uploaded; its bytes decide its
-// type, and the same size and type rules apply. A create that succeeds
-// consumes its uploads; one that fails leaves them usable for a retry.
+//   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
+//     `seedPreviews.count` candidates and, with `seedSelection: auto`
+//     (default), serves the first that completes. v2 is invite-only (`403
+//     v2_access_required`).
+//   - **Drafts**: the portrait and the voice are optional in zip and JSON
+//     bodies. Without either (other than a v1 avatar with a portrait, which
+//     is render-only) the avatar is a `draft`, and `missingInputs` names
+//     what to add with `PUT /v1/avatars/{avatarId}/appearance` or
+//     `PUT /v1/avatars/{avatarId}/voice`.
+//   - **Portrait**: use a front-facing photo of one person, head and
+//     shoulders, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Uploads**: a create that succeeds consumes its uploads; one that
+//     fails leaves them usable for a retry.
+//   - **Captures** count against the account's limit of 10 queued or
+//     running. A v2 create returns `X-RateLimit-Limit` and
+//     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
+//     not fit.
+//   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
+//     block.
 //
-// **The portrait** (every body shape) decides whether the avatar can be
-// animated. Use a front-facing photo of one person, head and shoulders with
-// some margin around the head, the face at least about a third of the frame,
-// in even light, with the **lips slightly parted as if about to speak**. A v2
-// avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still);
-// lips slightly parted work far more often. The build refuses a clearly bad
-// portrait at the `appearance` stage: `stages.appearance` and `latestFailure`
-// carry a `portrait_*` reason in `userFeedback` (`portrait_no_face`,
-// `portrait_face_too_small`, `portrait_mouth_closed`, with a message you can
-// show verbatim). Replace it with `PUT /v1/avatars/{avatarId}/appearance`.
-// Preview clips are not generated unless the manifest sets `previews: true`
-// (toggle later with PATCH); `stages.previews` then reads `skipped`.
-// Requires the `avatars:write` scope, plus `billing:write` when the manifest has a
-// `sponsor` block. Behind the `avatar_import_api` feature flag.
+// | Manifest field | Rule |
+// |---|---|
+// | `persona` | `whoPrompt` (who the avatar is), `whatPrompt` (what it does with the visitor; in a zip, `prompt/prompt.txt` instead, not both), `preferredAlias`, `spokenName`, `knownAliases`, `greeting`, `selfIntroduction` (derived from `whoPrompt` when absent), `guardrails`, `conversationalHabits`. `personality` and `scenario` are older names of `whoPrompt` and `whatPrompt`; a field under both names is `400 invalid_manifest`. |
+// | `previewMessage` | The line preview clips speak; omit it for a default sentence in the avatar's language. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `previews` | `true` generates preview clips (default off; change it with PATCH). |
+// | `seedPreviews`, `seedSelection` | v2 only, and only with the portrait and the voice: `count` candidates (default 1, at most 10), and `auto` (default) or `manual` selection. |
+// | `knowledge.facts` | The avatar's knowledge as text, at most 32,000 characters (`400 invalid_manifest`). |
+// | `knowledge.questionnaire` | Answers to Creator Studio's knowledge questions (listed by `GET /v1/avatars/{avatarId}/knowledge`), each at most 2,000 characters. |
+// | `knowledge.descriptions` | Maps a knowledge file name to a short description. |
+// | `blackoutRecovery`, `runtimeSeed`, `resolution` | v2 render settings (see their schemas). v1 avatars ignore the first two and refuse `resolution` (`400 invalid_input`). |
+// | `aspectRatio` | v2 only: the avatar's shape, `square` (default, 512 × 512), `portrait` (384 × 640) or `landscape` (640 × 384); see `AspectRatio`. `resolution` names a size this deployment offers instead; send one or the other, not both. v1 avatars refuse it (`400 invalid_input`). |
 //
-// **engine** is `v1` (the default) or `v2` (AvatarForever). A v2 avatar's voice
-// is cloned from its sample; a v2 create with the portrait and the voice
-// captures `seedPreviews.count` candidates (default 1, at most 10). `seedSelection` is `auto` (the default:
-// the first completed candidate is promoted) or `manual`. Both are v2 only.
-// A portrait, voice or preview message changed outside the API (Creator
-// Studio) captures one candidate of the new inputs by itself.
-// Captures count against the account's limit of 10 queued or running; a v2
-// create answers with `X-RateLimit-Limit` and `X-RateLimit-Remaining`, and
-// with `429 rate_limited` (and `Retry-After`) when the captures do not fit.
-// `previewMessage` is the line the preview clips speak; omit it for a default
-// sentence in the avatar's language. On v2 it is the ~6 s prime clip every
-// candidate is captured from, so at most 60 Unicode code points
-// (`400 preview_message_too_long`).
-// `knowledge.descriptions` maps a knowledge file name to a short description.
-// `knowledge.facts` is the avatar's knowledge as text, at most 32,000
-// characters (`400 invalid_manifest` otherwise), on either engine: it is saved
-// as Creator Studio saves its "Facts with context" box (shown there) and as a
-// knowledge file the knowledge base reads; change it with PATCH.
-// `knowledge.questionnaire` answers Creator Studio's knowledge questionnaire
-// (question to answer, the questions of `GET /v1/avatars/{avatarId}/knowledge`;
-// each answer non-blank, at most 2,000 characters), saved as Studio saves it;
-// change it with PATCH. Knowledge
-// (files and facts) is used in conversations by v1 avatars; v2 conversations
-// do not use it yet.
-// `blackoutRecovery` tunes how v2 sessions recover from frames that
-// fade to black; it is on by default, so omit it unless a setting
-// should differ. It is ignored for v1 avatars (the setting exists only
-// on the v2 renderer).
-// `runtimeSeed` (v2) is the seed of a session's motion; omit it to keep
-// the renderer default, 42. Ignored for v1 avatars, like
-// `blackoutRecovery`.
-// `resolution` (v2) is the frame size the avatar renders at, e.g.
-// `{"width": 384, "height": 672}` for portrait; default 512 x 512 (see
-// `RenderResolution`). Unlike `blackoutRecovery` it is refused for v1
-// avatars (`400 invalid_input`).
+// v2 conversations do not use knowledge yet.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16641,12 +15506,11 @@ func (c *ClientWithResponses) CreateAvatarWithResponse(ctx context.Context, body
 	return ParseCreateAvatarResponse(rsp)
 }
 
-// DeleteAvatarWithResponse Delete (soft) an avatar
+// DeleteAvatarWithResponse Delete an avatar
 //
-// Soft-deletes the avatar: it disappears from the API at once and its
-// unfinished captures are cancelled. After the retention period every
-// file of the avatar -- every version's portrait, voice sample and
-// takes included -- is removed permanently.
+// Deletes the avatar: it disappears from the API at once and its
+// unfinished captures are cancelled. Its files, every version's included,
+// are removed permanently after the retention period.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16659,7 +15523,14 @@ func (c *ClientWithResponses) DeleteAvatarWithResponse(ctx context.Context, avat
 	return ParseDeleteAvatarResponse(rsp)
 }
 
-// GetAvatarWithResponse Avatar detail and build status
+// GetAvatarWithResponse Get an avatar
+//
+// Returns the avatar's settings and its build status, stage by stage.
+// Poll it after a create or a change: `stages` and `rebuilding` show
+// progress, and `status` says when it needs you (`failed`,
+// `awaiting_selection`, `stalled`, `draft`). A v2 avatar stays `ready`
+// while a new version builds; when that build needs a candidate picked,
+// `selectionRequired` turns true while `status` stays `ready`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16672,124 +15543,44 @@ func (c *ClientWithResponses) GetAvatarWithResponse(ctx context.Context, avatarI
 	return ParseGetAvatarResponse(rsp)
 }
 
-// UpdateAvatarWithBodyWithResponse Update name, description, visibility, language or preview message
+// UpdateAvatarWithBodyWithResponse Update an avatar
 //
-// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-// guardrails, habits, aliases, name) rebuild the persona in the
-// background. A v1 avatar is briefly not ready; a v2 avatar stays
-// `ready` and keeps serving its current config while `stages.persona`
-// shows the rebuild, and serves the new persona a few seconds after
-// that stage completes. A persona edit captures nothing, so
-// `rebuilding` (which is about candidates) does not change. Every
-// persona edit is moderated again, on both engines: a `clean` avatar
-// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-// rebuild already under way waits: its candidates stay queued and
-// are not captured until the check passes; the serving candidate
-// keeps serving.
-// On v2, a changed `previewMessage`, portrait or voice captures new
-// candidates.
+// Changes an avatar's settings, persona, knowledge or share card, and
+// returns the avatar. Send only the fields to change: an absent or `null`
+// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+// optional one.
 //
-// Send only the fields to change: an absent or `null` field is left
-// unchanged. To remove a value, send it empty: `""` for description,
-// greeting, preferredAlias and spokenName, `[]` for guardrails and
-// knownAliases, `{}` for conversationalHabits, and `""` for
-// `previewMessage` to go back to the default sentence. whoPrompt,
-// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-// schema (`422`), and so does blank selfIntroduction text under 51
-// characters; other blank text is `400 invalid_manifest`.
+//   - **Persona edits** rebuild the persona in the background and are
+//     moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+//     serving until the new persona is live.
+//   - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+//     new version with new candidates, like a new portrait or voice, while
+//     the serving candidate keeps serving. `blackoutRecovery` and
+//     `runtimeSeed` apply from the next session and rebuild nothing.
+//   - **Knowledge**: knowledge files stay; replace them with `PUT
+//     /v1/avatars/{avatarId}/knowledge`.
+//   - **Visibility**: `public` needs a title, a tag, a subtitle, a
+//     description and a thumbnail (`409 public_requirements_missing` lists
+//     what is missing). `public` and `unlisted` must pass moderation (`409
+//     moderation_blocked`).
+//   - **Atomicity**: every field is checked first. The name, description,
+//     share fields, statement, monetization and visibility are written
+//     together, and a refusal of any of them writes nothing. The rest is
+//     written after, so after a later error, send the same request again to
+//     retry.
 //
-// `personality` and `scenario` are older names of `whoPrompt` and
-// `whatPrompt` and still accepted, nested in `persona` or at the top
-// level. A field given twice (under both names, or both at the top
-// level and in `persona`) is `400 invalid_body`.
-//
-// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-// (`400 preview_message_too_long`); changing it captures new
-// candidates. Sending the current `previewMessage` again is no
-// rebuild, and `""` (the default sentence) rebuilds only when a custom
-// line was set.
-//
-// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-// sessions render: nothing is rebuilt or captured, and the serving
-// candidate stays. They are ignored for v1 avatars (the settings exist
-// only on the v2 renderer).
-//
-// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-// the frame size: it is a build input, so a new size builds a new
-// version (new candidates, as a new portrait does) while the serving
-// candidate keeps serving; the current size sent again builds nothing.
-//
-// `knowledge.facts` replaces the avatar's knowledge text (at most
-// 32,000 characters; `""` removes it), on either engine, as Creator
-// Studio's "Facts with context" box does: the text and its knowledge
-// file, which the knowledge stage processes again. Other knowledge
-// files stay. Nothing is captured.
-//
-// `knowledge.questionnaire` replaces the answers to Creator Studio's
-// knowledge questionnaire, question to answer, as Studio's Knowledge
-// step saves them: the answers and their knowledge file, which the
-// knowledge stage processes again (answers equal to the current ones
-// change nothing). `{}` removes them. The questions are the `questions`
-// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-//
-// The share fields are what Creator Studio's "Share to community" card
-// edits, written as Studio writes them and with its limits, on either
-// engine (nothing is rebuilt): `title` (at most 100 characters),
-// `subtitle` (200), `description` (280), `tags` (the whole set: at
-// most 5 after trimming and dropping case-insensitive duplicates, each
-// with a letter or digit; an existing tag of the same name is reused)
-// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-// twitter or youtube, each at most once, with an https URL of at most
-// 500 characters). `""` clears title and subtitle, `[]` clears tags
-// and socialLinks. A field Studio's rules refuse is
-// `400 invalid_body` naming it. The Explore thumbnail has its own
-// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-//
-// `visibility` follows Studio's rules: making an avatar `public` needs
-// a title, a tag, a subtitle, a description and a thumbnail (`409
-// public_requirements_missing`, with the `missing` fields), checked on
-// the state after the rest of the request. On an avatar already
-// public, only clearing one of them is refused (the same error, with
-// the cleared fields as `missing`); its other edits, and `public`
-// sent again, pass. Making it `public` or `unlisted` passes the
-// moderation publish gate (`409 moderation_blocked` while the avatar
-// is held or not yet checked, when the gate is enforced). A value
-// equal to the stored one is no change.
-//
-// `statementType` records who the avatar depicts, as Studio's
-// verification dialog does; `""` resets it (null leaves it unchanged).
-// It cannot change while the avatar is monetized (`409
-// avatar_is_earning`; turn monetization off in the same request
-// first), and changing or resetting it clears `verified`. The identity
-// check that verifies a self or representative statement runs in
-// Creator Studio only.
-//
-// `monetization.enabled` turns monetization on or off with Studio's
-// switch's preconditions: a verified avatar or the fictional
-// statement (`409 statement_required` / `identity_not_verified`), a
-// verified payout account (`409 payouts_not_ready`; payouts are set up
-// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-// eligibility (`409 monetization_eligibility_not_met`) and room under
-// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-// pool to the account. Turning it off always works.
-//
-// `name` and `description` are written with these fields, under the
-// same rules (`name` at most 100 characters once trimmed, counted in
-// UTF-16 units as Studio counts them; `description` at most 280).
-//
-// Every field of the request is checked before anything is written.
-// Then the name, description, share fields, statement, monetization
-// and visibility are written first, in one write: a refusal of any of
-// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-// leaves the whole request unwritten, including the persona, preview
-// message, knowledge and settings, and starts no rebuild. The rest is
-// written after it, so a later failure (a rebuild refused with `429`,
-// an outage) answers an error with that first write already made;
-// sending the same request again writes it as no change and retries
-// the rest.
+// | Field | Rule |
+// |---|---|
+// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16802,124 +15593,44 @@ func (c *ClientWithResponses) UpdateAvatarWithBodyWithResponse(ctx context.Conte
 	return ParseUpdateAvatarResponse(rsp)
 }
 
-// UpdateAvatarWithResponse Update name, description, visibility, language or preview message
+// UpdateAvatarWithResponse Update an avatar
 //
-// Persona edits (whoPrompt, whatPrompt, greeting, self-introduction,
-// guardrails, habits, aliases, name) rebuild the persona in the
-// background. A v1 avatar is briefly not ready; a v2 avatar stays
-// `ready` and keeps serving its current config while `stages.persona`
-// shows the rebuild, and serves the new persona a few seconds after
-// that stage completes. A persona edit captures nothing, so
-// `rebuilding` (which is about candidates) does not change. Every
-// persona edit is moderated again, on both engines: a `clean` avatar
-// reads `moderationState: unmoderated` until the new check passes. Meanwhile a v2
-// rebuild already under way waits: its candidates stay queued and
-// are not captured until the check passes; the serving candidate
-// keeps serving.
-// On v2, a changed `previewMessage`, portrait or voice captures new
-// candidates.
+// Changes an avatar's settings, persona, knowledge or share card, and
+// returns the avatar. Send only the fields to change: an absent or `null`
+// field stays as it is, and an empty value (`""`, `[]` or `{}`) clears an
+// optional one.
 //
-// Send only the fields to change: an absent or `null` field is left
-// unchanged. To remove a value, send it empty: `""` for description,
-// greeting, preferredAlias and spokenName, `[]` for guardrails and
-// knownAliases, `{}` for conversationalHabits, and `""` for
-// `previewMessage` to go back to the default sentence. whoPrompt,
-// whatPrompt and selfIntroduction cannot be emptied: `""` fails the
-// schema (`422`), and so does blank selfIntroduction text under 51
-// characters; other blank text is `400 invalid_manifest`.
+//   - **Persona edits** rebuild the persona in the background and are
+//     moderated again. A v1 avatar is briefly not ready; a v2 avatar keeps
+//     serving until the new persona is live.
+//   - **v2 build inputs**: a new `previewMessage` or `resolution` builds a
+//     new version with new candidates, like a new portrait or voice, while
+//     the serving candidate keeps serving. `blackoutRecovery` and
+//     `runtimeSeed` apply from the next session and rebuild nothing.
+//   - **Knowledge**: knowledge files stay; replace them with `PUT
+//     /v1/avatars/{avatarId}/knowledge`.
+//   - **Visibility**: `public` needs a title, a tag, a subtitle, a
+//     description and a thumbnail (`409 public_requirements_missing` lists
+//     what is missing). `public` and `unlisted` must pass moderation (`409
+//     moderation_blocked`).
+//   - **Atomicity**: every field is checked first. The name, description,
+//     share fields, statement, monetization and visibility are written
+//     together, and a refusal of any of them writes nothing. The rest is
+//     written after, so after a later error, send the same request again to
+//     retry.
 //
-// `personality` and `scenario` are older names of `whoPrompt` and
-// `whatPrompt` and still accepted, nested in `persona` or at the top
-// level. A field given twice (under both names, or both at the top
-// level and in `persona`) is `400 invalid_body`.
-//
-// `previewMessage` on a v2 avatar is at most 60 Unicode code points
-// (`400 preview_message_too_long`); changing it captures new
-// candidates. Sending the current `previewMessage` again is no
-// rebuild, and `""` (the default sentence) rebuilds only when a custom
-// line was set.
-//
-// `blackoutRecovery` and `runtimeSeed` change only how the next v2
-// sessions render: nothing is rebuilt or captured, and the serving
-// candidate stays. They are ignored for v1 avatars (the settings exist
-// only on the v2 renderer).
-//
-// `resolution` (v2 only; `400 invalid_input` for a v1 avatar) changes
-// the frame size: it is a build input, so a new size builds a new
-// version (new candidates, as a new portrait does) while the serving
-// candidate keeps serving; the current size sent again builds nothing.
-//
-// `knowledge.facts` replaces the avatar's knowledge text (at most
-// 32,000 characters; `""` removes it), on either engine, as Creator
-// Studio's "Facts with context" box does: the text and its knowledge
-// file, which the knowledge stage processes again. Other knowledge
-// files stay. Nothing is captured.
-//
-// `knowledge.questionnaire` replaces the answers to Creator Studio's
-// knowledge questionnaire, question to answer, as Studio's Knowledge
-// step saves them: the answers and their knowledge file, which the
-// knowledge stage processes again (answers equal to the current ones
-// change nothing). `{}` removes them. The questions are the `questions`
-// of `GET /v1/avatars/{avatarId}/knowledge`; another question, or a
-// blank answer or one over 2,000 characters, is `400 invalid_manifest`.
-//
-// The share fields are what Creator Studio's "Share to community" card
-// edits, written as Studio writes them and with its limits, on either
-// engine (nothing is rebuilt): `title` (at most 100 characters),
-// `subtitle` (200), `description` (280), `tags` (the whole set: at
-// most 5 after trimming and dropping case-insensitive duplicates, each
-// with a letter or digit; an existing tag of the same name is reused)
-// and `socialLinks` (the whole set: instagram, tiktok, facebook,
-// twitter or youtube, each at most once, with an https URL of at most
-// 500 characters). `""` clears title and subtitle, `[]` clears tags
-// and socialLinks. A field Studio's rules refuse is
-// `400 invalid_body` naming it. The Explore thumbnail has its own
-// route (`PUT /v1/avatars/{avatarId}/thumbnail`).
-//
-// `visibility` follows Studio's rules: making an avatar `public` needs
-// a title, a tag, a subtitle, a description and a thumbnail (`409
-// public_requirements_missing`, with the `missing` fields), checked on
-// the state after the rest of the request. On an avatar already
-// public, only clearing one of them is refused (the same error, with
-// the cleared fields as `missing`); its other edits, and `public`
-// sent again, pass. Making it `public` or `unlisted` passes the
-// moderation publish gate (`409 moderation_blocked` while the avatar
-// is held or not yet checked, when the gate is enforced). A value
-// equal to the stored one is no change.
-//
-// `statementType` records who the avatar depicts, as Studio's
-// verification dialog does; `""` resets it (null leaves it unchanged).
-// It cannot change while the avatar is monetized (`409
-// avatar_is_earning`; turn monetization off in the same request
-// first), and changing or resetting it clears `verified`. The identity
-// check that verifies a self or representative statement runs in
-// Creator Studio only.
-//
-// `monetization.enabled` turns monetization on or off with Studio's
-// switch's preconditions: a verified avatar or the fictional
-// statement (`409 statement_required` / `identity_not_verified`), a
-// verified payout account (`409 payouts_not_ready`; payouts are set up
-// in Creator Studio, see `payouts` on `GET /v1/account`), the 30-day
-// eligibility (`409 monetization_eligibility_not_met`) and room under
-// the plan's cap (`409 monetization_limit_reached`); an avatar whose
-// sponsor pool holds credits needs `confirmSponsorWithdrawal: true`
-// (`409 sponsor_pool_not_empty`), and turning it on then withdraws the
-// pool to the account. Turning it off always works.
-//
-// `name` and `description` are written with these fields, under the
-// same rules (`name` at most 100 characters once trimmed, counted in
-// UTF-16 units as Studio counts them; `description` at most 280).
-//
-// Every field of the request is checked before anything is written.
-// Then the name, description, share fields, statement, monetization
-// and visibility are written first, in one write: a refusal of any of
-// them (`400 invalid_body`, `400 name_invalid` or one of the `409`s)
-// leaves the whole request unwritten, including the persona, preview
-// message, knowledge and settings, and starts no rebuild. The rest is
-// written after it, so a later failure (a rebuild refused with `429`,
-// an outage) answers an error with that first write already made;
-// sending the same request again writes it as no change and retries
-// the rest.
+// | Field | Rule |
+// |---|---|
+// | `name` | At most 100 characters once trimmed, counted in UTF-16 units (`400 name_invalid`). |
+// | `whoPrompt`, `whatPrompt`, `selfIntroduction` | Cannot be emptied: `""` is `422`, and so is a blank `selfIntroduction` under 51 characters. Other blank text is `400 invalid_manifest`. |
+// | `personality`, `scenario` | Older names of `whoPrompt` and `whatPrompt`, at the top level or in `persona`. A field given twice is `400 invalid_body`. |
+// | `previewMessage` | `""` goes back to the default sentence. On v2 at most 300 Unicode code points (`400 preview_message_too_long`). |
+// | `knowledge.facts` | Replaces the knowledge text, at most 32,000 characters; `""` removes it. |
+// | `knowledge.questionnaire` | Replaces Creator Studio's questionnaire answers, question to answer; `{}` removes them. An unknown question, or a blank answer or one over 2,000 characters, is `400 invalid_manifest`. |
+// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
+// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
+// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16932,7 +15643,10 @@ func (c *ClientWithResponses) UpdateAvatarWithResponse(ctx context.Context, avat
 	return ParseUpdateAvatarResponse(rsp)
 }
 
-// GetAvatarAppearanceWithResponse The avatar's portrait
+// GetAvatarAppearanceWithResponse Get the portrait
+//
+// Returns a presigned URL of the portrait last given. The URL expires
+// after about an hour.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16945,24 +15659,22 @@ func (c *ClientWithResponses) GetAvatarAppearanceWithResponse(ctx context.Contex
 	return ParseGetAvatarAppearanceResponse(rsp)
 }
 
-// ReplaceAvatarAppearanceWithBodyWithResponse Replace the avatar's portrait
+// ReplaceAvatarAppearanceWithBodyWithResponse Replace the portrait
 //
-// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-// front-facing, head and shoulders with some margin around the head (a face that
-// fills the frame cannot be animated), the face at least about a third of the
-// frame, in even light, with the **lips slightly parted as if about to speak**:
-// a v2 avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still).
-// The build refuses a clearly bad portrait at the `appearance` stage with a
-// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-// from `POST /v1/uploads`, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its portrait this way; on v2 it captures the first
-// candidate once the voice is there too.
+// Replaces the avatar's portrait and re-runs the build stages that depend
+// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+// portrait this way (on v2, the first candidate is captured once the voice
+// is there too).
+//
+//   - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+//     of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+//     `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+//     `portrait` upload consumed on success.
+//   - **Portrait**: front-facing, head and shoulders with some margin around
+//     the head, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16975,24 +15687,22 @@ func (c *ClientWithResponses) ReplaceAvatarAppearanceWithBodyWithResponse(ctx co
 	return ParseReplaceAvatarAppearanceResponse(rsp)
 }
 
-// ReplaceAvatarAppearanceWithResponse Replace the avatar's portrait
+// ReplaceAvatarAppearanceWithResponse Replace the portrait
 //
-// One image (jpg, png or webp, <= 10 MB) as the `file` part. A good portrait is
-// front-facing, head and shoulders with some margin around the head (a face that
-// fills the frame cannot be animated), the face at least about a third of the
-// frame, in even light, with the **lips slightly parted as if about to speak**:
-// a v2 avatar animates its first moments from the portrait itself, so a closed
-// mouth usually makes the first second of speech fail (the lips stay still).
-// The build refuses a clearly bad portrait at the `appearance` stage with a
-// `portrait_*` reason in `userFeedback` (no face, face too small, lips closed).
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"image": "<https URL | upload:<uploadId>>"}`, the
-// portrait by URL (downloaded like a JSON create's) or by a `portrait` upload
-// from `POST /v1/uploads`, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its portrait this way; on v2 it captures the first
-// candidate once the voice is there too.
+// Replaces the avatar's portrait and re-runs the build stages that depend
+// on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft gets its
+// portrait this way (on v2, the first candidate is captured once the voice
+// is there too).
+//
+//   - **Body**: the image (jpg, png or webp, up to 10 MB) as the `file` part
+//     of `multipart/form-data`. Where `POST /v1/uploads` is available, JSON
+//     `{"image": "<https URL or upload:<uploadId>>"}` also works, with a
+//     `portrait` upload consumed on success.
+//   - **Portrait**: front-facing, head and shoulders with some margin around
+//     the head, the face at least a third of the frame, in even light, with
+//     the lips slightly parted. A clearly bad portrait fails the
+//     `appearance` stage with a `portrait_*` reason.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17118,23 +15828,21 @@ func (c *ClientWithResponses) CreateAvatarSessionWithResponse(ctx context.Contex
 	return ParseCreateAvatarSessionResponse(rsp)
 }
 
-// ListAvatarCandidatesWithResponse List the candidates and versions of a v2 avatar
+// ListAvatarCandidatesWithResponse List candidates
 //
-// v2 (`engine: v2`) avatars only. A candidate (a take) is one capture: a
-// sink latent that decides lip sync and motion for this image and voice
-// pair, plus a ~3 s talking preview of the avatar saying the preview
-// message. Candidates are identified by `candidateId`; the `seed` is
-// informational (the same seed does not reproduce a capture). Promote one
-// with `PUT /selected_candidate`; with `seedSelection: auto` the first
-// completed candidate of the current version is promoted for you.
+// Lists a v2 avatar's candidates and versions. A candidate (a take) is one
+// capture of the avatar's lip sync and motion, with a short talking
+// preview to compare. A version is one set of capture inputs: the
+// portrait, the voice sample and the preview message.
 //
-// A version is one set of capture inputs: the portrait, the voice
-// sample and the preview message. Replacing any of them starts a new
-// version; the takes of older versions are kept. `versions` always
-// lists every version (oldest first) with what going back to it brings
-// back. `items` lists the takes of the current version, plus the
-// serving take if it is older; pass `versions=all` for the takes of
-// every version.
+//   - `items` lists the current version's takes and the serving take;
+//     `versions=all` adds every older version's.
+//   - `versions` always lists every version, oldest first, with what going
+//     back to it restores.
+//   - Pick one with `PUT /v1/avatars/{avatarId}/selected_candidate`. With
+//     `seedSelection: auto`, the first completed take of the current version
+//     is picked for you.
+//   - `seed` is informational: the same seed does not reproduce a capture.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17149,10 +15857,9 @@ func (c *ClientWithResponses) ListAvatarCandidatesWithResponse(ctx context.Conte
 
 // CreateAvatarCandidatesWithBodyWithResponse Capture more candidates
 //
-// Captures `count` more candidates from the avatar's current bundle and
-// prime clip without re-running preprocessing. Captures are free for now
-// but count against the account's limit: at most 10 queued or running
-// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+// Captures `count` more candidates of a v2 avatar from its current inputs,
+// without preprocessing again. Captures count against the account's limit
+// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17167,10 +15874,9 @@ func (c *ClientWithResponses) CreateAvatarCandidatesWithBodyWithResponse(ctx con
 
 // CreateAvatarCandidatesWithResponse Capture more candidates
 //
-// Captures `count` more candidates from the avatar's current bundle and
-// prime clip without re-running preprocessing. Captures are free for now
-// but count against the account's limit: at most 10 queued or running
-// (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
+// Captures `count` more candidates of a v2 avatar from its current inputs,
+// without preprocessing again. Captures count against the account's limit
+// of 10 queued or running (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17183,12 +15889,12 @@ func (c *ClientWithResponses) CreateAvatarCandidatesWithResponse(ctx context.Con
 	return ParseCreateAvatarCandidatesResponse(rsp)
 }
 
-// DeleteAvatarConductorWithResponse Remove the graph conductor of a v2 avatar
+// DeleteAvatarConductorWithResponse Remove the conductor
 //
-// The next session runs without a conductor, also one the avatar's own
-// config carries (a running session keeps the one it started with).
-// Nothing is rebuilt. Removing a conductor that is not set is no
-// error.
+// Removes a v2 avatar's conductor, including one its own configuration
+// carries: the next session runs without one, and a running session keeps
+// its own. Nothing is rebuilt. Removing a conductor that is not set is not
+// an error.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17201,11 +15907,11 @@ func (c *ClientWithResponses) DeleteAvatarConductorWithResponse(ctx context.Cont
 	return ParseDeleteAvatarConductorResponse(rsp)
 }
 
-// GetAvatarConductorWithResponse Read the graph conductor of a v2 avatar
+// GetAvatarConductorWithResponse Get the conductor
 //
-// The conductor as saved: the whole graph and `speakAfterS`. The
-// avatar detail (`GET /v1/avatars/{avatarId}`) reports only whether one
-// is set and its node count.
+// Returns a v2 avatar's conductor as saved: the whole graph and
+// `speakAfterS`. `GET /v1/avatars/{avatarId}` only reports whether one is
+// set and its node count.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17218,46 +15924,29 @@ func (c *ClientWithResponses) GetAvatarConductorWithResponse(ctx context.Context
 	return ParseGetAvatarConductorResponse(rsp)
 }
 
-// SetAvatarConductorWithBodyWithResponse Set the graph conductor of a v2 avatar
+// SetAvatarConductorWithBodyWithResponse Set the conductor
 //
-// Gives the avatar's conversations an agenda: a graph of steps, each
-// with the avatar's instructions while the conversation is in it, and
-// edges that say when it moves on. At the end of every turn a judge
-// model gives each condition (`when`) of the current step the
-// probability that it holds; edges without a condition share the
-// probability that none holds, by `weight`. The step then takes its
-// likeliest edge (or, marked `random`, draws one). A step without
-// edges is the end. An edge marked `speak`, taken after an avatar
-// turn, has the avatar go on under the next step without waiting for
-// the user (`speakAfterS` seconds later; absent, Causeur's default).
+// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+// instructions for the avatar and edges that say when to move on. It
+// replaces any earlier conductor, including one the avatar's own
+// configuration carries, and applies from the next session. Nothing is
+// rebuilt.
 //
-// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-// conductor runs on Causeur, the conversation runtime v2 sessions are
-// moving to; it has no effect on a session the behavior module runs.
-// It replaces any earlier conductor, and any conductor the avatar's
-// own config carries, and applies from the next session (a running
-// session keeps what it started with). Nothing is rebuilt or captured,
-// and the serving candidate stays. A session whose whole payload would
-// exceed Causeur's limit (262,144 characters, the avatar's persona and
-// config included) starts without the conductor.
-//
-// The graph is checked before it is saved, with Causeur's own rules
-// and limits; a refusal names the field (`400 invalid_conductor`,
-// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-// 1000 characters; a condition at most 300; a weight above 0 and at
-// most 1000, and only on an edge without a condition (default 1); one
-// edge with a condition and one without per target at most; every
-// node reachable from `start`, every edge to a node of the graph, a
-// `speak` edge only into a step with instructions. Not accepted here:
-// `replan` steps (the graph runs as given), text holding a
-// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-// 150,000 characters of JSON (non-ASCII characters count as their
-// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-// of the session (a v2 avatar's own config is typically under 15,000).
-// Only `graph` and `speakAfterS` are accepted at the top level. The
-// request body may be up to 512 KiB.
+//   - **How it runs**: after each turn, a judge model scores each edge's
+//     `when` condition. Edges without a condition share the chance that none
+//     holds, by `weight`. The step takes its likeliest edge, or draws one
+//     when `random`. A step without edges is the end. A `speak` edge lets
+//     the avatar go on without waiting for the user, `speakAfterS` seconds
+//     later.
+//   - **Validation**: the graph is checked before it is saved. `400
+//     invalid_conductor` names the field (e.g.
+//     `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+//     `422`. Per-field limits are on the schema.
+//   - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+//     graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+//     request body may be up to 512 KiB. A session whose whole configuration
+//     would be too large starts without the conductor.
+//   - v1 avatars are refused (`409 not_v2_avatar`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17270,46 +15959,29 @@ func (c *ClientWithResponses) SetAvatarConductorWithBodyWithResponse(ctx context
 	return ParseSetAvatarConductorResponse(rsp)
 }
 
-// SetAvatarConductorWithResponse Set the graph conductor of a v2 avatar
+// SetAvatarConductorWithResponse Set the conductor
 //
-// Gives the avatar's conversations an agenda: a graph of steps, each
-// with the avatar's instructions while the conversation is in it, and
-// edges that say when it moves on. At the end of every turn a judge
-// model gives each condition (`when`) of the current step the
-// probability that it holds; edges without a condition share the
-// probability that none holds, by `weight`. The step then takes its
-// likeliest edge (or, marked `random`, draws one). A step without
-// edges is the end. An edge marked `speak`, taken after an avatar
-// turn, has the avatar go on under the next step without waiting for
-// the user (`speakAfterS` seconds later; absent, Causeur's default).
+// Gives a v2 avatar's conversations an agenda: a graph of steps, each with
+// instructions for the avatar and edges that say when to move on. It
+// replaces any earlier conductor, including one the avatar's own
+// configuration carries, and applies from the next session. Nothing is
+// rebuilt.
 //
-// v2 avatars only: a v1 avatar is refused (`409 not_v2_avatar`). The
-// conductor runs on Causeur, the conversation runtime v2 sessions are
-// moving to; it has no effect on a session the behavior module runs.
-// It replaces any earlier conductor, and any conductor the avatar's
-// own config carries, and applies from the next session (a running
-// session keeps what it started with). Nothing is rebuilt or captured,
-// and the serving candidate stays. A session whose whole payload would
-// exceed Causeur's limit (262,144 characters, the avatar's persona and
-// config included) starts without the conductor.
-//
-// The graph is checked before it is saved, with Causeur's own rules
-// and limits; a refusal names the field (`400 invalid_conductor`,
-// `/graph/nodes/2/edges/0/weight: ...`; a value of the wrong JSON type
-// is `422`). Limits: at most 100 nodes and 100 edges in all; node ids
-// `[a-z][a-z0-9_]{0,39}` and not `none`, unique; instructions at most
-// 1000 characters; a condition at most 300; a weight above 0 and at
-// most 1000, and only on an edge without a condition (default 1); one
-// edge with a condition and one without per target at most; every
-// node reachable from `start`, every edge to a node of the graph, a
-// `speak` edge only into a step with instructions. Not accepted here:
-// `replan` steps (the graph runs as given), text holding a
-// `!<...>!` placeholder or starting with `supabase/`, and a graph over
-// 150,000 characters of JSON (non-ASCII characters count as their
-// `\uXXXX` escapes), which leaves over 110,000 characters for the rest
-// of the session (a v2 avatar's own config is typically under 15,000).
-// Only `graph` and `speakAfterS` are accepted at the top level. The
-// request body may be up to 512 KiB.
+//   - **How it runs**: after each turn, a judge model scores each edge's
+//     `when` condition. Edges without a condition share the chance that none
+//     holds, by `weight`. The step takes its likeliest edge, or draws one
+//     when `random`. A step without edges is the end. A `speak` edge lets
+//     the avatar go on without waiting for the user, `speakAfterS` seconds
+//     later.
+//   - **Validation**: the graph is checked before it is saved. `400
+//     invalid_conductor` names the field (e.g.
+//     `/graph/nodes/2/edges/0/weight`); a value of the wrong JSON type is
+//     `422`. Per-field limits are on the schema.
+//   - **Limits**: at most 100 nodes and 100 edges, and 150,000 characters of
+//     graph JSON (non-ASCII characters count as their `\uXXXX` escapes). The
+//     request body may be up to 512 KiB. A session whose whole configuration
+//     would be too large starts without the conductor.
+//   - v1 avatars are refused (`409 not_v2_avatar`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17322,7 +15994,10 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 	return ParseSetAvatarConductorResponse(rsp)
 }
 
-// GetAvatarKnowledgeWithResponse The avatar's facts and knowledge files
+// GetAvatarKnowledgeWithResponse Get the knowledge
+//
+// Returns the facts text, the knowledge questionnaire's questions and
+// answers, and the knowledge files with presigned URLs.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17335,23 +16010,23 @@ func (c *ClientWithResponses) GetAvatarKnowledgeWithResponse(ctx context.Context
 	return ParseGetAvatarKnowledgeResponse(rsp)
 }
 
-// ReplaceAvatarKnowledgeWithBodyWithResponse Replace the avatar's knowledge files
+// ReplaceAvatarKnowledgeWithBodyWithResponse Replace the knowledge files
 //
-// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-// `descriptions` is an optional JSON object mapping a filename to a short description.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-// list clears the set). A URL's file is named by its last path segment, an
-// upload's by the `fileName` it was created with; `descriptions` uses those
-// names. The uploads are consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-// keep their own files: replacing the files leaves them (change them
-// with PATCH). Knowledge is not used in v2
-// conversations yet.
+// Replaces the avatar's whole set of knowledge files and re-runs the build
+// stages that depend on them; send none to clear the set. The
+// `knowledge.facts` text and the questionnaire answers are kept (change
+// them with `PATCH /v1/avatars/{avatarId}`).
+//
+//   - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+//     txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+//     `descriptions` JSON object of file name to description. Where `POST
+//     /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+//     {...}}` also works, with https URLs or `knowledge` uploads consumed on
+//     success.
+//   - A URL's file is named by its last path segment, an upload's by its
+//     `fileName`; `descriptions` uses those names.
+//   - v2 conversations do not use knowledge yet.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17364,23 +16039,23 @@ func (c *ClientWithResponses) ReplaceAvatarKnowledgeWithBodyWithResponse(ctx con
 	return ParseReplaceAvatarKnowledgeResponse(rsp)
 }
 
-// ReplaceAvatarKnowledgeWithResponse Replace the avatar's knowledge files
+// ReplaceAvatarKnowledgeWithResponse Replace the knowledge files
 //
-// Replaces the whole knowledge set: repeat the `files` part for each document (pdf, docx,
-// doc, txt, md, html, csv <= 50 MB each; up to 20 files). Send with no files to clear it.
-// `descriptions` is an optional JSON object mapping a filename to a short description.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"files": ["<https URL | upload:<uploadId>>", ...],
-// "descriptions": {...}}`, the files by URL or by `knowledge` uploads (an empty
-// list clears the set). A URL's file is named by its last path segment, an
-// upload's by the `fileName` it was created with; `descriptions` uses those
-// names. The uploads are consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// The `knowledge.facts` text and the `knowledge.questionnaire` answers
-// keep their own files: replacing the files leaves them (change them
-// with PATCH). Knowledge is not used in v2
-// conversations yet.
+// Replaces the avatar's whole set of knowledge files and re-runs the build
+// stages that depend on them; send none to clear the set. The
+// `knowledge.facts` text and the questionnaire answers are kept (change
+// them with `PATCH /v1/avatars/{avatarId}`).
+//
+//   - **Body**: repeat the `files` part for each document (pdf, docx, doc,
+//     txt, md, html or csv, up to 50 MB each, at most 20), with an optional
+//     `descriptions` JSON object of file name to description. Where `POST
+//     /v1/uploads` is available, JSON `{"files": [...], "descriptions":
+//     {...}}` also works, with https URLs or `knowledge` uploads consumed on
+//     success.
+//   - A URL's file is named by its last path segment, an upload's by its
+//     `fileName`; `descriptions` uses those names.
+//   - v2 conversations do not use knowledge yet.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17393,15 +16068,12 @@ func (c *ClientWithResponses) ReplaceAvatarKnowledgeWithResponse(ctx context.Con
 	return ParseReplaceAvatarKnowledgeResponse(rsp)
 }
 
-// GetAvatarMonetizationWithResponse The avatar's monetization eligibility and earnings
+// GetAvatarMonetizationWithResponse Get monetization
 //
-// What Creator Studio's monetization panel shows: whether the avatar is
-// monetized, its last 30 days against the eligibility requirements, the
-// account's cap on monetizing avatars, and what it has earned. The 30-day
-// numbers leave out the account's own conversations. Earnings are in
-// microcredits (100 = 1 credit); the current cycle is the account's
-// billing cycle. Requires `avatars:read`; an avatar-scoped key reads only
-// its own avatar.
+// Returns whether the avatar is monetized, its last 30 days against the
+// eligibility requirements (the account's own conversations left out), the
+// account's cap on monetized avatars, and what the avatar earned, in
+// microcredits (100 = 1 credit). Requires `avatars:read`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17414,27 +16086,23 @@ func (c *ClientWithResponses) GetAvatarMonetizationWithResponse(ctx context.Cont
 	return ParseGetAvatarMonetizationResponse(rsp)
 }
 
-// SelectAvatarCandidateWithBodyWithResponse Promote the candidate a v2 avatar renders with
+// SelectAvatarCandidateWithBodyWithResponse Select a candidate
 //
-// Picks a completed candidate. The pick is recorded at once
-// (`selectedCandidateId`); the avatar serves it once its config is
-// built, a few seconds later (`servingCandidateId`). The first pick
-// makes the avatar `ready`; a later one switches without downtime, with
-// `rebuilding` true until it serves.
+// Picks the completed candidate a v2 avatar serves. The pick is recorded
+// at once (`selectedCandidateId`) and served a few seconds later
+// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+// one switches without downtime, with `rebuilding` true until it serves.
 //
-// A completed candidate of an older version (`current: false`,
-// `restorable: true`) goes back to that version -- also when it is
-// still the pick from before an edit: its portrait, voice sample and
-// preview message, and the language its default sentence speaks,
-// become the avatar's again, in one step, and every other setting
-// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-// Nothing is captured again and nothing is charged: that version's
-// takes are already built. Takes of the newer version still queued or
-// being captured are cancelled. Moderation is not run again for
-// inputs already checked together; a combination never checked (the
-// old portrait with a name or description edited since) is moderated
-// like any edit. Re-selecting the current pick is always allowed.
-// Queued, failed and superseded candidates cannot be selected.
+//   - **Older versions**: picking a restorable take of an older version
+//     (`current: false`, `restorable: true`) restores that version's
+//     portrait, voice sample, preview message and default-sentence language
+//     in one step. Other settings stay as they are, nothing is captured or
+//     charged, and the newer version's unfinished takes are cancelled.
+//   - **Moderation**: inputs already checked together are not checked again;
+//     a combination never checked is moderated like an edit.
+//   - Queued, failed and superseded candidates cannot be selected (`409
+//     candidate_not_ready`). Selecting the current pick again is always
+//     allowed.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17447,27 +16115,23 @@ func (c *ClientWithResponses) SelectAvatarCandidateWithBodyWithResponse(ctx cont
 	return ParseSelectAvatarCandidateResponse(rsp)
 }
 
-// SelectAvatarCandidateWithResponse Promote the candidate a v2 avatar renders with
+// SelectAvatarCandidateWithResponse Select a candidate
 //
-// Picks a completed candidate. The pick is recorded at once
-// (`selectedCandidateId`); the avatar serves it once its config is
-// built, a few seconds later (`servingCandidateId`). The first pick
-// makes the avatar `ready`; a later one switches without downtime, with
-// `rebuilding` true until it serves.
+// Picks the completed candidate a v2 avatar serves. The pick is recorded
+// at once (`selectedCandidateId`) and served a few seconds later
+// (`servingCandidateId`). The first pick makes the avatar `ready`; a later
+// one switches without downtime, with `rebuilding` true until it serves.
 //
-// A completed candidate of an older version (`current: false`,
-// `restorable: true`) goes back to that version -- also when it is
-// still the pick from before an edit: its portrait, voice sample and
-// preview message, and the language its default sentence speaks,
-// become the avatar's again, in one step, and every other setting
-// (persona, greeting, guardrails, knowledge, name) stays as it is now.
-// Nothing is captured again and nothing is charged: that version's
-// takes are already built. Takes of the newer version still queued or
-// being captured are cancelled. Moderation is not run again for
-// inputs already checked together; a combination never checked (the
-// old portrait with a name or description edited since) is moderated
-// like any edit. Re-selecting the current pick is always allowed.
-// Queued, failed and superseded candidates cannot be selected.
+//   - **Older versions**: picking a restorable take of an older version
+//     (`current: false`, `restorable: true`) restores that version's
+//     portrait, voice sample, preview message and default-sentence language
+//     in one step. Other settings stay as they are, nothing is captured or
+//     charged, and the newer version's unfinished takes are cancelled.
+//   - **Moderation**: inputs already checked together are not checked again;
+//     a combination never checked is moderated like an edit.
+//   - Queued, failed and superseded candidates cannot be selected (`409
+//     candidate_not_ready`). Selecting the current pick again is always
+//     allowed.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17480,12 +16144,11 @@ func (c *ClientWithResponses) SelectAvatarCandidateWithResponse(ctx context.Cont
 	return ParseSelectAvatarCandidateResponse(rsp)
 }
 
-// GetAvatarSponsorWithResponse Sponsor pool balance and settings
+// GetAvatarSponsorWithResponse Get the sponsor pool
 //
-// Callable by an API key (`avatars:read`) or a signed-in user acting for
-// the account. Sponsoring otherwise takes an API key with
-// `billing:write` or a signed-in user, who sponsors the account's
-// avatars as in Studio without holding that scope.
+// Returns the avatar's sponsor pool balance and settings. Readable by an
+// API key with `avatars:read` or a signed-in user of the account. Changing
+// the pool takes an API key with `billing:write` or a signed-in user.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17500,14 +16163,17 @@ func (c *ClientWithResponses) GetAvatarSponsorWithResponse(ctx context.Context, 
 
 // UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 //
-// One request applies all of its fields or none. `anonymousAccess: true`
-// lets visitors without an account spend the pool, so it needs an avatar
-// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-// or turn on auto top-up) and is public or unlisted (`409
-// avatar_not_shared`: change its visibility first). A monetized avatar
-// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-// already stored (`400 auto_topup_incomplete`).
+// Changes who may spend the avatar's sponsor pool, and when. The request
+// applies all of its fields or none.
+//
+//   - `anonymousAccess: true` lets visitors without an account spend the
+//     pool. The avatar must be funded first (`409
+//     avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+//     public or unlisted (`409 avatar_not_shared`).
+//   - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+//     already stored (`400 auto_topup_incomplete`).
+//   - A monetized avatar cannot be sponsored (`409
+//     monetized_avatar_cannot_be_sponsored`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17522,14 +16188,17 @@ func (c *ClientWithResponses) UpdateAvatarSponsorWithBodyWithResponse(ctx contex
 
 // UpdateAvatarSponsorWithResponse Update sponsor settings
 //
-// One request applies all of its fields or none. `anonymousAccess: true`
-// lets visitors without an account spend the pool, so it needs an avatar
-// that was funded (`409 avatar_not_budget_managed`: grant credits first,
-// or turn on auto top-up) and is public or unlisted (`409
-// avatar_not_shared`: change its visibility first). A monetized avatar
-// cannot be sponsored (`409 monetized_avatar_cannot_be_sponsored`).
-// `autoTopupEnabled: true` needs a threshold and an amount, sent here or
-// already stored (`400 auto_topup_incomplete`).
+// Changes who may spend the avatar's sponsor pool, and when. The request
+// applies all of its fields or none.
+//
+//   - `anonymousAccess: true` lets visitors without an account spend the
+//     pool. The avatar must be funded first (`409
+//     avatar_not_budget_managed`: grant credits or turn on auto top-up) and
+//     public or unlisted (`409 avatar_not_shared`).
+//   - `autoTopupEnabled: true` needs a threshold and an amount, sent or
+//     already stored (`400 auto_topup_incomplete`).
+//   - A monetized avatar cannot be sponsored (`409
+//     monetized_avatar_cannot_be_sponsored`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17542,10 +16211,11 @@ func (c *ClientWithResponses) UpdateAvatarSponsorWithResponse(ctx context.Contex
 	return ParseUpdateAvatarSponsorResponse(rsp)
 }
 
-// GrantAvatarSponsorWithBodyWithResponse Move credits from the account into the avatar's sponsor pool
+// GrantAvatarSponsorWithBodyWithResponse Fund the sponsor pool
 //
-// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-// first successful result instead of granting twice.
+// Moves credits from the account into the avatar's sponsor pool. Send an
+// `Idempotency-Key` to retry safely: the same key replays the first result
+// instead of granting twice.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17558,10 +16228,11 @@ func (c *ClientWithResponses) GrantAvatarSponsorWithBodyWithResponse(ctx context
 	return ParseGrantAvatarSponsorResponse(rsp)
 }
 
-// GrantAvatarSponsorWithResponse Move credits from the account into the avatar's sponsor pool
+// GrantAvatarSponsorWithResponse Fund the sponsor pool
 //
-// Send an `Idempotency-Key` header to make retries safe: the same key replays the
-// first successful result instead of granting twice.
+// Moves credits from the account into the avatar's sponsor pool. Send an
+// `Idempotency-Key` to retry safely: the same key replays the first result
+// instead of granting twice.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17574,7 +16245,9 @@ func (c *ClientWithResponses) GrantAvatarSponsorWithResponse(ctx context.Context
 	return ParseGrantAvatarSponsorResponse(rsp)
 }
 
-// WithdrawAvatarSponsorWithBodyWithResponse Return unreserved sponsor credits to the account
+// WithdrawAvatarSponsorWithBodyWithResponse Withdraw sponsor credits
+//
+// Returns the sponsor pool's unreserved credits to the account.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17587,7 +16260,9 @@ func (c *ClientWithResponses) WithdrawAvatarSponsorWithBodyWithResponse(ctx cont
 	return ParseWithdrawAvatarSponsorResponse(rsp)
 }
 
-// WithdrawAvatarSponsorWithResponse Return unreserved sponsor credits to the account
+// WithdrawAvatarSponsorWithResponse Withdraw sponsor credits
+//
+// Returns the sponsor pool's unreserved credits to the account.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17600,14 +16275,14 @@ func (c *ClientWithResponses) WithdrawAvatarSponsorWithResponse(ctx context.Cont
 	return ParseWithdrawAvatarSponsorResponse(rsp)
 }
 
-// DeleteAvatarThumbnailWithResponse Remove the avatar's Explore thumbnail
+// DeleteAvatarThumbnailWithResponse Remove the thumbnail
 //
-// Removes the thumbnail, custom or automatic: Explore shows the
-// portrait in its place, and an automatic thumbnail may be made for
-// the avatar again. A public avatar keeps needing a thumbnail, so
-// removing it is `409 public_requirements_missing`; make the avatar
-// unlisted or private first. Answers the detail. Requires
-// `avatars:write`.
+// Removes the thumbnail, custom or automatic: Explore shows the portrait
+// instead, and an automatic thumbnail may be made again. Returns the
+// avatar. Requires `avatars:write`.
+//
+// A public avatar needs a thumbnail, so this is `409
+// public_requirements_missing` until you make it unlisted or private.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17620,19 +16295,17 @@ func (c *ClientWithResponses) DeleteAvatarThumbnailWithResponse(ctx context.Cont
 	return ParseDeleteAvatarThumbnailResponse(rsp)
 }
 
-// ReplaceAvatarThumbnailWithBodyWithResponse Set the avatar's Explore thumbnail
+// ReplaceAvatarThumbnailWithBodyWithResponse Set the thumbnail
 //
-// A custom thumbnail for the avatar's card on Explore, as Creator
-// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-// MB) as the `file` part, or, on an instance that keeps uploads,
-// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-// `portrait` upload from `POST /v1/uploads`, consumed when the
-// thumbnail is set). It replaces any thumbnail, and automatic ones are
-// no longer made for the avatar. Nothing is rebuilt. Answers the
-// detail, whose `profile.thumbnailSource` reads `custom` and whose
-// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-// is one of what public needs (removing it is refused; setting one
-// never is). Requires `avatars:write`.
+// Sets a custom thumbnail for the avatar's Explore card, replacing any
+// other; automatic thumbnails are no longer made for it. Nothing is
+// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+//
+//   - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+//     part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+//     URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+//     consumed on success.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17645,19 +16318,17 @@ func (c *ClientWithResponses) ReplaceAvatarThumbnailWithBodyWithResponse(ctx con
 	return ParseReplaceAvatarThumbnailResponse(rsp)
 }
 
-// ReplaceAvatarThumbnailWithResponse Set the avatar's Explore thumbnail
+// ReplaceAvatarThumbnailWithResponse Set the thumbnail
 //
-// A custom thumbnail for the avatar's card on Explore, as Creator
-// Studio's share card uploads one: one image (jpg, png or webp, <= 10
-// MB) as the `file` part, or, on an instance that keeps uploads,
-// `application/json` `{"image": "<https URL | upload:<uploadId>>"}` (a
-// `portrait` upload from `POST /v1/uploads`, consumed when the
-// thumbnail is set). It replaces any thumbnail, and automatic ones are
-// no longer made for the avatar. Nothing is rebuilt. Answers the
-// detail, whose `profile.thumbnailSource` reads `custom` and whose
-// `thumbnailUrl` is the new image. On a public avatar the thumbnail
-// is one of what public needs (removing it is refused; setting one
-// never is). Requires `avatars:write`.
+// Sets a custom thumbnail for the avatar's Explore card, replacing any
+// other; automatic thumbnails are no longer made for it. Nothing is
+// rebuilt. Returns the avatar, with `profile.thumbnailSource: custom`.
+//
+//   - **Body**: one image (jpg, png or webp, up to 10 MB) as the `file`
+//     part. Where `POST /v1/uploads` is available, JSON `{"image": "<https
+//     URL or upload:<uploadId>>"}` also works, with a `portrait` upload
+//     consumed on success.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17670,20 +16341,17 @@ func (c *ClientWithResponses) ReplaceAvatarThumbnailWithResponse(ctx context.Con
 	return ParseReplaceAvatarThumbnailResponse(rsp)
 }
 
-// DeleteAvatarVersionWithResponse Delete an older version of a v2 avatar
+// DeleteAvatarVersionWithResponse Delete a version
 //
-// Deletes every take of an older version and the files only that
-// version uses: its takes' sink latents and preview clips, and its
-// portrait, voice sample, voice clone, prime clip and bundle unless a
-// kept take or the current inputs still use them. Files that any kept
-// take or the current inputs reference are never deleted. The version
-// cannot be restored afterwards. The current version, and a version
-// holding the serving or selected take, cannot be deleted; nor can a
-// version whose capture is still running (retry when it ends). When
-// storage cannot delete the files now, the takes are still gone and
-// `pendingFiles` counts what is left: repeat the DELETE to retry.
-// Deleting the avatar deletes all of its files, every version's
-// included.
+// Deletes an older version of a v2 avatar: its takes and the files only it
+// uses. It can no longer be restored.
+//
+//   - Files that a kept take or the current inputs use are never deleted.
+//   - The current version, a version holding the serving or selected take
+//     (`409 version_in_use`) and one whose capture is still running (`409
+//     version_busy`) cannot be deleted.
+//   - If storage cannot delete every file now, the takes are still gone and
+//     `pendingFiles` counts what is left: call again to retry.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17696,7 +16364,9 @@ func (c *ClientWithResponses) DeleteAvatarVersionWithResponse(ctx context.Contex
 	return ParseDeleteAvatarVersionResponse(rsp)
 }
 
-// GetAvatarVoiceWithResponse The avatar's voice sample and engine
+// GetAvatarVoiceWithResponse Get the voice
+//
+// Returns a presigned URL of the voice sample last given, and the voice engine.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17709,17 +16379,20 @@ func (c *ClientWithResponses) GetAvatarVoiceWithResponse(ctx context.Context, av
 	return ParseGetAvatarVoiceResponse(rsp)
 }
 
-// ReplaceAvatarVoiceWithBodyWithResponse Replace the avatar's voice sample
+// ReplaceAvatarVoiceWithBodyWithResponse Replace the voice
 //
-// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its voice this way; on v2 it captures the first
-// candidate once the portrait is there too.
+// Replaces the avatar's voice sample and re-runs the build stages that
+// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+// gets its voice this way (on v2, the first candidate is captured once the
+// portrait is there too).
+//
+//   - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+//     m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+//     Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+//     upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+//     success.
+//   - Silence, pure tones or heavy noise fail the voice stage.
+//   - **Scope**: `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17732,17 +16405,20 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithBodyWithResponse(ctx context
 	return ParseReplaceAvatarVoiceResponse(rsp)
 }
 
-// ReplaceAvatarVoiceWithResponse Replace the avatar's voice sample
+// ReplaceAvatarVoiceWithResponse Replace the voice
 //
-// One 10-60 s recording of clear speech (mp3, wav, m4a, aac, ogg, flac, opus or webm,
-// <= 12 MB) as the `file` part. Silence, pure tones or heavy noise fail the voice stage.
-// Or, on an instance that keeps uploads (where `POST /v1/uploads` answers),
-// `application/json`: `{"voice": "<https URL | upload:<uploadId>>"}`, the
-// sample by URL or by a `voice` upload, consumed when the replacement succeeds.
-// Re-runs only the build stages that depend on this part; poll
-// `GET /v1/avatars/{avatarId}` for progress. Requires `avatars:write`.
-// A draft is given its voice this way; on v2 it captures the first
-// candidate once the portrait is there too.
+// Replaces the avatar's voice sample and re-runs the build stages that
+// depend on it; poll `GET /v1/avatars/{avatarId}` for progress. A draft
+// gets its voice this way (on v2, the first candidate is captured once the
+// portrait is there too).
+//
+//   - **Body**: one 10 to 60 second recording of clear speech (mp3, wav,
+//     m4a, aac, ogg, flac, opus or webm, up to 12 MB) as the `file` part.
+//     Where `POST /v1/uploads` is available, JSON `{"voice": "<https URL or
+//     upload:<uploadId>>"}` also works, with a `voice` upload consumed on
+//     success.
+//   - Silence, pure tones or heavy noise fail the voice stage.
+//   - **Scope**: `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17755,45 +16431,45 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 	return ParseReplaceAvatarVoiceResponse(rsp)
 }
 
-// GenerateClipWithBodyWithResponse Render a video clip from an image and a prompt
+// GenerateClipWithBodyWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-// character in `image`, moving as `prompt` describes, optionally
-// speaking `audio`. No avatar is made or needed: the clip is rendered
-// directly by Atmee's v2 renderer.
+// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// in `image`, moving as `prompt` describes and optionally speaking
+// `audio`. No avatar is needed.
 //
-// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-// usable afterwards) or a public https link to a jpg, png or webp of at
-// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-// webm, ...). The audio plays once from the start of the clip, padded
-// with silence and cut at its end. `durationSeconds` is required with
-// `audio` (the audio's own length is not read: set it to the audio's
-// length, at most 15; without it the request is `400 invalid_input`)
-// and defaults to 8 for a silent clip; `resolution` defaults to
-// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-// are moderated first. If the image shows a real person other than the
-// creator, have that person's permission first.
+//   - **Inputs**: `image` is a `portrait` upload or a public https link
+//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+//     The audio plays once from the start, padded with silence or cut at the
+//     end. The prompt and the image are moderated; if the image shows a real
+//     person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio` (set it to
+//     the audio's length; the file is not measured) and defaults to 8 for a
+//     silent clip. At most 15 seconds where clips render on the sessions'
+//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
+//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+//     side rounded up to 32 and the centre is cropped. Where
+//     `clipAnySize` is false the render size must be one of
+//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+//     short-lived `url` to download it.
+//   - **Billing**: the per-15-second price from `GET /v1/account`
+//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+//     `durationSeconds` and rounded up, charged only when the clip comes
+//     back.
+//   - **Slow starts**: a cold render can take minutes. After about 45
+//     seconds the call answers `409 request_in_progress`; retry with the
+//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
+//     once.
+//   - **Access**: needs v2 access (`403 v2_access_required`) and the
+//     `generation:write` and `avatars:write` scopes.
 //
-// The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per 15 seconds
-// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-// credit for a 15-second clip), charged only when the clip comes back; a
-// flagged, failed or refused call costs nothing. Clips use the v2
-// renderer, so an account without v2 access gets
-// `403 v2_access_required`. A render can take
-// minutes when the renderer starts cold: past about 45 seconds the
-// request answers `409 request_in_progress`, and a retry with the same
-// `Idempotency-Key` after `Retry-After` returns the clip once it is
-// done, charged once. An image or audio the renderer cannot use (no
-// face, an unreadable file) is `400 invalid_input` naming
-// `input_failure image` or `input_failure audio`. Where clips are not
-// offered the route answers `503 generation_unavailable`. A size this
-// deployment offers but its render pool does not serve is `400
-// invalid_input` naming `input_failure resolution` ("the render pool
-// does not serve WxH"), not an image error. Requires
-// `generation:write` and `avatars:write`.
+// | Error | When |
+// |---|---|
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17806,45 +16482,45 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 	return ParseGenerateClipResponse(rsp)
 }
 
-// GenerateClipWithResponse Render a video clip from an image and a prompt
+// GenerateClipWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or
-// character in `image`, moving as `prompt` describes, optionally
-// speaking `audio`. No avatar is made or needed: the clip is rendered
-// directly by Atmee's v2 renderer.
+// Renders a short mp4 (1 to 30 seconds, 25 fps) of the person or character
+// in `image`, moving as `prompt` describes and optionally speaking
+// `audio`. No avatar is needed.
 //
-// `image` is `upload:<uploadId>` (a `portrait` upload, which stays
-// usable afterwards) or a public https link to a jpg, png or webp of at
-// most 10 MB; `audio` the same for a `voice` upload or link (wav, mp3,
-// webm, ...). The audio plays once from the start of the clip, padded
-// with silence and cut at its end. `durationSeconds` is required with
-// `audio` (the audio's own length is not read: set it to the audio's
-// length, at most 15; without it the request is `400 invalid_input`)
-// and defaults to 8 for a silent clip; `resolution` defaults to
-// 512 x 512 (see `RenderResolution`; e.g. 384 x 672 for portrait,
-// 672 x 384 for landscape) and `seed` to 0. The prompt and the image
-// are moderated first. If the image shows a real person other than the
-// creator, have that person's permission first.
+//   - **Inputs**: `image` is a `portrait` upload or a public https link
+//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
+//     The audio plays once from the start, padded with silence or cut at the
+//     end. The prompt and the image are moderated; if the image shows a real
+//     person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio` (set it to
+//     the audio's length; the file is not measured) and defaults to 8 for a
+//     silent clip. At most 15 seconds where clips render on the sessions'
+//     pool (`pricing.generation.clipAnySize` false), else 30 seconds within
+//     the size's budget (1920 × 1080: 10 seconds, 1280 × 720: 22).
+//   - **Resolution**: 512 × 512 unless you pass `resolution`, the clip's
+//     output size (see `ClipResolution`), or `aspectRatio` (`square`,
+//     `portrait` 384 × 640, `landscape` 640 × 384). It renders at each
+//     side rounded up to 32 and the centre is cropped. Where
+//     `clipAnySize` is false the render size must be one of
+//     `pricing.generation.clipResolutions` on `GET /v1/account`.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
+//     short-lived `url` to download it.
+//   - **Billing**: the per-15-second price from `GET /v1/account`
+//     (`pricing.generation.clipPer15SecondsMicrocredits`), pro rata to
+//     `durationSeconds` and rounded up, charged only when the clip comes
+//     back.
+//   - **Slow starts**: a cold render can take minutes. After about 45
+//     seconds the call answers `409 request_in_progress`; retry with the
+//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
+//     once.
+//   - **Access**: needs v2 access (`403 v2_access_required`) and the
+//     `generation:write` and `avatars:write` scopes.
 //
-// The clip is returned as `upload:<uploadId>` (24 hours) with a
-// short-lived `url` to download it. It costs the price per 15 seconds
-// (`GET /v1/account`, `pricing.generation.clipPer15SecondsMicrocredits`)
-// times `durationSeconds` / 15, rounded up to a whole microcredit (1
-// credit for a 15-second clip), charged only when the clip comes back; a
-// flagged, failed or refused call costs nothing. Clips use the v2
-// renderer, so an account without v2 access gets
-// `403 v2_access_required`. A render can take
-// minutes when the renderer starts cold: past about 45 seconds the
-// request answers `409 request_in_progress`, and a retry with the same
-// `Idempotency-Key` after `Retry-After` returns the clip once it is
-// done, charged once. An image or audio the renderer cannot use (no
-// face, an unreadable file) is `400 invalid_input` naming
-// `input_failure image` or `input_failure audio`. Where clips are not
-// offered the route answers `503 generation_unavailable`. A size this
-// deployment offers but its render pool does not serve is `400
-// invalid_input` naming `input_failure resolution` ("the render pool
-// does not serve WxH"), not an image error. Requires
-// `generation:write` and `avatars:write`.
+// | Error | When |
+// |---|---|
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), `input_failure resolution` (a size not served right now) |
+// | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17857,22 +16533,21 @@ func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, para
 	return ParseGenerateClipResponse(rsp)
 }
 
-// EnhancePortraitWithBodyWithResponse Enhance or restyle a portrait photo
+// EnhancePortraitWithBodyWithResponse Enhance a portrait
 //
-// Crops the caller's own photo to a square and returns up to four square
-// portraits, one per image provider. Without `prompt` they are enhanced
-// versions that keep the subject's identity. With `prompt` they restyle
-// the photo as the prompt asks ("this person as a 1920s detective"): the
-// person is kept unless the prompt asks otherwise. The prompt and the
-// photo are each moderated before any provider is called. `image` is
-// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-// stays usable afterwards) or a public https link to a jpg, png or webp of
-// at most 10 MB. If the photo shows a real person other than the creator,
-// have that person's permission first.
+// Crops your photo to a square and returns up to four enhanced portraits
+// that keep the subject's identity. With `prompt`, they restyle the photo
+// as the prompt asks ("this person as a 1920s detective"), keeping the
+// person unless the prompt says otherwise.
 //
-// The outputs, price, charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+//     usable afterwards) or a public https link to a jpg, png or webp of at
+//     most 10 MB. The prompt and the photo are moderated first.
+//   - **Consent**: if the photo shows a real person other than you, get
+//     their permission first.
+//   - **Output, billing and idempotency**: as for `POST
+//     /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17885,22 +16560,21 @@ func (c *ClientWithResponses) EnhancePortraitWithBodyWithResponse(ctx context.Co
 	return ParseEnhancePortraitResponse(rsp)
 }
 
-// EnhancePortraitWithResponse Enhance or restyle a portrait photo
+// EnhancePortraitWithResponse Enhance a portrait
 //
-// Crops the caller's own photo to a square and returns up to four square
-// portraits, one per image provider. Without `prompt` they are enhanced
-// versions that keep the subject's identity. With `prompt` they restyle
-// the photo as the prompt asks ("this person as a 1920s detective"): the
-// person is kept unless the prompt asks otherwise. The prompt and the
-// photo are each moderated before any provider is called. `image` is
-// `upload:<uploadId>` (a `portrait` upload from `POST /v1/uploads`, which
-// stays usable afterwards) or a public https link to a jpg, png or webp of
-// at most 10 MB. If the photo shows a real person other than the creator,
-// have that person's permission first.
+// Crops your photo to a square and returns up to four enhanced portraits
+// that keep the subject's identity. With `prompt`, they restyle the photo
+// as the prompt asks ("this person as a 1920s detective"), keeping the
+// person unless the prompt says otherwise.
 //
-// The outputs, price, charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Input**: `image` is a `portrait` upload (`upload:<uploadId>`, still
+//     usable afterwards) or a public https link to a jpg, png or webp of at
+//     most 10 MB. The prompt and the photo are moderated first.
+//   - **Consent**: if the photo shows a real person other than you, get
+//     their permission first.
+//   - **Output, billing and idempotency**: as for `POST
+//     /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17913,24 +16587,24 @@ func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, p
 	return ParseEnhancePortraitResponse(rsp)
 }
 
-// GeneratePortraitsWithBodyWithResponse Generate portraits from a description
+// GeneratePortraitsWithBodyWithResponse Generate portraits
 //
-// Generates up to four square portraits from a text description, one from
-// each configured image provider, with Atmee Studio's portrait prompt. For
-// an invented character only: never use it to depict a real person from a
-// description. For a real person, enhance their own photo with
-// `POST /v1/generation/enhancements`, with their permission.
+// Generates up to four square portraits of an invented character from a
+// text description. Never use it to depict a real person: for a real
+// person, enhance their own photo with `POST /v1/generation/enhancements`,
+// with their permission.
 //
-// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-// take as they are (an upload works once and expires 24 hours after it was
-// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-//
-// Costs the operation's price (`GET /v1/account`), charged only when at least
-// one portrait comes back; a flagged, failed or refused call costs nothing.
-// The `Idempotency-Key` is required: a retry with the same key never charges
-// twice and returns the first result (`replayed: true`). Requires
-// `generation:write` and `avatars:write`.
+//   - **Output**: each portrait is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.image`) and `PUT
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+//     hours), with a short-lived `url` and a small JPEG `preview`.
+//   - **Billing**: the operation's price from `GET /v1/account`, charged
+//     only when at least one portrait comes back. A flagged, failed or
+//     refused call costs nothing.
+//   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+//     key never charges twice and returns the first result (`replayed:
+//     true`).
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17943,24 +16617,24 @@ func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.
 	return ParseGeneratePortraitsResponse(rsp)
 }
 
-// GeneratePortraitsWithResponse Generate portraits from a description
+// GeneratePortraitsWithResponse Generate portraits
 //
-// Generates up to four square portraits from a text description, one from
-// each configured image provider, with Atmee Studio's portrait prompt. For
-// an invented character only: never use it to depict a real person from a
-// description. For a real person, enhance their own photo with
-// `POST /v1/generation/enhancements`, with their permission.
+// Generates up to four square portraits of an invented character from a
+// text description. Never use it to depict a real person: for a real
+// person, enhance their own photo with `POST /v1/generation/enhancements`,
+// with their permission.
 //
-// Each portrait is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.image`) and the JSON form of `PUT /v1/avatars/{avatarId}/appearance`
-// take as they are (an upload works once and expires 24 hours after it was
-// made), plus a short-lived `url` to view it and a small JPEG `preview`.
-//
-// Costs the operation's price (`GET /v1/account`), charged only when at least
-// one portrait comes back; a flagged, failed or refused call costs nothing.
-// The `Idempotency-Key` is required: a retry with the same key never charges
-// twice and returns the first result (`replayed: true`). Requires
-// `generation:write` and `avatars:write`.
+//   - **Output**: each portrait is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.image`) and `PUT
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
+//     hours), with a short-lived `url` and a small JPEG `preview`.
+//   - **Billing**: the operation's price from `GET /v1/account`, charged
+//     only when at least one portrait comes back. A flagged, failed or
+//     refused call costs nothing.
+//   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
+//     key never charges twice and returns the first result (`replayed:
+//     true`).
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17973,27 +16647,22 @@ func (c *ClientWithResponses) GeneratePortraitsWithResponse(ctx context.Context,
 	return ParseGeneratePortraitsResponse(rsp)
 }
 
-// DesignVoiceWithBodyWithResponse Design a voice from a description
+// DesignVoiceWithBodyWithResponse Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
-// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-// sample needs: a preview under 10 seconds is made once more with a longer
-// read and dropped if it is still short, and one over 60 seconds is
-// dropped. A preview whose length the provider did not report has
-// `durationSeconds: null`.
+// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+// needs: a short one is made once more with a longer read, and one still
+// outside that range is dropped.
 //
-// `sampleText`, when given, is what every preview says, in `language`:
-// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-// greeting from the description, long enough for 10 seconds. Each preview
-// reports the text it actually speaks (`spokenText`).
-//
-// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-// take as they are, plus a short-lived `url` to play it. The price,
-// charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Text**: `sampleText` is what every preview says, in `language`;
+//     without it, a greeting is written from the description. Each preview
+//     reports what it actually says in `spokenText`.
+//   - **Output**: each preview is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     `null` when the length is unknown.
+//   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18006,27 +16675,22 @@ func (c *ClientWithResponses) DesignVoiceWithBodyWithResponse(ctx context.Contex
 	return ParseDesignVoiceResponse(rsp)
 }
 
-// DesignVoiceWithResponse Design a voice from a description
+// DesignVoiceWithResponse Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
-// Every preview runs 10 to 60 seconds, the length a v2 avatar's voice
-// sample needs: a preview under 10 seconds is made once more with a longer
-// read and dropped if it is still short, and one over 60 seconds is
-// dropped. A preview whose length the provider did not report has
-// `durationSeconds: null`.
+// Each preview runs 10 to 60 seconds, the length an avatar's voice sample
+// needs: a short one is made once more with a longer read, and one still
+// outside that range is dropped.
 //
-// `sampleText`, when given, is what every preview says, in `language`:
-// 220-600 characters for Latin and Cyrillic scripts, 120-300 for Chinese,
-// Japanese and Korean, 180-450 for Hindi. Without it, Atmee writes a
-// greeting from the description, long enough for 10 seconds. Each preview
-// reports the text it actually speaks (`spokenText`).
-//
-// Each preview is returned as `upload:<uploadId>`, which `POST /v1/avatars`
-// (`assets.voice`) and the JSON form of `PUT /v1/avatars/{avatarId}/voice`
-// take as they are, plus a short-lived `url` to play it. The price,
-// charging and `Idempotency-Key` work as for
-// `POST /v1/generation/portraits`. Requires `generation:write` and
-// `avatars:write`.
+//   - **Text**: `sampleText` is what every preview says, in `language`;
+//     without it, a greeting is written from the description. Each preview
+//     reports what it actually says in `spokenText`.
+//   - **Output**: each preview is an `upload:<uploadId>` that `POST
+//     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
+//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     `null` when the length is unknown.
+//   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
+//   - **Scopes**: `generation:write` and `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18148,56 +16812,35 @@ func (c *ClientWithResponses) StartEmbedSessionWithResponse(ctx context.Context,
 	return ParseStartEmbedSessionResponse(rsp)
 }
 
-// CreateSpeechSessionWithBodyWithResponse Start a speech-to-speech session (audio only, no video)
+// CreateSpeechSessionWithBodyWithResponse Start a speech session
 //
-// Reserves a **speech session** with an avatar: a realtime
-// speech-to-speech conversation over a WebSocket, without video. The
-// answer carries the WebSocket `url` and a short-lived `token`:
-// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-// token either as `Authorization: Bearer <token>` or as the WebSocket
-// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-// admits the connection. The session ends at its `endsAt` (the
-// reservation plus `actualDurationSeconds`), whenever the connection
-// opened. The first connection holds the session for good: no other
-// connection can use it, so a client that lost its connection starts a
-// new session.
+// Starts a realtime speech-to-speech conversation with an avatar over a
+// WebSocket, without video. The answer carries the WebSocket `url` and a
+// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 //
-// `avatarId` is required: the conversation uses that avatar's persona
-// (name, personality, facts, self-introduction) and always its voice;
-// an avatar without a voice (a Fish Audio voice ID) answers `422
-// avatar_has_no_voice`.
-//
-// `settings` pins `session.start` fields from your backend: the speech
-// server applies them over the client's, refuses a client
-// `session.start` / `session.update` that sets a pinned field (naming
-// it), and leaves them out of the session it echoes. Unpinned fields
-// stay the client's to set. Pinned persona fields override the
-// avatar's. Appends (`session.instructions.append` and the like) stay
-// allowed: they add to the pinned instructions, never replace them.
-//
-// Billing runs by the minute from the speech server's first usage report
-// (within 30 s of the connection) until the session ends, at the
-// plan's speech rate. A session nobody connects to costs nothing and is
-// closed (`failed`, `no_user_joined`) by the first read, or start of
-// the account, 30 seconds after its token expired, otherwise by the
-// stale-session cleanup: 120 seconds without a heartbeat (the
-// reservation sets the first), checked every minute.
-//
-// **Who pays.** Always the account that owns the avatar:
-//
-//   - **API key** (`X-Api-Key`) — your backend, billed to the key's
-//     account. Requires the `sessions` scope; an avatar-scoped key may
-//     only start sessions on its avatar (it must name it).
-//   - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-//     deployment accepts user tokens) — billed to the account the user
-//     acts for (`X-Account-Id` when there are several). An avatar of
-//     another account answers `403 avatar_not_allowed`.
-//   - **No credential** — `401`. There is no anonymous or visitor-paid
-//     speech session.
-//
-// With both an API key and a bearer token, the key's start applies,
-// as on `POST /v1/sessions`. Read and end a session with either
-// credential of its account.
+//   - **Connecting**: present the token as `Authorization: Bearer <token>`
+//     or as the WebSocket subprotocols `atmee-live` and
+//     `atmee-token.<token>`. The first connection holds the session for
+//     good; a client that loses it starts a new session.
+//   - **Avatar**: `avatarId` is required, and the session uses that avatar's
+//     persona and voice. An avatar without a voice is `422
+//     avatar_has_no_voice`.
+//   - **Pinned settings**: `settings` pins `session.start` fields from your
+//     backend, over the client's. A client `session.start` or
+//     `session.update` that sets a pinned field is refused, naming it;
+//     appends such as `session.instructions.append` still add to it. Pinned
+//     persona fields override the avatar's.
+//   - **Length**: the session ends at `endsAt` (the reservation plus
+//     `actualDurationSeconds`), whenever the connection opened.
+//   - **Billing**: by the minute from the first usage report (within 30
+//     seconds of connecting) until the end, always to the account that owns
+//     the avatar. A session nobody connects to costs nothing and is closed
+//     as `failed` (`no_user_joined`).
+//   - **Credentials**: an API key with the `sessions` scope (an
+//     avatar-scoped key must name its avatar), or the owner's signed-in user
+//     token where the deployment accepts one (`X-Account-Id` picks among
+//     several accounts). There are no anonymous speech sessions. Read and
+//     end a session with either credential of its account.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18210,56 +16853,35 @@ func (c *ClientWithResponses) CreateSpeechSessionWithBodyWithResponse(ctx contex
 	return ParseCreateSpeechSessionResponse(rsp)
 }
 
-// CreateSpeechSessionWithResponse Start a speech-to-speech session (audio only, no video)
+// CreateSpeechSessionWithResponse Start a speech session
 //
-// Reserves a **speech session** with an avatar: a realtime
-// speech-to-speech conversation over a WebSocket, without video. The
-// answer carries the WebSocket `url` and a short-lived `token`:
-// connect to `url` within 60 seconds (`tokenExpiresAt`), presenting the
-// token either as `Authorization: Bearer <token>` or as the WebSocket
-// subprotocols `atmee-live` and `atmee-token.<token>`. The token only
-// admits the connection. The session ends at its `endsAt` (the
-// reservation plus `actualDurationSeconds`), whenever the connection
-// opened. The first connection holds the session for good: no other
-// connection can use it, so a client that lost its connection starts a
-// new session.
+// Starts a realtime speech-to-speech conversation with an avatar over a
+// WebSocket, without video. The answer carries the WebSocket `url` and a
+// short-lived `token`: connect within 60 seconds (`tokenExpiresAt`).
 //
-// `avatarId` is required: the conversation uses that avatar's persona
-// (name, personality, facts, self-introduction) and always its voice;
-// an avatar without a voice (a Fish Audio voice ID) answers `422
-// avatar_has_no_voice`.
-//
-// `settings` pins `session.start` fields from your backend: the speech
-// server applies them over the client's, refuses a client
-// `session.start` / `session.update` that sets a pinned field (naming
-// it), and leaves them out of the session it echoes. Unpinned fields
-// stay the client's to set. Pinned persona fields override the
-// avatar's. Appends (`session.instructions.append` and the like) stay
-// allowed: they add to the pinned instructions, never replace them.
-//
-// Billing runs by the minute from the speech server's first usage report
-// (within 30 s of the connection) until the session ends, at the
-// plan's speech rate. A session nobody connects to costs nothing and is
-// closed (`failed`, `no_user_joined`) by the first read, or start of
-// the account, 30 seconds after its token expired, otherwise by the
-// stale-session cleanup: 120 seconds without a heartbeat (the
-// reservation sets the first), checked every minute.
-//
-// **Who pays.** Always the account that owns the avatar:
-//
-//   - **API key** (`X-Api-Key`) — your backend, billed to the key's
-//     account. Requires the `sessions` scope; an avatar-scoped key may
-//     only start sessions on its avatar (it must name it).
-//   - **The owner's login** (`Authorization: Bearer <jwt>`, where the
-//     deployment accepts user tokens) — billed to the account the user
-//     acts for (`X-Account-Id` when there are several). An avatar of
-//     another account answers `403 avatar_not_allowed`.
-//   - **No credential** — `401`. There is no anonymous or visitor-paid
-//     speech session.
-//
-// With both an API key and a bearer token, the key's start applies,
-// as on `POST /v1/sessions`. Read and end a session with either
-// credential of its account.
+//   - **Connecting**: present the token as `Authorization: Bearer <token>`
+//     or as the WebSocket subprotocols `atmee-live` and
+//     `atmee-token.<token>`. The first connection holds the session for
+//     good; a client that loses it starts a new session.
+//   - **Avatar**: `avatarId` is required, and the session uses that avatar's
+//     persona and voice. An avatar without a voice is `422
+//     avatar_has_no_voice`.
+//   - **Pinned settings**: `settings` pins `session.start` fields from your
+//     backend, over the client's. A client `session.start` or
+//     `session.update` that sets a pinned field is refused, naming it;
+//     appends such as `session.instructions.append` still add to it. Pinned
+//     persona fields override the avatar's.
+//   - **Length**: the session ends at `endsAt` (the reservation plus
+//     `actualDurationSeconds`), whenever the connection opened.
+//   - **Billing**: by the minute from the first usage report (within 30
+//     seconds of connecting) until the end, always to the account that owns
+//     the avatar. A session nobody connects to costs nothing and is closed
+//     as `failed` (`no_user_joined`).
+//   - **Credentials**: an API key with the `sessions` scope (an
+//     avatar-scoped key must name its avatar), or the owner's signed-in user
+//     token where the deployment accepts one (`X-Account-Id` picks among
+//     several accounts). There are no anonymous speech sessions. Read and
+//     end a session with either credential of its account.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18272,15 +16894,17 @@ func (c *ClientWithResponses) CreateSpeechSessionWithResponse(ctx context.Contex
 	return ParseCreateSpeechSessionResponse(rsp)
 }
 
-// GetSpeechSessionWithResponse Read a speech session's state, end reason and cost
+// GetSpeechSessionWithResponse Get a speech session
 //
-// `status` is `active` while the session is reserved or connected,
-// then `completed` or `failed`. `connectedAt` is when billing started
-// (the speech server's first usage report), `endsAt` when the session's
-// time runs out, `endRequestedAt` when you ended it while a connection
-// was open (until its next usage report settles it). Once it ended,
-// `endReason` says why and `billedSeconds` / `chargedMicrocredits` what
-// it cost (100 microcredits = 1 credit).
+// Reads a speech session's state and, once it ended, why and what it cost.
+//
+//   - `status` is `active` while the session is reserved or connected, then
+//     `completed` or `failed`.
+//   - `connectedAt` is when billing started, `endsAt` when the session's
+//     time runs out, and `endRequestedAt` when you ended it with a
+//     connection open.
+//   - Once it ended, `endReason` says why, and `billedSeconds` and
+//     `chargedMicrocredits` what it cost (100 microcredits = 1 credit).
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18295,13 +16919,14 @@ func (c *ClientWithResponses) GetSpeechSessionWithResponse(ctx context.Context, 
 
 // EndSpeechSessionWithResponse End a speech session
 //
-// Ends the session (`completed`, `endReason: ended_by_api`). With no
-// connection open it settles now. With a connection open, the session
-// ends at its next usage report (within 30 s) and is billed until
-// then: the answer is `status: active` with `endRequestedAt` set, and
-// `GET` reads it `completed` once it settled. **Idempotent**: a repeat
-// keeps the first request; ending a settled session answers
-// `alreadyEnded: true`.
+// Ends the session with `endReason: ended_by_api`. With no connection open
+// it settles at once. With one open, it ends at the next usage report
+// (within 30 seconds) and is billed until then: the answer reads `status:
+// active` with `endRequestedAt` set, and `GET` reads it `completed` once
+// settled.
+//
+// Idempotent: a repeat keeps the first request, and ending a settled
+// session answers `alreadyEnded: true`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18314,29 +16939,32 @@ func (c *ClientWithResponses) EndSpeechSessionWithResponse(ctx context.Context, 
 	return ParseEndSpeechSessionResponse(rsp)
 }
 
-// CreateUploadWithBodyWithResponse Start a file upload
+// CreateUploadWithBodyWithResponse Create an upload
 //
-// Gets a file to the Avatar API ahead of the create or replace that uses it,
-// for clients that cannot send a file in the same request (an MCP tool, a
-// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+// Creates a one-time upload for a file you cannot send in the same
+// request, for example from an MCP tool or a chat assistant. Once it is
+// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+// a file URL.
+//
+// | `kind` | Accepts |
+// |---|---|
+// | `portrait` | jpg, png or webp, up to 10 MB |
+// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 //
 // Send the file one of two ways:
 //
 //   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-//     `allowedTypes` when none was declared), at most `maxBytes`:
-//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
-//     uploaded and how it will be used, takes the file (or, for a voice, records
-//     one in the browser) and sends it. The link works for 15 minutes
-//     (`uploadPageExpiresAt`) and until the file has arrived.
+//     `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+//     -H 'Content-Type: image/png' --data-binary @portrait.png
+//     '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl`, a page that takes the file (or
+//     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+//     until the file arrives.
 //
-// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-// upload works once and expires an hour after it was created. Requires
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+// upload is used once and expires an hour after it was created.
+// `contentType`, when given, is the only type accepted. Requires
 // `avatars:write`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -18350,29 +16978,32 @@ func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Conte
 	return ParseCreateUploadResponse(rsp)
 }
 
-// CreateUploadWithResponse Start a file upload
+// CreateUploadWithResponse Create an upload
 //
-// Gets a file to the Avatar API ahead of the create or replace that uses it,
-// for clients that cannot send a file in the same request (an MCP tool, a
-// chat assistant). `kind` is `portrait` (jpg, png or webp, <= 10 MB), `voice`
-// (a 10-60 s recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, <= 12 MB)
-// or `knowledge` (pdf, docx, doc, txt, md, html, csv <= 50 MB; audio or video
-// <= 20 MB). `contentType`, when given, is the only type the upload accepts.
+// Creates a one-time upload for a file you cannot send in the same
+// request, for example from an MCP tool or a chat assistant. Once it is
+// `uploaded`, pass `upload:<uploadId>` wherever a create or replace takes
+// a file URL.
+//
+// | `kind` | Accepts |
+// |---|---|
+// | `portrait` | jpg, png or webp, up to 10 MB |
+// | `voice` | a 10 to 60 second recording: mp3, wav, m4a, aac, ogg, flac, opus or webm, up to 12 MB |
+// | `knowledge` | pdf, docx, doc, txt, md, html or csv up to 50 MB; audio or video up to 20 MB |
 //
 // Send the file one of two ways:
 //
 //   - `PUT` it to `uploadUrl` with `uploadHeaders` (a `Content-Type` from
-//     `allowedTypes` when none was declared), at most `maxBytes`:
-//     `curl -X PUT -H 'Content-Type: image/png' --data-binary @portrait.png '<uploadUrl>'`.
-//   - Or give a person `uploadPageUrl` to open: a page that shows what is being
-//     uploaded and how it will be used, takes the file (or, for a voice, records
-//     one in the browser) and sends it. The link works for 15 minutes
-//     (`uploadPageExpiresAt`) and until the file has arrived.
+//     `allowedTypes` if you declared none), at most `maxBytes`: `curl -X PUT
+//     -H 'Content-Type: image/png' --data-binary @portrait.png
+//     '<uploadUrl>'`.
+//   - Or give a person `uploadPageUrl`, a page that takes the file (or
+//     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
+//     until the file arrives.
 //
-// Poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`, then pass
-// `upload:<uploadId>` where `POST /v1/avatars` (`assets`) or the JSON form of
-// `PUT /v1/avatars/{avatarId}/appearance|voice|knowledge` takes a URL. An
-// upload works once and expires an hour after it was created. Requires
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
+// upload is used once and expires an hour after it was created.
+// `contentType`, when given, is the only type accepted. Requires
 // `avatars:write`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -18386,12 +17017,12 @@ func (c *ClientWithResponses) CreateUploadWithResponse(ctx context.Context, body
 	return ParseCreateUploadResponse(rsp)
 }
 
-// GetUploadWithResponse Upload status
+// GetUploadWithResponse Get an upload
 //
-// `pending` until the file arrives, then `uploaded` (usable once), `consumed`
-// once a create or replace used it, or `expired` an hour after it was
-// created. Only the account that created it sees it. Requires
-// `avatars:read` or `avatars:write`.
+// Returns the upload's `status`: `pending` until the file arrives, then
+// `uploaded` (usable once), `consumed` once a create or replace used it,
+// or `expired` an hour after it was created. Only the account that created
+// it can read it. Requires `avatars:read` or `avatars:write`.
 //
 // Returns a wrapper object for the known response body format(s).
 //

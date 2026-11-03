@@ -1,6 +1,6 @@
 interface:
   display_name: 'Create an Atmee avatar'
-  short_description: 'Build a talking avatar from a rough idea, then test it live'
+  short_description: 'Build a talking avatar from a rough idea, or a video clip from a photo'
   icon_small: './assets/atmee-icon.svg'
   icon_large: './assets/atmee-icon.svg'
   brand_color: '#111114'

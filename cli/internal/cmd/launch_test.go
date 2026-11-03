@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Atmanity/toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
 )
 
 const testSession = "11111111-2222-4333-8444-555555555555"
@@ -112,7 +112,12 @@ func TestGenerateRefusesBadInputBeforeSending(t *testing.T) {
 		{"generate", "clip", "--image", "http://x/y.png", "--prompt", "waves"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--audio", "http://x/y.wav", "--duration", "6"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--audio", "upload:b"},
-		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "16"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "31"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1920x1080", "--duration", "11"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1281x720"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "1920x1920"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--aspect-ratio", "wide"},
+		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--aspect-ratio", "portrait", "--resolution", "512x512"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--duration", "0"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--resolution", "wide"},
 		{"generate", "clip", "--image", "upload:a", "--prompt", "waves", "--seed", "-1"},
@@ -147,10 +152,10 @@ func TestGenerateClip(t *testing.T) {
 			return
 		}
 		_, _ = io.WriteString(w, `{"clip":{"upload":"upload:clip","url":"https://store.example/clip.mp4","expiresAt":"2026-11-02T00:00:00Z",`+
-			`"durationSeconds":6,"width":384,"height":672,"unavailable":false},"microcreditsCharged":100,"replayed":false}`)
+			`"durationSeconds":6,"width":1280,"height":720,"unavailable":false},"microcreditsCharged":100,"replayed":false}`)
 	})
 	out, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod", "--audio", "https://x.example/a.wav",
-		"--duration", "6", "--resolution", "384x672", "--seed", "0")
+		"--duration", "6", "--resolution", "1280x720", "--seed", "0")
 	if code != 0 || len(keys) != 2 || keys[0] == "" || keys[0] != keys[1] {
 		t.Fatalf("%d %s %v", code, errOut, keys)
 	}
@@ -159,7 +164,7 @@ func TestGenerateClip(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]any{"image": "upload:a", "prompt": "a slow nod", "audio": "https://x.example/a.wav", "durationSeconds": float64(6),
-		"resolution": map[string]any{"width": float64(384), "height": float64(672)}, "seed": float64(0)}
+		"resolution": map[string]any{"width": float64(1280), "height": float64(720)}, "seed": float64(0)}
 	if !reflect.DeepEqual(sent, want) {
 		t.Fatalf("sent %v", sent)
 	}
@@ -198,6 +203,39 @@ func TestGenerateClipDefaults(t *testing.T) {
 	}
 	if !strings.Contains(out, "expired") || !strings.Contains(out, "replayed") {
 		t.Fatalf("%q", out)
+	}
+}
+
+// --aspect-ratio sends the shape's name, and a clip may run 30 seconds, or
+// as long as a large size's budget allows.
+func TestGenerateClipAspectRatioAndLength(t *testing.T) {
+	var bodies []string
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, string(b))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"clip":{"upload":"upload:clip","expiresAt":"2026-11-02T00:00:00Z","durationSeconds":30,"width":384,"height":640,"unavailable":true},`+
+			`"microcreditsCharged":0,"replayed":false}`)
+	})
+	for _, args := range [][]string{
+		{"--aspect-ratio", "Portrait", "--duration", "30"},
+		{"--resolution", "1920x1080", "--duration", "10"},
+		{"--resolution", "1280x720", "--duration", "22"},
+	} {
+		if _, errOut, code := run(t, "", append([]string{"generate", "clip", "--image", "upload:a", "--prompt", "a slow nod"}, args...)...); code != 0 {
+			t.Fatalf("%v: %d %s", args, code, errOut)
+		}
+	}
+	want := []string{
+		`{"aspectRatio":"portrait","durationSeconds":30,"image":"upload:a","prompt":"a slow nod"}`,
+		`{"durationSeconds":10,"image":"upload:a","prompt":"a slow nod","resolution":{"height":1080,"width":1920}}`,
+		`{"durationSeconds":22,"image":"upload:a","prompt":"a slow nod","resolution":{"height":720,"width":1280}}`,
+	}
+	if !reflect.DeepEqual(bodies, want) {
+		t.Fatalf("sent %q", bodies)
+	}
+	if _, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod", "--resolution", "1280x720", "--duration", "23"); code != 2 || !strings.Contains(errOut, "at most 22 seconds") {
+		t.Fatalf("23 s at 1280x720: %d %s", code, errOut)
 	}
 }
 

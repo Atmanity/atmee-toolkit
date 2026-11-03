@@ -33,7 +33,7 @@
       "group": "framing",
       "problem": "The face sits near the edge of a wide photo",
       "look_for": "A landscape photo with the face off-centre",
-      "why_it_fails": "The engine scales the photo to the avatar's frame (512×512 unless another resolution was chosen) and keeps only the centre crop of that shape, so a face near the edge is cut or lost",
+      "why_it_fails": "The engine scales the photo to the avatar's frame (square 512×512 unless a portrait 384×640 or landscape 640×384 aspect ratio was chosen) and keeps only the centre crop of that shape, so a face near the edge is cut or lost",
       "severity": "blocks",
       "detect": {
         "by": "measure",

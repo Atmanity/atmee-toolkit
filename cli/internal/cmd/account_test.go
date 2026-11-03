@@ -31,7 +31,7 @@ func accountAPI(t *testing.T, account ...string) *httptest.Server {
 			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
 				"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0,
 				"generation":{"portraitsMicrocredits":100,"enhancementsMicrocredits":100,"voicesMicrocredits":100,"clipPerSecondMicrocredits":10,
-					"clipResolutions":[{"width":512,"height":512},{"width":384,"height":672}]}},
+					"clipResolutions":[{"width":512,"height":512},{"width":384,"height":640}],"clipAnySize":true}},
 			"captureQuota":{"pending":2,"pendingLimit":10},"payouts":{"status":"verified","verifiedAt":"2026-09-01T12:00:00Z"}}`,
 		"/v1/api_keys/current": `{"kind":"api_key","id":"k-1","accountId":"11111111-1111-4111-8111-111111111111","name":"prod backend",
 			"scopes":["sessions","avatars:read"],"billingMode":"metered","active":true,"maxSessionSeconds":600,
@@ -89,7 +89,7 @@ func TestAccount(t *testing.T) {
 	}
 	for _, want := range []string{"Account 11111111-1111-4111-8111-111111111111", "Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-0",
 		"Next cycle   Pro (pro)", "API access   on", "session length no plan cap · 7 at once · 50 API avatars",
-		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x672", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
+		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x640", "Clip sizes   any, up to 1920x1080 and 30 s", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}

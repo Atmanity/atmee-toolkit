@@ -91,19 +91,21 @@ instead. The API is at `https://api.atmanity.us`.
   update the persona and settings, replace the portrait, voice or knowledge,
   delete. v2 seeds: list, capture more, select, remove an older version. An
   agenda (conductor) per v2 avatar. A v2 avatar's video is square (512×512)
-  by default, or portrait (384×672) or landscape (672×384) where the account
-  offers it (`get_account` `pricing.generation.clipResolutions`); a new
-  shape makes new seeds.
+  by default, or portrait (384×640) or landscape (640×384), set with
+  `aspectRatio`; a new shape makes new seeds.
 - **Account:** the balance, the plan with its limits, per-minute prices and
   generation prices, and who the caller is.
 - **Generation:** portraits from a description, an enhanced or restyled
   version of a photo, voice previews from a description, each paid per call; the outputs
   go straight into an avatar's create or replace (a key needs
   `generation:write` with `avatars:write`). Where offered, a **clip**: an
-  mp4 of up to 15 seconds of a portrait moving as a prompt says, silent, or
-  with sound from an audio file, in the same shapes; no avatar is made, it
-  needs v2 access, runs 1 to 15 seconds, and is paid by its length at the
-  price `get_account` reports.
+  mp4 of a portrait moving as a prompt says, silent, or with sound from an
+  audio file, in an avatar's shapes or any size up to 1920×1080; no avatar is
+  made, it needs v2 access, and it is paid by its length at the price
+  `get_account` reports. Where `pricing.generation.clipAnySize` is true it
+  runs up to 30 seconds, a larger size allowing less (1920×1080: 10 seconds,
+  1280×720: 22); otherwise it renders at an offered size for up to 15
+  seconds.
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest
@@ -131,5 +133,5 @@ instead. The API is at `https://api.atmanity.us`.
   and clips (`generate_clip` or `atmee generate clip`, priced by its length, with v2 access, where offered).
 - **The `atmee` CLI:** every Avatar API task from a terminal or CI, as a
   signed-in user or with a key (`docs/cli.md` in the GitHub repo
-  `Atmanity/toolkit`).
+  `Atmanity/atmee-toolkit`).
 - Installing all of it: the `README.md` of the same repo.

@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 )
 
 // Speech sessions: realtime speech-to-speech conversations over a WebSocket,

@@ -12,9 +12,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
-	"github.com/Atmanity/toolkit/cli/internal/creds"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
 )
 
 // The account's API keys, managed by the signed-in user (`atmee login`; an

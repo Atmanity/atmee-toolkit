@@ -27,7 +27,7 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Frames per row: two per second over the ~6 s preview clip.
+// Frames per row, spread evenly over the clip (up to ~30 s for a v2 preview).
 const Frames = 12
 
 // mouthFilter samples Frames frames evenly over a clip of the given length,

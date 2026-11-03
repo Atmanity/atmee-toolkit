@@ -1,6 +1,6 @@
 ---
 name: atmee-product
-description: What Atmee is - its products, features, use cases, plans and pricing, and which path fits an idea. Use when asked what Atmee can do or costs, or before planning a build. NOT for making or coding one.
+description: What Atmee is - live video avatars and v2 video clips from a photo - features, plans, pricing, the path for an idea. Use when asked what Atmee can do or costs, or before a build. NOT for making one.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -24,6 +24,15 @@ video avatars, with any voice, personality and knowledge, then launch them on
 Atmee or integrate them anywhere. People make avatars of themselves (a
 digital twin), a brand's concierge, an expert, a teacher, a companion, a
 historical figure or an original character.
+
+Atmee v2 also makes **video clips**: from a photo and a prompt, a short mp4
+of that person or character moving as the prompt says, speaking a voice line
+when one is given (silent without), with no avatar needed (a teaser, a social
+post, an ad, a product demo). Whenever someone asks what Atmee can do, or
+wants a video rather than a conversation, say that it makes clips too;
+`create-avatar` makes them. Clips need v2 access (`get_account`'s
+`v2Access`; an invite code opens it), and a server offers them only when
+`get_account`'s `pricing.generation` has a clip price.
 
 The company was called Atmanity, and the name stays in infrastructure: the
 API host (`api.atmanity.us`), the GitHub organisation
@@ -79,7 +88,7 @@ always its chat page: never start a session for it (`start_session`,
   (who it is, what it does with the visitor, greeting, guardrails, names) and optional knowledge
   files. It speaks one language; a session can ask for another.
 - **Two engines.** v1 animates a talking head from one portrait: sharp and
-  cheaper, and the engine the public API docs describe. v2 adds emotion,
+  cheaper. v2 adds emotion,
   expression and motion; it is invite-only for now. An account gets it from
   an invite code (the agent redeems it with `redeem_code`, `atmee redeem CODE`
   in a terminal, or Creator Studio's Billing page) or an email invite
@@ -91,6 +100,11 @@ always its chat page: never start a session for it (`start_session`,
   tooling (`create-avatar`) build v2 for an account that has it, and v1 for
   any account. Agents go to v2 by default: with no access they ask for an
   invite code first, and make v1 only if there is none and the creator agrees.
+- **`/v1` in a path is the API version, not the engine.** Every endpoint
+  starts with `/v1` (`POST /v1/sessions`, `/v1/avatars`), and v1 and v2
+  avatars use the same ones. Never infer an avatar's engine from a path or
+  call a `/v1` endpoint "the v1 API"; read `engine` on the avatar. To a
+  person, name the engines Atmee V1 and Atmee V2.
 - **Visibility:** private, unlisted (anyone with the link) or public (listed
   on atmee.ai). Through the API an avatar starts private or unlisted and
   goes public by an update once it is ready.
@@ -132,9 +146,9 @@ last column.
 | Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
-| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is paid by its length, with or without sound, and needs v2 access | `create-avatar` |
+| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of up to 30 seconds is paid by its length, with or without sound, and needs v2 access | `create-avatar` |
 | A voice conversation over a WebSocket, with no video | **Speech session** (`start_speech_session`, `atmee speech start`); the avatar needs a voice | `build-avatar-app` |
-| To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/toolkit` |
+| To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/atmee-toolkit` |
 
 Proven app shapes, the sample apps that proved them, and what they taught:
 `references/use-cases.md`.

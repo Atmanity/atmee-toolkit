@@ -13,8 +13,8 @@
 <p align="center">Build talking avatars from your coding agent or terminal, then build apps around them.</p>
 
 <p align="center">
-  <a href="https://github.com/Atmanity/toolkit/releases/latest"><img src="https://img.shields.io/github/v/release/Atmanity/toolkit?display_name=release&label=release" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Atmanity/toolkit" alt="License: MIT"></a>
+  <a href="https://github.com/Atmanity/atmee-toolkit/releases/latest"><img src="https://img.shields.io/github/v/release/Atmanity/atmee-toolkit?display_name=release&label=release" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Atmanity/atmee-toolkit" alt="License: MIT"></a>
   <a href="https://discord.gg/7nkQFhedKD"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
@@ -79,7 +79,7 @@ The quickest route is to let your agent install everything. Paste this into
 Claude Code, Codex, Cursor or any other coding agent:
 
 ```text
-Set up atmee for me by following INSTALL_FOR_AGENTS.md in the GitHub repo Atmanity/toolkit.
+Set up atmee for me by following INSTALL_FOR_AGENTS.md in the GitHub repo Atmanity/atmee-toolkit.
 ```
 
 The agent detects which agent it is, installs the plugin or the skills, and
@@ -93,7 +93,7 @@ avatar, or run the setup check first (`/atmee:atmee-setup` with the plugin).
 ### Claude Code
 
 ```bash
-claude plugin marketplace add Atmanity/toolkit
+claude plugin marketplace add Atmanity/atmee-toolkit
 claude plugin install atmee@atmee
 ```
 
@@ -104,7 +104,7 @@ sessions only, not in cloud sessions.
 ### Codex
 
 ```bash
-codex plugin marketplace add https://github.com/Atmanity/toolkit.git
+codex plugin marketplace add https://github.com/Atmanity/atmee-toolkit.git
 codex plugin add atmee@atmee
 ```
 
@@ -116,7 +116,7 @@ codex mcp login atmee-avatars
 
 ### Cursor
 
-In a team, an admin imports `Atmanity/toolkit` under **Plugins > Import from
+In a team, an admin imports `Atmanity/atmee-toolkit` under **Plugins > Import from
 Repo** and members install `atmee`. On your own, copy the plugin into Cursor's
 local plugins as described in
 [INSTALL_FOR_AGENTS.md](INSTALL_FOR_AGENTS.md#2c-cursor). Restart Cursor, then
@@ -125,7 +125,7 @@ sign in to `atmee-avatars` under **Settings > MCP**.
 ### Other agents (skills CLI)
 
 ```bash
-npx -y skills add Atmanity/toolkit --skill '*' --agent AGENT_ID --yes --global
+npx -y skills add Atmanity/atmee-toolkit --skill '*' --agent AGENT_ID --yes --global
 ```
 
 Replace `AGENT_ID` with your agent's id, for example `gemini-cli`, `github-copilot`, `windsurf`,
@@ -152,8 +152,8 @@ server's `get_account` tool reports the current prices.
 ### claude.ai
 
 1. Download a skill from the
-   [latest release](https://github.com/Atmanity/toolkit/releases/latest), for
-   example [`create-avatar.zip`](https://github.com/Atmanity/toolkit/releases/latest/download/create-avatar.zip).
+   [latest release](https://github.com/Atmanity/atmee-toolkit/releases/latest), for
+   example [`create-avatar.zip`](https://github.com/Atmanity/atmee-toolkit/releases/latest/download/create-avatar.zip).
    The others are `build-avatar-app.zip`, `plan-avatar-app.zip`,
    `atmee-product.zip` and `atmee-setup.zip`.
 2. Upload it under **Settings > Capabilities > Skills**.
@@ -163,7 +163,7 @@ server's `get_account` tool reports the current prices.
 ### CLI
 
 ```bash
-go install github.com/Atmanity/toolkit/cli/cmd/atmee@latest
+go install github.com/Atmanity/atmee-toolkit/cli/cmd/atmee@latest
 atmee login
 atmee balance
 ```
@@ -188,7 +188,7 @@ The CLI covers the same Avatar API as the MCP server, for scripts, CI and
 backends. Its source is in [`cli/`](cli).
 
 ```bash
-go install github.com/Atmanity/toolkit/cli/cmd/atmee@latest
+go install github.com/Atmanity/atmee-toolkit/cli/cmd/atmee@latest
 ```
 
 The binary lands in `$(go env GOPATH)/bin` (usually `~/go/bin`), which must be
@@ -275,14 +275,14 @@ one step to take for anything it can't fix.
 
 The skills check for a newer release once a session and print the command to
 update with. Releases are listed under
-[Releases](https://github.com/Atmanity/toolkit/releases), and the
+[Releases](https://github.com/Atmanity/atmee-toolkit/releases), and the
 [changelog](plugins/atmee/CHANGELOG.md) says what changed in each.
 
 ## Contributing
 
 This repository is a published copy: each release replaces its contents, so
 pull requests here can't be merged. Please
-[open an issue](https://github.com/Atmanity/toolkit/issues) for bugs, questions
+[open an issue](https://github.com/Atmanity/atmee-toolkit/issues) for bugs, questions
 and feature requests, and we'll make the change at the source.
 
 ## License

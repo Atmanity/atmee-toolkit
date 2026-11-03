@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Atmanity/toolkit/cli/internal/api"
-	"github.com/Atmanity/toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 )
 
 // Generation answers with upload:<uploadId> references, which create and the
@@ -178,19 +178,25 @@ func (a *app) generateVoiceCmd() *cobra.Command {
 
 func (a *app) generateClipCmd() *cobra.Command {
 	var in api.ClipInput
-	var resolution, key string
+	var resolution, aspect, key string
 	var seed int64
 	var jsonOut bool
 	c := &cobra.Command{
 		Use:   "clip --image PATH --prompt TEXT",
 		Short: "Render a video clip from an image and a prompt.",
-		Long: "Render an mp4 of 1 to 15 seconds of the person or character in the image, moving as the prompt says, silent or speaking " +
+		Long: "Render an mp4 of the person or character in the image, moving as the prompt says, silent or speaking " +
 			"--audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
-			"seconds for a silent clip. If the image shows a real person other than you, have their permission first. A clip is " +
+			"seconds for a silent clip.\n\n" +
+			"--resolution is the clip's size, each side even from 256 to 1920, e.g. 1920x1080, 1080x1920 or 1280x720; " +
+			"--aspect-ratio names an avatar shape instead (square 512x512, the default; portrait 384x640; landscape 640x384). " +
+			"A larger size allows a shorter clip: up to 30 seconds within a budget of 1920x1080 for 10 seconds (1280x720: 22 seconds). " +
+			"Where `atmee account` shows no any-size clips, a clip renders at one of the sizes it lists for at most 15 seconds.\n\n" +
+			"If the image shows a real person other than you, have their permission first. A clip is " +
 			"priced per 15 seconds of video, prorated (`atmee account`), the same with or without audio, charged only when it comes back; a flagged, failed or refused call costs nothing. " +
 			"The result lasts 24 hours. Needs v2 access. A signed-in user, or an API key with generation:write and avatars:write.",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
-  atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 384x672`,
+  atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --aspect-ratio portrait
+  atmee generate clip --image ./me.jpg --prompt "he waves at the camera" --resolution 1920x1080 --duration 10`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			f := cmd.Flags()
@@ -206,15 +212,28 @@ func (a *app) generateClipCmd() *cobra.Command {
 				}
 			}
 			if in.Audio != "" && !f.Changed("duration") {
-				return usagef("--duration is required with --audio: the audio's length in seconds, at most 15")
+				return usagef("--duration is required with --audio: the audio's length in seconds")
 			}
-			if f.Changed("duration") && (in.Duration < 1 || in.Duration > 15) {
-				return usagef("--duration takes 1 to 15 seconds")
+			if f.Changed("duration") && (in.Duration < 1 || in.Duration > api.MaxClipSeconds) {
+				return usagef("--duration takes 1 to %d seconds", api.MaxClipSeconds)
 			}
-			if f.Changed("resolution") {
-				r, err := api.ParseResolution(resolution)
+			if err := api.CheckAspectOrResolution(f.Changed("aspect-ratio"), f.Changed("resolution")); err != nil {
+				return usageError{err}
+			}
+			if f.Changed("aspect-ratio") {
+				r, err := api.ParseAspectRatio(aspect)
 				if err != nil {
 					return usageError{err}
+				}
+				in.AspectRatio = string(r)
+			}
+			if f.Changed("resolution") {
+				r, err := api.ParseClipResolution(resolution)
+				if err != nil {
+					return usageError{err}
+				}
+				if most := api.MaxClipSecondsAt(r); in.Duration > most {
+					return usagef("a %dx%d clip lasts at most %d seconds", r.Width, r.Height, most)
 				}
 				in.Resolution = &r
 			}
@@ -279,8 +298,9 @@ func (a *app) generateClipCmd() *cobra.Command {
 	f.StringVar(&in.Image, "image", "", "Who or what the clip shows: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required)")
 	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion, up to 2000 characters (required)")
 	f.StringVar(&in.Audio, "audio", "", "What the clip says or plays: a local audio file, an https URL or upload:ID; without it the clip is silent")
-	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, 1 to 15: required with --audio, set to the audio's length; default 8 for a silent clip")
-	f.StringVar(&resolution, "resolution", "", "The frame size as `WxH`, e.g. 512x512 (default, square), 384x672 (portrait) or 672x384 (landscape): see `atmee account`")
+	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, 1 to 30 (a large --resolution allows less; 15 where clips render at the offered sizes): required with --audio, set to the audio's length; default 8 for a silent clip")
+	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, each side even from 256 to 1920, e.g. 1920x1080, 1080x1920 or 1280x720 (default 512x512)")
+	f.StringVar(&aspect, "aspect-ratio", "", "An avatar shape instead of --resolution: square (512x512, the default), portrait (384x640) or landscape (640x384)")
 	f.Int64Var(&seed, "seed", 0, "The render's seed; another seed gives other motion")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)

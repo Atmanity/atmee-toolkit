@@ -1,6 +1,6 @@
 interface:
   display_name: 'What Atmee offers'
-  short_description: 'What Atmee offers and costs, and which path fits your idea'
+  short_description: 'What Atmee offers (avatars, video clips), what it costs, which path fits'
   icon_small: './assets/atmee-icon.svg'
   icon_large: './assets/atmee-icon.svg'
   brand_color: '#111114'

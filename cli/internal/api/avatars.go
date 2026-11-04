@@ -207,7 +207,7 @@ func (c *Client) Update(ctx context.Context, avatarID string, fields map[string]
 		return nil, fmt.Errorf("nothing to update")
 	}
 	if msg, ok := fields["previewMessage"].(string); ok && runeLen(msg) > MaxPrimeTextChars {
-		// Only v2 and V2 Pro have this limit: look the engine up before refusing.
+		// Only v2 and V2 HD have this limit: look the engine up before refusing.
 		a, err := c.Get(ctx, avatarID)
 		if err != nil {
 			return nil, err

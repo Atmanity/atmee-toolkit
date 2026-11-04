@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/Atmanity/atmee-toolkit/cli/internal/api"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
 )
 
 // credits formats microcredits as credits (100 microcredits = 1 credit),
@@ -59,7 +60,7 @@ func (a *app) balanceCmd() *cobra.Command {
 		Use:   "balance",
 		Short: "Credits left on the account, and what expires when.",
 		Long: "Credits left on your account (the signed-in user's or the API key's; 100 microcredits = 1 credit): what a session can spend now, " +
-			"the plan, top-up and coupon buckets, what running sessions hold, and the credits that expire next. " +
+			"the plan, top-up and coupon buckets, how much is usable on Atmee V2 (where the server reports it), what running sessions hold, and the credits that expire next. " +
 			"Works for a signed-in user, or a key with the sessions or avatars:read scope.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -92,6 +93,11 @@ func (a *app) printBalance(b *api.Balance) {
 		coupon = "  (not spent by this key: metered keys use plan and top-up credits only)"
 	}
 	a.printf("  Plan     %s\n  Top-up   %s\n  Coupon   %s%s\n", credits(b.PlanMicrocredits), credits(b.TopupMicrocredits), credits(b.CouponMicrocredits), coupon)
+	// The part that pays for Atmee V2 (v2 and V2 HD avatars, their
+	// sessions, video clips), where the server reports it.
+	if v := b.V2SpendableMicrocredits; v != nil {
+		a.printf("Usable on Atmee V2  %s\n", credits(*v))
+	}
 	if b.HeldByLiveSessionsMicrocredits > 0 {
 		a.printf("Held by running sessions  %s (what they do not use comes back when they end)\n", credits(b.HeldByLiveSessionsMicrocredits))
 	}
@@ -176,7 +182,7 @@ func (a *app) printAccount(x *api.Account) {
 	if v := x.V2Access; v != nil {
 		a.printf("v2 avatars   %s\n", map[string]string{
 			api.V2AccessGranted:        "yes",
-			api.V2AccessInviteRequired: "invite only: redeem an invite code in Creator Studio (Billing); creates default to v1",
+			api.V2AccessInviteRequired: "not unlocked by an invite code: Atmee V2 comes with Growth and up; below that, `atmee redeem CODE` with an invite code unlocks it (creates default to V1 without it)",
 			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
 	}
@@ -189,8 +195,16 @@ func (a *app) printAccount(x *api.Account) {
 	if x.SessionV2Reported {
 		conversation = "v1 " + conversation + ", v2 " + creditsPerMinute(pr.SessionV2PerMinuteMicrocredits)
 	}
-	a.printf("Per minute   conversation %s · avatar session v1 %s, v2 %s\n",
-		conversation, creditsPerMinute(pr.RenderV1PerMinuteMicrocredits), creditsPerMinute(pr.RenderV2PerMinuteMicrocredits))
+	// Atmee V2 HD's own rates, where the server reports them; otherwise its
+	// price is left unsaid rather than taken for v2's.
+	if v := pr.SessionV2HdPerMinuteMicrocredits; v != nil {
+		conversation += ", V2 HD " + creditsPerMinute(*v)
+	}
+	render := "v1 " + creditsPerMinute(pr.RenderV1PerMinuteMicrocredits) + ", v2 " + creditsPerMinute(pr.RenderV2PerMinuteMicrocredits)
+	if v := pr.RenderV2HdPerMinuteMicrocredits; v != nil {
+		render += ", V2 HD " + creditsPerMinute(*v)
+	}
+	a.printf("Per minute   conversation %s · avatar session %s\n", conversation, render)
 	if pr.SpeechPerMinuteMicrocredits != nil {
 		a.printf("             speech session %s\n", creditsPerMinute(*pr.SpeechPerMinuteMicrocredits))
 	}
@@ -206,7 +220,7 @@ func (a *app) printAccount(x *api.Account) {
 				clip = " · clip " + credits(int64(*g.ClipPerSecondMicrocredits)) + "/s"
 			}
 		}
-		a.printf("Generation   portraits %s each · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),
+		a.printf("Generation   portraits %s · enhance %s · voice %s%s credits\n", credits(int64(g.PortraitsMicrocredits)),
 			credits(int64(g.EnhancementsMicrocredits)), credits(int64(g.VoicesMicrocredits)), clip)
 		// The plan's free generation: portraits, enhance and voice draw on
 		// it before credits; clips never do.
@@ -218,7 +232,10 @@ func (a *app) printAccount(x *api.Account) {
 			a.printf("Free gen     %s of %s credits left this cycle (%s used%s) · portraits, enhance and voice; not clips\n",
 				credits(int64(fa.RemainingMicrocredits)), credits(int64(fa.LimitMicrocredits)), credits(int64(fa.UsedMicrocredits)), resets)
 		}
-		if cs := g.ClipSizes; cs != nil && len(*cs) > 0 {
+		if cp := g.ClipPrices; cp != nil && len(*cp) > 0 {
+			a.printClipPrices(*cp)
+		} else if cs := g.ClipSizes; cs != nil && len(*cs) > 0 {
+			// A server that priced each size the same for any length.
 			sizes := make([]string, len(*cs))
 			for i, c := range *cs {
 				sizes[i] = fmt.Sprintf("%dx%d %s", c.Width, c.Height, credits(int64(c.Microcredits)))
@@ -241,22 +258,22 @@ func (a *app) printAccount(x *api.Account) {
 	if len(v2Sizes) > 0 {
 		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(v2Sizes, ", "))
 	}
-	// Atmee V2 Pro: reported only where this server offers it.
+	// Atmee V2 HD: reported only where this server offers it.
 	if v := l.V2Pro; v != nil {
 		switch {
 		case !*v:
-			a.printf("V2 Pro       not in this plan (Growth and up): --engine v2pro answers 403 v2_pro_not_in_plan\n")
+			a.printf("V2 HD        not in this plan (Growth and up): --engine v2hd answers 403 v2_pro_not_in_plan\n")
 		case x.V2Access != nil && string(*x.V2Access) != api.V2AccessGranted:
-			a.printf("V2 Pro       in this plan, once the account has v2 access (--engine v2pro, at v2's rates)\n")
+			a.printf("V2 HD        yes, where Atmee V2 is on this account (--engine v2hd)\n")
 		default:
-			a.printf("V2 Pro       yes (--engine v2pro, at v2's rates)\n")
+			a.printf("V2 HD        yes (--engine v2hd)\n")
 		}
 		if rs := l.V2ProResolutions; rs != nil && len(*rs) > 0 {
 			sizes := make([]string, len(*rs))
 			for i, r := range *rs {
 				sizes[i] = fmt.Sprintf("%dx%d", r.Width, r.Height)
 			}
-			a.printf("V2 Pro sizes %s (--resolution)\n", strings.Join(sizes, ", "))
+			a.printf("V2 HD sizes  %s (--resolution)\n", strings.Join(sizes, ", "))
 		}
 	}
 	if v := l.VideoGeneration; v != nil && !*v {
@@ -423,7 +440,7 @@ func (a *app) redeemCmd() *cobra.Command {
 		Use:   "redeem CODE",
 		Short: "Redeem an invite or credit code for the account.",
 		Long: "Redeems a code for your account, as Creator Studio's Billing page does. A code can add credits, " +
-			"open v2 avatars (invite-only for now), or both; each account redeems a code once. " +
+			"unlock Atmee V2, or both (Growth and up include Atmee V2 already). Each account redeems a code once. " +
 			"Needs `atmee login`: an API key cannot redeem codes.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -444,8 +461,8 @@ func (a *app) redeemCmd() *cobra.Command {
 			}
 			if res.V2Access != nil {
 				parts = append(parts, map[string]string{
-					api.V2AccessGranted:        "v2 avatars are open",
-					api.V2AccessInviteRequired: "v2 avatars are still invite-only for this account",
+					api.V2AccessGranted:        "Atmee V2 is unlocked",
+					api.V2AccessInviteRequired: "it did not unlock Atmee V2 (Growth and up include it; below that, an invite code unlocks it)",
 					api.V2AccessUnavailable:    "v2 avatars are not offered on this server",
 				}[string(*res.V2Access)])
 			}
@@ -458,4 +475,23 @@ func (a *app) redeemCmd() *cobra.Command {
 	}
 	c.Flags().BoolVar(&jsonOut, "json", false, "print the API's JSON")
 	return c
+}
+
+// printClipPrices lists the clip sizes with their prices by length tier:
+// "480x480 0.10/0.30/0.50" for up to 5/10/15 s.
+func (a *app) printClipPrices(cp []avatarapi.ClipSizePrices) {
+	var upTo []string
+	for _, p := range cp[0].Prices {
+		upTo = append(upTo, strconv.Itoa(p.UpToSeconds))
+	}
+	sizes := make([]string, len(cp))
+	for i, c := range cp {
+		prices := make([]string, len(c.Prices))
+		for j, p := range c.Prices {
+			prices[j] = credits(int64(p.Microcredits))
+		}
+		sizes[i] = fmt.Sprintf("%dx%d %s", c.Width, c.Height, strings.Join(prices, "/"))
+	}
+	a.printf("Clip sizes   %s credits a clip up to %s s, charged at the next length up (--resolution)\n",
+		strings.Join(sizes, ", "), strings.Join(upTo, "/"))
 }

@@ -16,7 +16,7 @@ What gets installed:
   can) and `atmee-product` (what Atmee offers and costs, and which path fits
   an idea).
 - One server, `atmee-avatars`: it creates and updates avatars, takes uploads,
-  reports the balance and generates portraits, voices and, with v2 access,
+  reports the balance and generates portraits, voices and, with Atmee V2,
   short videos: a clip of the person in a photo moving as a prompt says, and
   speaking a voice line when one is given (paid per call).
   The skills-only route adds the same server under the name `atmee`.
@@ -262,18 +262,19 @@ Tell the person, in one or two lines, for example:
 Then call `get_account` (free) for the clip line. Clips are offered on this
 server when its `pricing.generation` has `clipSizes` (an older server:
 `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`); without any,
-say nothing about clips. When they are offered, `v2Access` is granted and
-`limits.videoGeneration` is not false (absent counts as allowed), add one line saying
-atmee can also make videos, for example:
+say nothing about clips. When they are offered, `limits.videoGeneration` is not
+false (absent counts as allowed) and the account has Atmee V2
+(`get_balance`'s `v2SpendableMicrocredits` above 0, or, where the balance does not
+report it, `v2Access` granted), add one line saying atmee can also make videos, for example:
 
 > atmee v2 can also make short videos: give a photo and a prompt, and you
 > get an mp4 of them moving; add a voice line and they speak it. Say "make a
 > video clip" to try it.
 
-When they are offered and `v2Access` is `invite_required`, mention them
-once as available with an invite code (`redeem_code`), and don't offer to
-make one. Any other `v2Access` (`unavailable`, or none): say nothing about
-clips.
+When they are offered but the account doesn't have Atmee V2 (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it),
+mention them once as available on Growth and up or with an invite code
+(`redeem_code`), and don't offer to make one. With
+`v2Access` `unavailable`: say nothing about clips.
 
 ## If something goes wrong
 

@@ -4,7 +4,7 @@ description: Build an Atmee talking avatar or digital twin - name, photo, voice,
 license: Proprietary
 metadata:
   owner: Atmanity
-allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip
+allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__plugin_atmee_atmee-avatars__get_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip, mcp__atmee__get_clip
 ---
 
 # Create an Atmee avatar
@@ -87,7 +87,7 @@ Read these before anything else, and keep them for the whole conversation.
    price from `get_account` (`pricing.generation`) and
    the balance from `get_balance` (rule 12), then ask one question with every
    call's price, the total and what the creator has left,
-   for example "Make four portraits (<price>) and voice previews (<price>), <total> in all? You have <balance> left."
+   for example "Make two portraits (<price>) and voice previews (<price>), <total> in all? You have <balance> left."
    Wait for a clear yes (ask it as a question with Yes and No options, rule 9), then pass
    `confirm: true` on each call in that round: the server refuses a paid call
    without it. A later round asks again. Each new paid request gets a fresh `requestId` (a UUID you make
@@ -132,9 +132,10 @@ Read these before anything else, and keep them for the whole conversation.
 
    From the other tools:
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
-   - `v2_access_required`: v2 is invite-only for now and this account has not been let in. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
-   - `v2_pro_not_in_plan`: the plan doesn't include Atmee V2 Pro (Growth and up do). Say so, give the billing link (`get_account` `links.billing`), and offer Atmee V2 instead; never switch without asking.
-   - `engine_unavailable` on a V2 Pro call: this server doesn't offer V2 Pro right now. Say so and offer Atmee V2.
+   - `insufficient_v2_credits`: Atmee V2 isn't on this account's plan (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it; `get_balance`'s `v2SpendableMicrocredits`). Say so, and suggest Growth and up (`get_account` `links.billing`) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
+   - `v2_access_required`: where V2 is still invite-only, no invite code has unlocked Atmee V2 on this account. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
+   - `v2_pro_not_in_plan`: where billing still decides V2 HD by plan, the plan doesn't include Atmee V2 HD. Say so, give the billing link (`get_account` `links.billing`), and offer Atmee V2 instead; never switch without asking.
+   - `engine_unavailable` on a V2 HD call: this server doesn't offer V2 HD right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
    - `preview_message_too_long`: shorten the preview line to 300 characters (code points) or fewer.
@@ -161,7 +162,9 @@ Read these before anything else, and keep them for the whole conversation.
     and making an avatar public happen only when the creator picks one or
     explicitly asks you to. Until then, recommend and wait.
 12. **The balance comes only from `get_balance`:**
-    `spendableMicrocredits` divided by 100 is the credits left. After a paid
+    `spendableMicrocredits` divided by 100 is the credits left;
+    `v2SpendableMicrocredits` (where present) is the part that pays for v2
+    sessions and clips. After a paid
     call, read `get_balance` again.
 
 ## The server
@@ -176,14 +179,15 @@ every call (setup saves it for a sign-in that belongs to several accounts).
 - **Avatars:** create, get, list and update avatars, replace the portrait,
   voice or knowledge, upload the creator's own files (`create_upload`,
   `get_upload`, `wait_for_upload`), list, capture and select v2 candidates.
-- **Generation**, portraits paid per portrait and the rest per call (`references/credits-and-generation.md`):
+- **Generation**, paid per call (`references/credits-and-generation.md`):
 
   | Tool | Use |
   |---|---|
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
-  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, a fixed price per size; 1080p coming soon) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
+  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, priced by size and length, charged at the next length up; 1080p coming soon) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
+  | `get_clip` | a clip's status by its `requestId`, free: follow a render after `request_in_progress` and get its download link |
 
   If the server lists none of them, or `get_account` has no
   `pricing.generation`, say generation isn't available and work with the
@@ -276,10 +280,10 @@ uploads" below). Check each portrait as it arrives
 When a portrait or voice is missing, offer to generate it, asking before each
 paid call (`references/credits-and-generation.md`). Before the first paid
 portrait call, generated or enhanced, settle the engine from `get_account`'s
-`v2Access` and pass it on the call (the same reference, The engine a
+`v2Access` and `get_balance`'s `v2SpendableMicrocredits` and pass it on the call (the same reference, The engine a
 portrait is for).
 
-With a usable portrait and voice, create the avatar as v2 (or V2 Pro, when the
+With a usable portrait and voice, create the avatar as v2 (or V2 HD, when the
 creator chose it: `references/candidates.md`, Model) with one seed that
 goes live by itself, private, with no persona yet (`references/candidates.md`,
 Create). Save the `create` iteration (`references/iterations.md`). Building
@@ -330,8 +334,9 @@ open the link yourself or say you'll test it
 ### Step 5: Ready
 
 Hand over the chat link and the Studio link
-(`references/test-and-handover.md`, Hand over). When the account has v2
-access, `get_account`'s `limits.videoGeneration` is not false (absent
+(`references/test-and-handover.md`, Hand over). When the account has
+Atmee V2 (`get_balance`'s `v2SpendableMicrocredits` above 0, or, where it is
+absent, `v2Access` granted), `get_account`'s `limits.videoGeneration` is not false (absent
 counts as allowed) and its `pricing.generation` has clip prices (`clipSizes`;
 an older server: `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`),
 add one line that Atmee can also make a short video clip from the same photo,

@@ -587,7 +587,7 @@ func TestResolutionFlag(t *testing.T) {
 	}
 }
 
-// A V2 Pro size on v2: a create can choose V2 Pro, so it says --engine
+// A V2 HD size on v2: a create can choose V2 HD, so it says --engine
 // v2pro; an update can't change the avatar's engine, so it says what can be
 // done instead. Neither is sent.
 func TestV2ProSizeOnV2IsCommandAware(t *testing.T) {
@@ -611,17 +611,17 @@ func TestV2ProSizeOnV2IsCommandAware(t *testing.T) {
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
 	_, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "640x640")
 	if code != 2 || sent != 0 || !strings.Contains(errOut, "engine can't change") || !strings.Contains(errOut, "pick a v2 size") ||
-		strings.Contains(errOut, "make one with --engine v2pro") {
+		strings.Contains(errOut, "make one with --engine v2hd") {
 		t.Fatalf("update: %d %s", code, errOut)
 	}
 	_, errOut, code = run(t, "", "avatars", "create", "--name", "M", "--resolution", "640x640")
-	if code != 2 || sent != 0 || !strings.Contains(errOut, "make one with --engine v2pro") || strings.Contains(errOut, "can't change") {
+	if code != 2 || sent != 0 || !strings.Contains(errOut, "make one with --engine v2hd") || strings.Contains(errOut, "can't change") {
 		t.Fatalf("create: %d %s", code, errOut)
 	}
 }
 
-// v2proAPI is a server whose account offers V2 Pro at two sizes and whose
-// avatar is a V2 Pro one; it records the bodies sent.
+// v2proAPI is a server whose account offers V2 HD at two sizes and whose
+// avatar is a V2 HD one; it records the bodies sent.
 func v2proAPI(t *testing.T, id string, got *[]map[string]any) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -650,15 +650,17 @@ func v2proAPI(t *testing.T, id string, got *[]map[string]any) {
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
 }
 
-// --engine v2pro creates like v2 (one candidate, auto selection) and its
-// sizes are V2 Pro's: the account's list, checked before anything is sent.
+// --engine v2hd creates like v2 (one candidate, auto selection) and its
+// sizes are V2 HD's: the account's list, checked before anything is sent.
 func TestV2ProEngine(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	id := "11111111-2222-4333-8444-555555555555"
 	var got []map[string]any
 	v2proAPI(t, id, &got)
-	out, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", "v2pro", "--image", "https://x.example/a.png",
+	// --engine v2hd goes out as v2pro, the name every server accepts, and the
+	// reply (v2pro from a server before the rename) prints as v2hd.
+	out, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", "v2hd", "--image", "https://x.example/a.png",
 		"--voice", "https://x.example/a.m4a", "--resolution", "864x480")
 	if code != 0 {
 		t.Fatalf("create: %d %s", code, errOut)
@@ -668,7 +670,7 @@ func TestV2ProEngine(t *testing.T) {
 		!reflect.DeepEqual(got[0]["resolution"], map[string]any{"width": float64(864), "height": float64(480)}) {
 		t.Fatalf("create body: %v", got)
 	}
-	if !strings.Contains(out, "(v2pro, building)") {
+	if !strings.Contains(out, "(v2hd, building)") {
 		t.Errorf("create output: %s", out)
 	}
 	out, errOut, code = run(t, "", "avatars", "update", id, "--resolution", "864x480")
@@ -679,10 +681,10 @@ func TestV2ProEngine(t *testing.T) {
 		args []string
 		want string
 	}{
-		{[]string{"avatars", "update", id, "--resolution", "512x512"}, "not a V2 Pro size on this server; offered: 640x640, 864x480"},
-		{[]string{"avatars", "update", id, "--resolution", "896x480"}, "V2 Pro frames are at most"},
-		{[]string{"avatars", "create", "--name", "M", "--engine", "v2pro", "--resolution", "512x512"}, "not a V2 Pro size"},
-		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "make one with --engine v2pro"},
+		{[]string{"avatars", "update", id, "--resolution", "512x512"}, "not a V2 HD size on this server; offered: 640x640, 864x480"},
+		{[]string{"avatars", "update", id, "--resolution", "896x480"}, "V2 HD frames are at most"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2pro", "--resolution", "512x512"}, "not a V2 HD size"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "make one with --engine v2hd"},
 	} {
 		if _, errOut, code := run(t, "", c.args...); code == 0 || len(got) != 2 || !strings.Contains(errOut, c.want) {
 			t.Errorf("%v: %d %q, sent %v", c.args, code, errOut, got)
@@ -690,14 +692,15 @@ func TestV2ProEngine(t *testing.T) {
 	}
 }
 
-// The V2 Pro refusals say what to do.
+// The V2 HD refusals say what to do.
 func TestV2ProRefusalHints(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	for body, want := range map[string]string{
-		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 Pro (Growth and up); upgrade the plan, or use engine v2"}`: "Creator Studio (Billing)",
-		`503 {"error":"engine_unavailable","message":"V2 Pro avatars are not enabled on this server; use engine v2"}`:                                   "a V2 Pro line only where V2 Pro is offered",
-		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                    "`atmee redeem CODE`",
+		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Growth and up); upgrade the plan, or use engine v2"}`: "Creator Studio (Billing)",
+		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`:                                   "a V2 HD line only where V2 HD is offered",
+		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                   "`atmee redeem CODE`",
+		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`:                                                   "upgrade to Growth and up",
 	} {
 		status, payload, _ := strings.Cut(body, " ")
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -877,29 +880,44 @@ func TestHabitFlag(t *testing.T) {
 	}
 }
 
-// A create that chooses no engine makes v1 for an account not let into v2
-// yet, and says so; an account with access gets v2; a chosen engine is
-// sent as is.
+// A create that chooses no engine makes v1 for an account that cannot build
+// v2 (not unlocked and nothing usable on Atmee V2, or a v2 create refused for the
+// account), and says so; an account with access or a v2 balance
+// gets v2; a chosen engine is sent as is.
 func TestCreateEngineFollowsV2Access(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	aid := "11111111-2222-4333-8444-555555555555"
 	for _, tc := range []struct {
 		access string
+		v2     string // the balance's v2SpendableMicrocredits, "" for absent, "fail" for a 500
+		refuse string // the first v2 create's refusal, "" for none
 		args   []string
 		want   string
 		note   string // a line on stderr, "" for none
 		fails  string // the error, "" when the create succeeds
+		posts  int    // creates sent, 0 for 1
 	}{
-		{access: "invite_required", want: "", note: "invite-only"}, // v1, the API's default, is not sent
+		{access: "invite_required", want: "", note: "isn't on this account's plan"}, // v1, the API's default, is not sent
+		{access: "invite_required", v2: "0", want: "", note: "upgrade to Growth and up"},
+		{access: "invite_required", v2: "500", want: "v2"},
+		{access: "invite_required", v2: "fail", want: "v2"}, // an unreadable balance lets the create decide
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
 		{access: "unavailable", args: []string{"--resolution", "384x640"}, fails: "drop them to make a v1 avatar"},
 		{access: "granted", want: "v2"},
 		{access: "", want: "v2"},
+		{access: "granted", v2: "0", want: "", note: "isn't on this account's plan"}, // a reported 0 decides over granted
+		{access: "", v2: "0", want: "", note: "isn't on this account's plan"},
+		{access: "granted", v2: "fail", want: "v2"},
 		{access: "invite_required", args: []string{"--engine", "v2"}, want: "v2"},
+		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no Atmee V2"}`, want: "", note: "insufficient_v2_credits", posts: 2},
+		{access: "granted", refuse: `403 {"error":"v2_access_required","message":"invite only"}`, want: "", note: "v2_access_required", posts: 2},
+		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--engine", "v2"}, fails: "upgrade to Growth and up", posts: 1},
+		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--resolution", "512x512"}, fails: "or use --engine v1", posts: 1},
 	} {
 		var got map[string]any
+		posts := 0
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Method == http.MethodGet && r.URL.Path == "/v1/account" {
 				acct := `{"accountId":"a","plan":{},"limits":{},"pricing":{},"captureQuota":{"pending":0,"pendingLimit":1}`
@@ -909,15 +927,40 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 				_, _ = w.Write([]byte(acct + "}"))
 				return
 			}
+			if r.Method == http.MethodGet && r.URL.Path == "/v1/account/balance" {
+				if tc.v2 == "fail" {
+					w.WriteHeader(500)
+					_, _ = io.WriteString(w, `{"error":"internal","message":"down"}`)
+					return
+				}
+				bal := `{"wallet":"direct","spendableMicrocredits":500,"planMicrocredits":500,"topupMicrocredits":0,"couponMicrocredits":0,` +
+					`"couponSpendable":true,"heldByLiveSessionsMicrocredits":0,"unlimited":false,"nextExpiry":[]`
+				if tc.v2 != "" {
+					bal += `,"v2SpendableMicrocredits":` + tc.v2
+				}
+				_, _ = w.Write([]byte(bal + "}"))
+				return
+			}
+			posts++
+			got = nil
 			_ = json.NewDecoder(r.Body).Decode(&got)
+			if status, payload, ok := strings.Cut(tc.refuse, " "); ok && posts == 1 {
+				code, _ := strconv.Atoi(status)
+				w.WriteHeader(code)
+				_, _ = io.WriteString(w, payload)
+				return
+			}
 			w.WriteHeader(202)
 			_, _ = w.Write([]byte(`{"avatarId":"` + aid + `","kind":"conversational","status":"draft","missingInputs":["image","voice"],"statusUrl":"x"}`))
 		}))
 		t.Setenv("ATMEE_BASE_URL", srv.URL)
 		_, errOut, code := run(t, "", append([]string{"avatars", "create", "--name", "Ada"}, tc.args...)...)
 		srv.Close()
+		if want := max(tc.posts, 1); tc.fails == "" && posts != want || tc.fails != "" && posts != tc.posts {
+			t.Errorf("%+v: %d creates sent", tc, posts)
+		}
 		if tc.fails != "" {
-			if code == 0 || !strings.Contains(errOut, tc.fails) || got != nil {
+			if code == 0 || !strings.Contains(errOut, tc.fails) || (tc.posts == 0 && got != nil) {
 				t.Errorf("%+v: %d %s (sent %v)", tc, code, errOut, got)
 			}
 			continue
@@ -927,6 +970,9 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		}
 		if e, _ := got["engine"].(string); e != tc.want {
 			t.Errorf("%+v: engine %v, want %q", tc, got["engine"], tc.want)
+		}
+		if tc.posts == 2 && (got["seedPreviews"] != nil || got["seedSelection"] != nil) {
+			t.Errorf("%+v: the v1 create kept v2 options: %v", tc, got)
 		}
 		if noted := strings.Contains(errOut, "Making a v1 avatar"); noted != (tc.note != "") || !strings.Contains(errOut, tc.note) {
 			t.Errorf("%+v: stderr %q", tc, errOut)

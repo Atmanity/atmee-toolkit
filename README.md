@@ -68,10 +68,10 @@ the MCP server; the CLI signs in as you or uses an API key.
 - **Generated inputs**: portraits from a description, an enhanced photo, and
   voices designed from a description.
 
-v2 avatars, and the features built on them (candidate clips, agendas, video
-clips), are invite-only for now. Accounts without v2 access get v1 avatars;
-redeem an invite code with `atmee redeem CODE` or on the Billing page in
-Creator Studio.
+Atmee V2 avatars, and the features built on them (candidate clips, agendas,
+video clips), come with Growth and up; below Growth, an invite code unlocks
+them. Accounts without Atmee V2 get Atmee V1 avatars; redeem an invite code
+with `atmee redeem CODE` or on the Billing page in Creator Studio.
 
 ## Quickstart
 
@@ -261,7 +261,7 @@ format, is in [docs/cli.md](docs/cli.md).
 | Claude Code lists the plugin but no atmee tools | Run `/reload-plugins --force`, or restart Claude Code. `/mcp` shows each server's status. |
 | Codex shows no atmee tools after a restart | Run `codex mcp list`. If `atmee-avatars` is missing, add it with `codex mcp add atmee-avatars --url https://api.atmanity.us/mcp`, then `codex mcp login atmee-avatars`. |
 | `npx skills` says Node.js is too old | Install Node.js 22.20 or newer, or use the plugin route. |
-| `v2_access_required` or "v2 avatars are invite-only" | Your account has no v2 access yet. Redeem an invite code (`atmee redeem CODE`), or make a v1 avatar. |
+| `v2_access_required` or `insufficient_v2_credits` | Atmee V2 isn't on this account's plan, or no invite code has unlocked it. Upgrade to Growth and up, redeem an invite code (`atmee redeem CODE`), or make a V1 avatar. |
 | `402 insufficient_credits` | Top up in Creator Studio, or raise the API key's spend cap. |
 | `409 avatar_not_ready` | The avatar has no ready clip yet. Check with `atmee avatars get AVATAR_ID` or wait with `atmee avatars wait AVATAR_ID`. |
 | A build fails at `appearance` | Use a front-facing portrait with the whole head in frame, the face at least a third of it, and the lips slightly parted. |

@@ -107,7 +107,8 @@ Do all of these before saying anything:
   `atmee-avatars/settings.json` if it is one of the error's choices; otherwise
   ask in step 4.
 - **Credits.** `spendableMicrocredits` from `get_balance`, divided by 100.
-  It is the only balance to report.
+  It is the only balance to report; `v2SpendableMicrocredits` (where present)
+  is the part usable on Atmee V2, worth a mention when it differs.
 - **Local.** From the project folder, run `atmee-setup` when the command
   exists (Claude Code with the plugin; it also checks the plugin version). It
   prints one line per check: `ok`, `fix` or `info`, the check's name, then a

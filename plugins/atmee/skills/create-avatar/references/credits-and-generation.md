@@ -30,10 +30,10 @@ likeness from a description, ever (the people-and-publishing reference).
 ## Before each round of paid calls
 
 1. Read the price from `get_account`: `pricing.generation` has
-   `portraitsMicrocredits` **per portrait** (a call costs it for each
-   portrait that comes back: four by default, so four times it),
-   `enhancementsMicrocredits` and `voicesMicrocredits` per call, and
-   `clipSizes` a fixed price per clip for each size (where clips are
+   `portraitsMicrocredits`, `enhancementsMicrocredits` and
+   `voicesMicrocredits`, each the price of one call (a portrait call costs
+   the same whether one portrait comes back or two), and
+   `clipPrices` each size's prices by clip length (where clips are
    offered; an older server reports `clipPer15SecondsMicrocredits` instead,
    see Clips), each divided by 100 for credits; never assume 1.
    A paid plan's free generation comes first: where `pricing.generation`
@@ -45,9 +45,11 @@ likeness from a description, ever (the people-and-publishing reference).
    `microcreditsCharged` is what credits paid, `microcreditsFree` what the
    allowance did.
    Read the balance from `get_balance`: `spendableMicrocredits` / 100.
+   For a clip, `v2SpendableMicrocredits` / 100 (where present) is what pays:
+   the part of the balance usable on Atmee V2.
 2. Ask once for the whole round: every paid call the step needs (portraits
    and a voice together, for example), each with its price, then the total
-   and the balance: "Make four portraits (4 × <portrait price>) and voice previews
+   and the balance: "Make two portraits (<portrait price>) and voice previews
    (<price>), <total> in all? You have <balance> left." With one call, give its
    price and the balance. Wait for a clear yes in the creator's next message;
    it covers only the calls you named. Never split a round into one question
@@ -107,13 +109,16 @@ a generated portrait is framed from the shoulders up. v2 animates whatever
 the portrait shows, so for v2 enhancing keeps the photo's pose, gaze, hands,
 framing and background and only improves its quality, and a generated
 portrait is framed half-body, from the waist up with both hands visible,
-unless the description sets another framing. An Atmee V2 Pro portrait
-(`engine: v2pro`, the candidates reference, Model) is made as for v2.
+unless the description sets another framing. An Atmee V2 HD portrait
+(`engine: v2hd`, the candidates reference, Model) is made as for v2.
 
 - **Settle the engine before the first paid portrait call,** in step 1:
-  read `v2Access` from `get_account`. `granted` means v2. Otherwise ask for
-  an invite code as the candidates reference's Create says, and use v1 only
-  when the creator has none and agrees. Use v1 too when the creator asks for
+  v2 when `get_balance` reports `v2SpendableMicrocredits` above 0; when it
+  leaves that field out (billing still decides v2 by invite), when
+  `get_account`'s `v2Access` is `granted`. A reported 0 means no v2,
+  whatever `v2Access` says. Otherwise ask for an invite code
+  (or suggest Growth and up) as the candidates reference's
+  Create says, and use v1 only when the creator has neither and agrees. Use v1 too when the creator asks for
   it.
 - **Pass it as `engine`** on every `generate_portraits` and
   `enhance_portrait` call for a new avatar, and write it into the pending
@@ -128,7 +133,7 @@ unless the description sets another framing. An Atmee V2 Pro portrait
   engines; pass `engine` anyway.
 
 **Falling back to v1 after a v2 portrait.** When the portrait was made for
-v2 but the avatar is now made as v1 (no invite code), that portrait may keep
+v2 but the avatar is now made as v1 (no Atmee V2 on the account), that portrait may keep
 a pose, hands or a background v1 animates badly. Ask before going on, as a
 choice: for an enhanced photo, offer the creator's original photo first (it
 costs nothing), then a v1 enhancement at its price; for a generated
@@ -137,8 +142,8 @@ call is a new paid request: a new `requestId`, asked first like any round.
 
 ## Portraits
 
-`generate_portraits` takes a `description` and returns up to four
-`portraits`, one per provider. Each has an `upload` (`upload:<uploadId>`), a
+`generate_portraits` takes a `description` and returns up to two
+`portraits`, one from Gemini and one from Grok. Each has an `upload` (`upload:<uploadId>`), a
 short-lived `url` to the full-size image and its `provider`. Each portrait's
 small preview arrives as an image after the JSON, labelled
 `Portrait N (upload:<uploadId>):`; match each image to its portrait by that
@@ -187,7 +192,7 @@ ones, and let the creator pick which to use.
 ## Enhancing or restyling the creator's photo
 
 `enhance_portrait` takes `image`, the creator's photo as it is, and returns
-up to four square versions the same way as portraits. If the photo shows a
+up to two square versions the same way as portraits. If the photo shows a
 real person other than the creator, rule 4 applies first.
 
 - **Without `prompt`** it enhances: use it when a real photo is close but
@@ -263,16 +268,20 @@ make the sample longer.
 `generate_clip` renders an mp4 of 1 to 15 seconds (25 fps) of the person in
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
-for a clip (a teaser, a post), not as part of the five steps. Clips need v2
-access: without it the call answers `v2_access_required`, so ask for an invite
-code (`redeem_code`); there is no v1 clip. They also need a plan with video
-generation, Growth and up: where `get_account` `limits.videoGeneration` is
-false (absent counts as allowed) the call answers
+for a clip (a teaser, a post), not as part of the five steps. Clips need
+Atmee V2 (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it): when `get_balance`'s
+`v2SpendableMicrocredits` doesn't cover the price the call answers
+`insufficient_v2_credits`, so suggest Growth and up or ask for an invite
+code (`redeem_code`); there is no v1 clip. Where billing still
+decides clips by invitation and plan, an account no invite code unlocked gets
+`v2_access_required` (ask for an invite code), and where `get_account`
+`limits.videoGeneration` is false (absent counts as allowed) the call answers
 `video_generation_not_in_plan`, so say the plan doesn't include video clips
 and point to Studio → Billing (`links.billing`) to change plans; don't call
 it. In a shell, `atmee generate clip` does the same (`--image`, `--prompt`,
 `--audio`, `--duration`, `--resolution`, `--seed`), and uploads local files
-first. Like the other `atmee generate`
+first; it waits up to 10 minutes, and `atmee generate clip-status
+REQUEST_ID --wait` follows a clip it stopped waiting for. Like the other `atmee generate`
 commands it does not ask first, so confirm the price with the creator before
 running it.
 
@@ -293,21 +302,34 @@ running it.
   1920×1080, 1080×1920, 1440×1080, 1080×1440) is coming soon, with no price
   yet: say so, and offer 720×720 (square) or 1280×720 / 720×1280 (wide or
   tall) instead. Any other size answers `invalid_input` with the list.
-- **Length:** `durationSeconds` 1 to 15, at any size. It doesn't change the
-  price. Pick the size before stating the price.
+- **Length:** `durationSeconds` 1 to 15, at any size. It sets the price
+  tier (up to 5, 10 or 15 seconds): a clip just over a tier pays the next
+  one, so suggest 5 or 10 seconds when a little shorter would do. Pick the
+  size and length before stating the price.
 - **`seed`:** defaults to 0; another seed gives other motion, as a
   new request.
-- **Price:** with or without sound, a fixed price per clip for its size,
-  whatever its length: the `microcredits` of that size in `clipSizes`
-  (divide by 100 for credits). Ask with the price for the chosen size. Only
-  on an older server without `clipSizes`: `clipPer15SecondsMicrocredits` pro
+- **Price:** with or without sound, set by the size and the length: in
+  that size's `clipPrices` `prices`, the entry with the smallest
+  `upToSeconds` (5, 10 or 15) at or above `durationSeconds` (a 7-second
+  clip pays the 10-second price; divide by 100 for credits). Pick the size
+  and length, then ask with that price. Without `clipPrices` (an older
+  server) a size costs its `clipSizes` `microcredits` for any length. Only on an older server
+  without `clipSizes`: `clipPer15SecondsMicrocredits` pro
   rata to `durationSeconds`, rounded up (`ceil(durationSeconds × price /
   15)`), or `clipPerSecondMicrocredits` times `durationSeconds`. Only if
   `get_account` has none of these are clips not offered here: say so and
   stop.
-- **Retry:** a cold render takes minutes, and past about 45 seconds the call
-  answers `request_in_progress`: wait `retryAfter` and send the same call
-  again, as step 4 above says. It charges once.
+- **Waiting:** a cold render takes minutes, and past about 45 seconds the call
+  answers `request_in_progress` while the render goes on. Follow it with
+  `get_clip` and the same `requestId`: it charges nothing, needs no
+  `confirm`, and answers `rendering` (ask again after `retryAfterSeconds`),
+  `ready` (`clip.url`, signed again on each read), `expired` (made, but its
+  24 hours are over; not made again) or `stalled` (the call stopped: send
+  the same `generate_clip` again, same `requestId` and inputs, which resumes
+  it and charges once). `clip_not_found` means the call ended without a clip
+  and charged nothing: the same `generate_clip` again says why. Where
+  `get_clip` is not listed (an older server), wait `retryAfter` and send the
+  same call again, as step 4 above says.
 - **`invalid_input`** naming `input_failure image` (no face, unreadable) or
   `audio` needs another file; `input_failure resolution` ("the render pool
   does not serve WxH") needs another size, not another image.
@@ -322,8 +344,8 @@ to `atmee-avatars/clips/pending.json`. Delete the file once the clip is saved,
 the replay answers `unavailable`, or the call answers `moderation_flagged`,
 `provider_failed`, `invalid_input`, `insufficient_credits`,
 `api_key_spend_cap_reached` or `generation_unavailable`, after which a further
-try is a new request. After a timeout or any other lost answer, keep the file. While the file exists, make no new clip: retry that one with the
-same `requestId` and inputs.
+try is a new request. After a timeout or any other lost answer, keep the file. While the file exists, make no new clip: read that one with
+`get_clip` (its `requestId`), or retry it with the same `requestId` and inputs.
 
 Without a filesystem, keep the `requestId` and inputs in the chat summary
 (`references/iterations.md`, Without a filesystem) and give the creator

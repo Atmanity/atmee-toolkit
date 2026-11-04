@@ -28,7 +28,7 @@ Then ask for what step 1 still needs, in one more call: the avatar's name,
 its language (the creator's own language first, marked "(Recommended)"), and
 the files they said they have ("I'll drag them into the chat now
 (Recommended)" or "Go ahead without them"), and the model when the account
-has Atmee V2 Pro (the candidates reference, Model). Offer your best guess for the
+has Atmee V2 HD (the candidates reference, Model). Offer your best guess for the
 name. Skip whatever their answers already gave you. Say once that the
 language is what the seed speaks, so changing it later makes new seeds.
 
@@ -42,7 +42,7 @@ Check what the creator has against these rules. Warn, don't block.
 - **Portrait:** run the portrait checks (the portrait-checks reference). In
   short: at least the avatar's frame on each side (the engine keeps the centre
   crop of that frame: square 512×512 unless another v2 size such as 672×384
-  (16:9) or 384×672 (9:16) is chosen; on V2 Pro square 640×640 unless another
+  (16:9) or 384×672 (9:16) is chosen; on V2 HD square 640×640 unless another
   of its sizes is), one person
   facing the camera, the mouth and jaw visible and uncovered, lips slightly
   parted or a relaxed smile; jpg, png or webp up to 10 MB. A v2 avatar takes a

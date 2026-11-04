@@ -29,7 +29,10 @@ type Account struct {
 	missing []string
 }
 
-// v2Rates are the pricing fields an older server leaves out.
+// v2Rates are the pricing fields an older server leaves out. The V2 HD
+// rates (sessionV2HdPerMinuteMicrocredits and the like) are optional in
+// the spec, so the generated pointers already tell absent (nil) from a
+// reported 0, and their JSON leaves them out when absent.
 var v2Rates = []string{"sessionV2PerMinuteMicrocredits", "monetizedV2PerMinuteMicrocredits"}
 
 func (a *Account) UnmarshalJSON(b []byte) error {

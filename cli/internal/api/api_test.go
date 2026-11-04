@@ -867,7 +867,7 @@ func TestManifestResolution(t *testing.T) {
 func TestParseResolution(t *testing.T) {
 	for in, ok := range map[string]bool{
 		"512x512": true, "384x640": true, "640 x 384": true, "256x1024": true, "1024X256": true, "256x256": true,
-		"640x640": true, "864x480": true, "544x512": true, // V2 Pro's rule; each engine's is checked later
+		"640x640": true, "864x480": true, "544x512": true, // V2 HD's rule; each engine's is checked later
 		"896x480": false, "1024x1024": false, "224x512": false, "500x500": false, "512": false, "x512": false, "512x512x1": false, "": false,
 	} {
 		r, err := ParseResolution(in)
@@ -877,7 +877,7 @@ func TestParseResolution(t *testing.T) {
 	}
 }
 
-// Each engine has its own frame rule: v2 at most 512x512 pixels, V2 Pro at
+// Each engine has its own frame rule: v2 at most 512x512 pixels, V2 HD at
 // most 864x480.
 func TestCheckResolutionFor(t *testing.T) {
 	for _, c := range []struct {
@@ -895,11 +895,11 @@ func TestCheckResolutionFor(t *testing.T) {
 		}
 	}
 	var pro *V2ProSizeError
-	if err := CheckResolutionFor("v2", Resolution{Width: 640, Height: 640}); !errors.As(err, &pro) || !strings.Contains(err.Error(), "for V2 Pro avatars") {
-		t.Errorf("a V2 Pro size on v2 does not say it is one: %v", err)
+	if err := CheckResolutionFor("v2", Resolution{Width: 640, Height: 640}); !errors.As(err, &pro) || !strings.Contains(err.Error(), "for V2 HD avatars") {
+		t.Errorf("a V2 HD size on v2 does not say it is one: %v", err)
 	}
 	if err := CheckResolutionFor("v2", Resolution{Width: 1024, Height: 1024}); errors.As(err, &pro) {
-		t.Errorf("a size too large for V2 Pro too is called a V2 Pro size: %v", err)
+		t.Errorf("a size too large for V2 HD too is called a V2 HD size: %v", err)
 	}
 }
 
@@ -914,8 +914,8 @@ func TestCheckOffered(t *testing.T) {
 		t.Error(err)
 	}
 	err := CheckOffered(acct, "v2pro", Resolution{Width: 512, Height: 512})
-	if err == nil || !strings.Contains(err.Error(), "not a V2 Pro size") || !strings.Contains(err.Error(), "640x640, 864x480") {
-		t.Errorf("512x512 for V2 Pro: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "not a V2 HD size") || !strings.Contains(err.Error(), "640x640, 864x480") {
+		t.Errorf("512x512 for V2 HD: %v", err)
 	}
 	if err := CheckOffered(acct, "v2", Resolution{Width: 384, Height: 640}); err == nil || !strings.Contains(err.Error(), "offered: 512x512") {
 		t.Errorf("384x640 for v2: %v", err)
@@ -925,7 +925,7 @@ func TestCheckOffered(t *testing.T) {
 	}
 }
 
-// A V2 Pro create is a v2 create with engine v2pro: the candidate options
+// A V2 HD create is a v2 create with engine v2hd (sent as v2pro): the candidate options
 // and the preview line limit apply as for v2.
 func TestManifestV2Pro(t *testing.T) {
 	m, err := (CreateInput{Name: "x", Engine: "v2pro", Image: "https://x/a.png", Voice: "https://x/a.m4a", Candidates: 2,
@@ -937,12 +937,62 @@ func TestManifestV2Pro(t *testing.T) {
 		t.Fatalf("resolution %v", m["resolution"])
 	}
 	if _, err := (CreateInput{Name: "x", Engine: "v2pro", Candidates: 2}).Manifest(); err == nil {
-		t.Error("a V2 Pro draft with candidates: no error")
+		t.Error("a V2 HD draft with candidates: no error")
 	}
 	if _, err := (CreateInput{Name: "x", Engine: "v2pro", PreviewMessage: strings.Repeat("a", MaxPrimeTextChars+1)}).Manifest(); err == nil {
-		t.Error("a V2 Pro preview line over the limit: no error")
+		t.Error("a V2 HD preview line over the limit: no error")
 	}
 	if _, err := (CreateInput{Name: "x", Engine: "v2", Resolution: &Resolution{Width: 640, Height: 640}}).Manifest(); err == nil {
-		t.Error("a V2 Pro size on v2: no error")
+		t.Error("a V2 HD size on v2: no error")
+	}
+}
+
+// A clip still rendering when generate clip's own wait runs out names
+// clip-status with the call's key, so it can be followed without resending.
+func TestGenerateClipPointsAtClipStatusWhenItStopsWaiting(t *testing.T) {
+	var key string
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		key = r.Header.Get("Idempotency-Key")
+		w.Header().Set("Retry-After", strconv.Itoa(int(2*generationBudget/time.Second)))
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"request_in_progress","message":"still running"}`))
+	})
+	_, err := c.GenerateClip(context.Background(), ClipInput{Image: "upload:a", Prompt: "waves"}, "")
+	if err == nil || key == "" || !strings.Contains(err.Error(), "atmee generate clip-status "+key+" --wait") ||
+		!strings.Contains(err.Error(), "--idempotency-key "+key) {
+		t.Fatalf("key %q: %v", key, err)
+	}
+}
+
+// WaitClip gives up at its timeout with a rendering clip, naming how to
+// check again; it never waits past the timeout.
+func TestWaitClipTimesOut(t *testing.T) {
+	var reads atomic.Int32
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		reads.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"requestId":"` + aid + `","status":"rendering","retryAfterSeconds":60}`))
+	})
+	st, err := c.WaitClip(context.Background(), aid, 30*time.Second, time.Second, nil)
+	if err == nil || st == nil || st.Status != ClipRendering || reads.Load() != 1 || !strings.Contains(err.Error(), "clip-status "+aid) {
+		t.Fatalf("%v %v, %d reads", st, err, reads.Load())
+	}
+}
+
+// A read still running at WaitClip's timeout is cut off there, not left to
+// the HTTP client's own timeout, and answers that the clip is still rendering.
+func TestWaitClipBoundsAReadByItsTimeout(t *testing.T) {
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-release:
+		case <-r.Context().Done():
+		}
+	})
+	start := time.Now()
+	_, err := c.WaitClip(context.Background(), aid, 200*time.Millisecond, time.Second, nil)
+	if err == nil || !strings.Contains(err.Error(), "still rendering") || time.Since(start) > 3*time.Second {
+		t.Fatalf("after %s: %v", time.Since(start), err)
 	}
 }

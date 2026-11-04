@@ -54,7 +54,7 @@ Local files go up in the create or replace request itself, so the CLI does not u
 
 ```bash
 atmee balance [--json]         # credits left on your account
-atmee account [--json]         # plan, limits, prices per minute, v2 and V2 Pro sizes, capture quota, payout status, v2 access
+atmee account [--json]         # plan, limits, prices per minute, v2 and V2 HD sizes, capture quota, payout status, v2 access
 atmee redeem CODE [--json]     # redeem an invite or credit code (needs atmee login, not an API key)
 ```
 
@@ -68,6 +68,7 @@ Spendable  50,000.00 credits
   Plan     1,000.00
   Top-up   49,000.00
   Coupon   0.00
+Usable on Atmee V2  50,000.00
 Next expiry  1,000.00 plan credits on 2026-11-01
 
 $ atmee account
@@ -75,34 +76,43 @@ Account 11111111-1111-4111-8111-111111111111
 Plan         Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-01
 API access   on
 Limits       session length no plan cap · 7 at once · 50 API avatars
-Per minute   conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min
+Per minute   conversation v1 1.00/min, v2 2.00/min, V2 HD 3.00/min · avatar session v1 0.50/min, v2 1.00/min, V2 HD 2.00/min
 Preview clip 0.00 credits
 Generation   portraits 1.00 · enhance 1.00 · voice 1.00 credits
-Clip sizes   480x480 0.50, 640x480 0.50, 480x640 0.50, 832x468 1.00, 468x832 1.00, 720x720 1.00, 960x720 1.00, 720x960 1.00, 1280x720 1.50, 720x1280 1.50 credits a clip, any length from 1 to 15 s (--resolution)
+Clip sizes   480x480 0.10/0.30/0.50, 640x480 0.10/0.30/0.50, 480x640 0.10/0.30/0.50, 832x468 0.30/0.70/1.00, 468x832 0.30/0.70/1.00, 720x720 0.50/1.00/1.50, 960x720 0.50/1.00/1.50, 720x960 0.50/1.00/1.50, 1280x720 0.80/1.40/2.00, 720x1280 0.80/1.40/2.00 credits a clip up to 5/10/15 s, charged at the next length up (--resolution)
 v2 sizes     512x512, 672x384, 384x672, 576x448, 448x576 (--resolution)
-V2 Pro       yes (--engine v2pro, at v2's rates)
-V2 Pro sizes 640x640, 864x480, 480x864, 736x544, 544x736 (--resolution)
+V2 HD        yes (--engine v2hd)
+V2 HD sizes  640x640, 864x480, 480x864, 736x544, 544x736 (--resolution)
 Captures     0 of 10 queued or running
 Payouts      verified since 2026-09-01
 ```
 
 **Spendable** is what a session can be started on. A metered key spends plan and top-up
-credits only, so its coupon line says it is not spent. Credits held by running sessions
+credits only, so its coupon line says it is not spent. **Usable on Atmee V2**
+(`v2SpendableMicrocredits`, shown where the server reports it) is the part that pays for Atmee
+V2 and V2 HD sessions and video clips, and building a V2 avatar needs it above 0. Atmee V2
+comes with Growth and up; below Growth, an invite code unlocks it. Credits held by running sessions
 are already out of the buckets; what a session does not use comes back when it ends.
 **Payouts** is the status of the account's payout account (`not started`, `unverified`,
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
 are set up in Creator Studio. **Per minute** shows a conversation rate for each engine; a server
 that doesn't report the v2 rate shows one `conversation` rate, which then applies to both.
+Atmee V2 HD's own rates (conversation and avatar session) appear only where the server
+reports them; elsewhere its price is not shown.
 **Clip sizes** are the sizes `generate clip --resolution` takes on this server, each with its
-fixed price per clip, whatever the clip's length (`pricing.generation.clipSizes` in `--json`).
+price per clip for up to 5, 10 and 15 seconds: a clip pays the next length up, so a 7-second
+clip pays the 10-second price (`pricing.generation.clipPrices` in `--json`). A server without `clipPrices`, which priced
+each size the same for any length, shows one price per size.
 An older server without them shows one clip price per 15 seconds on the **Generation** line
 instead. **v2 sizes** (shown when the deployment offers only some of the sizes the rule
 allows) are the frame sizes an avatar's `--resolution` takes (`limits.v2Resolutions`; on an
-older server, `pricing.generation.clipResolutions`). **Video clips** appears when the plan
-has no video generation (`limits.videoGeneration` false; Growth and up have it).
-**V2 Pro** appears only where the server offers Atmee V2 Pro (`limits.v2Pro`): `yes`, `not in
-this plan` (Growth and up have it) or, without v2 access, in the plan once the account has it.
-**V2 Pro sizes** are the frame sizes a V2 Pro avatar's `--resolution` takes on this server
+older server, `pricing.generation.clipResolutions`). **Video clips** appears only when the
+account may not make clips (`limits.videoGeneration` false, where billing still decides clips
+by plan). **V2 HD** appears only where the server offers Atmee V2 HD (`limits.v2Pro`): `yes`,
+`not in this plan` (where billing still decides V2 HD by plan) or, for an account no invite code
+unlocked, yes where Atmee V2 is on the account. **v2 avatars** says whether an invite code
+unlocked Atmee V2; on Growth and up it comes with the plan.
+**V2 HD sizes** are the frame sizes a V2 HD avatar's `--resolution` takes on this server
 (`limits.v2ProResolutions`, 640x640 first); the example above is one server's list.
 
 ## API keys
@@ -206,22 +216,23 @@ it. The portrait is
 framed at that size, so on `update` a new size builds a new version with new candidates, as
 a new portrait does, while the current candidate keeps serving; the current size sent again
 builds nothing. v1 avatars refuse it. `avatars get` shows it, e.g. `Resolution: 672x384`.
-A V2 Pro avatar has its own sizes, the ones the server lists as `V2 Pro sizes` in
+A V2 HD avatar has its own sizes, the ones the server lists as `V2 HD sizes` in
 `atmee account`: 640x640 (1:1, the default), 864x480 (16:9), 480x864 (9:16), 736x544 (4:3)
-or 544x736 (3:4); 512x512 and the other v2 sizes are not V2 Pro sizes. The CLI checks the size against the engine's rule
+or 544x736 (3:4); 512x512 and the other v2 sizes are not V2 HD sizes. The CLI checks the size against the engine's rule
 and, where `atmee account` lists sizes, against that list before sending; the server has the
 last word.
 
-**Atmee V2 Pro (`--engine v2pro`), where the server offers it.** It is not generally
+**Atmee V2 HD (`--engine v2hd`), where the server offers it.** It is not generally
 available: only a server that reports `limits.v2Pro` offers it, and `atmee account` shows a
-`V2 Pro` line there and nowhere else. A larger v2 model, on its own GPUs: it builds, previews
+`V2 HD` line there and nowhere else. A larger v2 model, on its own GPUs: it builds, previews
 and serves exactly like v2 (candidates, versions, the conductor, the runtime seed) at larger
-frame sizes, and its sessions cost what v2's do. It needs v2 access and a plan with V2 Pro
-(Growth and up). `avatars list` and `get` show its engine as `v2pro`. A
-plan without it answers `403 v2_pro_not_in_plan`, a server without it `503
-engine_unavailable`; the CLI adds what to do. Video clips are the same whatever engine you use.
+frame sizes, at its own per-minute rates (`atmee account` shows them on the **Per minute**
+line where the server reports them). It needs what v2 needs, Atmee V2 on the account
+(otherwise `402 insufficient_v2_credits`). `avatars list` and `get` show its engine as
+`v2hd`. `--engine v2pro`, its first name, still works. Where billing still decides V2 HD by plan, a plan without it answers `403
+v2_pro_not_in_plan`; a server without it answers `503 engine_unavailable`; the CLI adds what to do. Video clips are the same whatever engine you use.
 
-`create` flags: `--engine v2|v1|v2pro` (default v2; v1 for an account without v2 access, which `atmee account` shows; v2pro for Atmee V2 Pro where the server offers it, above), `--candidates 1-10`
+`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: Atmee V2 not on its plan and not unlocked by an invite code (`atmee balance` shows nothing usable on Atmee V2), or a v2 create refused with `insufficient_v2_credits` or `v2_access_required`; v2hd for Atmee V2 HD where the server offers it, above), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
 used automatically, once completed), `--preview-message` (v2: at most 300
@@ -371,13 +382,14 @@ balance`); it works signed in or with an account-wide key with `avatars:read`.
 ## Generate
 
 ```bash
-atmee generate portraits --description TEXT [--engine v1|v2|v2pro] [--idempotency-key K] [--json]
-atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--engine v1|v2|v2pro | --avatar ID] \
+atmee generate portraits --description TEXT [--engine v1|v2|v2hd] [--idempotency-key K] [--json]
+atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--engine v1|v2|v2hd | --avatar ID] \
   [--idempotency-key K] [--json]
 atmee generate voice --description TEXT [--name NAME] [--language LANG] [--text SAMPLE] \
   [--idempotency-key K] [--json]
 atmee generate clip --image PATH|URL|upload:ID --prompt TEXT [--audio PATH|URL|upload:ID] \
   [--duration SECONDS] [--resolution WxH] [--seed N] [--idempotency-key K] [--json]
+atmee generate clip-status REQUEST_ID [--wait] [--json]
 ```
 
 Each answers with `upload:<uploadId>` references and short-lived links to look or listen.
@@ -387,9 +399,9 @@ files). A reference works once and lasts 24 hours.
 
 - **`portraits`** is for invented characters only. For a real person, with their
   permission, use `enhance` on their own photo.
-- **Prices:** `portraits` is charged per portrait that comes back (up to four, so up to four
-  times the portrait price `atmee account` shows as "each"); `enhance` and `voice` per call. A
-  paid plan's free generation allowance pays first.
+- **Prices:** `portraits`, `enhance` and `voice` each cost one price per call (`atmee account`),
+  charged when something comes back. `portraits` and `enhance` make up to two portraits, one from Gemini and one from
+  Grok, and one costs the same as two. A paid plan's free generation allowance pays first.
 - **`enhance`** keeps the subject's identity; with `--prompt` it restyles the photo. A local
   file (jpg, png or webp, at most 10 MB) goes up through `POST /v1/uploads` first.
 - **`--engine`** is the engine the avatar will be created with; pass it on both. Without it the
@@ -407,15 +419,16 @@ files). A reference works once and lasts 24 hours.
   A clip lasts at least 1 second, up to the server's limit: 15 seconds on current servers
   (an older server allowed more); a longer `--duration` is refused by the server, which names
   its limit. `--resolution` is one of the sizes the server serves: `atmee account` lists them
-  (`Clip sizes`), and on a current server each has a fixed price per clip whatever its length,
-  the same with or without audio. For example, a current server serves:
+  (`Clip sizes`), and on a current server each is priced by the clip's length, charged at the
+  next length up (a 7-second clip pays the 10-second price), the same with or without audio.
+  For example, a current server serves:
 
-  | Size | Credits a clip |
-  |---|---|
-  | 480x480 (the default), 640x480, 480x640 | 0.50 |
-  | 832x468, 468x832 | 1.00 |
-  | 720x720, 960x720, 720x960 | 1.00 |
-  | 1280x720, 720x1280 | 1.50 |
+  | Size | Up to 5 s | Up to 10 s | Up to 15 s |
+  |---|---|---|---|
+  | 480x480 (the default), 640x480, 480x640 | 0.10 | 0.30 | 0.50 |
+  | 832x468, 468x832 | 0.30 | 0.70 | 1.00 |
+  | 720x720, 960x720, 720x960 | 0.50 | 1.00 | 1.50 |
+  | 1280x720, 720x1280 | 0.80 | 1.40 | 2.00 |
 
   1080p sizes (1080x1080 and the wider 1080p shapes) are coming soon: a current server refuses
   them with `400 invalid_input`, so pick 1280x720 or 720x1280 for the largest clip.
@@ -423,10 +436,22 @@ files). A reference works once and lasts 24 hours.
   The CLI checks only that `--resolution` is two even numbers; a size the server doesn't
   serve is `400 invalid_input`, and the message lists the ones it does. Without
   `--resolution` the server's own default size is used. The renderer works at each side rounded up to a multiple of 32 and crops the
-  centre. Local files go up through `POST /v1/uploads` first. It needs v2 access (otherwise
-  `403 v2_access_required`) and a plan with video generation, Growth and up (otherwise `403
-  video_generation_not_in_plan`), and comes back as an `upload:<uploadId>` with a download
+  centre. Local files go up through `POST /v1/uploads` first. It needs Atmee V2
+  (Growth and up; below Growth, an invite code unlocks it): otherwise it is `402
+  insufficient_v2_credits`. Where billing still
+  decides clips by invitation and plan, it needs v2 access (`403 v2_access_required`) and a
+  plan with video generation (`403 video_generation_not_in_plan`). It comes back as an `upload:<uploadId>` with a download
   link for 24 hours.
+- **`clip-status`** reads a clip by its request id, the `--idempotency-key` a `clip` call was
+  given or printed when it stopped waiting, through `GET /v1/generation/clips/{requestId}`. It
+  charges nothing and never starts a render, so it works from another shell or machine with
+  the same account. It prints `rendering` (`--wait` keeps reading, up to 10 minutes), the clip
+  and a newly signed download link when `ready`, the upload when `expired` (made, but its
+  24 hours are over; it is not made again), or, for `stalled` (the call stopped without
+  finishing), how to resume it: run `clip` again with the same inputs and
+  `--idempotency-key`, charged at most once, and it exits non-zero. A request id with no
+  clip is `404 clip_not_found`: the call ended without a clip and charged nothing. It needs
+  `avatars:read` or `avatars:write`.
 
 Like the other generation commands, none of these asks first.
 

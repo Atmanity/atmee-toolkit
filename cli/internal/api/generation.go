@@ -25,6 +25,7 @@ type (
 	GeneratedPortraits = avatarapi.GeneratedPortraitsResponse
 	DesignedVoices     = avatarapi.DesignedVoicesResponse
 	GeneratedClip      = avatarapi.GeneratedClipResponse
+	GeneratedClipBody  = avatarapi.GeneratedClip
 )
 
 // DesignVoiceInput is a voice design; only Description is required.
@@ -116,11 +117,11 @@ type EnhanceInput struct {
 }
 
 // GeneratePortraits makes portraits of an invented character from a
-// description, for engine (v1, v2 or v2pro; empty leaves the API's default).
+// description, for engine (v1, v2 or v2hd; empty leaves the API's default).
 func (c *Client) GeneratePortraits(ctx context.Context, description, engine, key string) (*GeneratedPortraits, error) {
 	req := avatarapi.GeneratePortraitsRequest{Description: description}
 	if engine != "" {
-		e := avatarapi.GeneratePortraitsRequestEngine(engine)
+		e := avatarapi.GeneratePortraitsRequestEngine(WireEngine(engine))
 		req.Engine = &e
 	}
 	return generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedPortraits, error) {
@@ -140,7 +141,7 @@ func (c *Client) EnhancePortrait(ctx context.Context, in EnhanceInput, key strin
 		req.Prompt = &in.Prompt
 	}
 	if in.Engine != "" {
-		e := avatarapi.EnhancePortraitRequestEngine(in.Engine)
+		e := avatarapi.EnhancePortraitRequestEngine(WireEngine(in.Engine))
 		req.Engine = &e
 	}
 	return generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedPortraits, error) {
@@ -183,13 +184,100 @@ func (c *Client) GenerateClip(ctx context.Context, in ClipInput, key string) (*G
 	if in.Duration > 0 {
 		req.DurationSeconds = &in.Duration
 	}
-	return generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedClip, error) {
+	if key == "" {
+		key = uuid.NewString()
+	}
+	out, err := generating(ctx, c, key, func(ctx context.Context, key string) (*GeneratedClip, error) {
 		r, err := c.gen.GenerateClipWithResponse(ctx, &avatarapi.GenerateClipParams{IdempotencyKey: key}, req)
 		if r == nil {
 			return nil, err
 		}
 		return decode[GeneratedClip](r.HTTPResponse, r.Body, err)
 	})
+	var apiErr *Error
+	if errors.As(err, &apiErr) && apiErr.Code == "request_in_progress" {
+		// Still rendering when the wait ran out: it can be followed without
+		// sending the inputs again.
+		return nil, fmt.Errorf("%w; or follow it without resending: atmee generate clip-status %s --wait", err, key)
+	}
+	return out, err
+}
+
+// ClipStatus is a clip call's status: rendering, ready, expired or stalled.
+type ClipStatus = avatarapi.ClipStatusResponse
+
+// Clip statuses.
+const (
+	ClipRendering = avatarapi.ClipStatusResponseStatusRendering
+	ClipReady     = avatarapi.ClipStatusResponseStatusReady
+	ClipExpired   = avatarapi.ClipStatusResponseStatusExpired
+	ClipStalled   = avatarapi.ClipStatusResponseStatusStalled
+)
+
+// ParseClipRequestID validates a clip's request id (the Idempotency-Key its
+// generate call was sent with) before any request.
+func ParseClipRequestID(s string) (uuid.UUID, error) {
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return id, fmt.Errorf("%q is not a clip's request id (the UUID its generate clip call printed or was given as --idempotency-key)", s)
+	}
+	return id, nil
+}
+
+// GetClip reads the clip a generate clip call made or is making under
+// requestID. It charges nothing and never starts a render; a request id
+// with no clip is the API's clip_not_found.
+func (c *Client) GetClip(ctx context.Context, requestID string) (*ClipStatus, error) {
+	id, err := ParseClipRequestID(requestID)
+	if err != nil {
+		return nil, err
+	}
+	r, err := c.gen.GetClipWithResponse(ctx, id)
+	if r == nil {
+		return nil, err
+	}
+	return decode[ClipStatus](r.HTTPResponse, r.Body, err)
+}
+
+// WaitClip reads the clip until it is no longer rendering (ready, expired
+// or stalled), pausing for its retryAfterSeconds between reads (interval
+// when it gives none), for at most timeout. onUpdate, when set, hears each
+// rendering read.
+func (c *Client) WaitClip(ctx context.Context, requestID string, timeout, interval time.Duration, onUpdate func(*ClipStatus)) (*ClipStatus, error) {
+	deadline := c.now().Add(timeout)
+	// Every read and pause ends by the deadline, so a read that starts
+	// near it cannot run on for the HTTP client's own timeout.
+	wctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	stillRendering := fmt.Errorf("the clip is still rendering after %s; check again with: atmee generate clip-status %s --wait", timeout, requestID)
+	for {
+		st, err := c.GetClip(wctx, requestID)
+		if err != nil {
+			if ctx.Err() == nil && wctx.Err() != nil {
+				return nil, stillRendering
+			}
+			return nil, err
+		}
+		if st.Status != ClipRendering {
+			return st, nil
+		}
+		if onUpdate != nil {
+			onUpdate(st)
+		}
+		wait := interval
+		if st.RetryAfterSeconds != nil && *st.RetryAfterSeconds > 0 {
+			wait = time.Duration(*st.RetryAfterSeconds) * time.Second
+		}
+		if c.now().Add(wait).After(deadline) {
+			return st, stillRendering
+		}
+		if err := c.sleepCtx(wctx, wait); err != nil {
+			if ctx.Err() == nil && wctx.Err() != nil {
+				return st, stillRendering
+			}
+			return nil, err
+		}
+	}
 }
 
 // The types an upload takes, by file extension.

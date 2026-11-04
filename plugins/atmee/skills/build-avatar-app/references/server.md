@@ -179,9 +179,9 @@ token they mint, not `/v1/session`. Nothing in `references/room.md` applies
 then: their agent does the talking. `atmee avatars session render --help`
 shows the fields. `livekit-plugins-atmee` wraps this for LiveKit Agents:
 from 0.2.0 it renders v1 and v2 avatars (`avatar_version="v2"` for a v2
-one). It does not take V2 Pro: for a V2 Pro avatar, call the route directly.
+one). It does not take V2 HD: for a V2 HD avatar, call the route directly.
 A render-only
-session with an Atmee V2 Pro avatar (engine `v2pro`) is the same call and
+session with an Atmee V2 HD avatar (engine `v2hd`) is the same call and
 the same fields, billed at the v2 render rate (`renderV2PerMinuteMicrocredits`);
 its video comes at the avatar's own size (640×640 unless it was given
 another).

@@ -89,7 +89,7 @@ func TestAccount(t *testing.T) {
 	}
 	for _, want := range []string{"Account 11111111-1111-4111-8111-111111111111", "Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-0",
 		"Next cycle   Pro (pro)", "API access   on", "session length no plan cap · 7 at once · 50 API avatars",
-		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 each · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x640", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
+		"conversation 1.00/min · avatar session v1 0.50/min, v2 1.00/min", "Generation   portraits 1.00 · enhance 1.00 · voice 1.00 · clip 0.10/s credits", "Preview clip 0.00 credits", "v2 sizes     512x512, 384x640", "Captures     2 of 10 queued or running", "Payouts      verified since 2026-09-0"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
@@ -121,8 +121,37 @@ func TestAccountClipSizes(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("%d %s", code, errOut)
 	}
-	for _, want := range []string{"Generation   portraits 1.00 each · enhance 1.00 · voice 1.00 credits",
+	for _, want := range []string{"Generation   portraits 1.00 · enhance 1.00 · voice 1.00 credits",
 		"Clip sizes   480x480 0.50, 1280x720 1.50 credits a clip, any length from 1 to 15 s",
+		"Video clips  not in this plan (Growth and up)", "v2 sizes     512x512, 384x640 (--resolution)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "per 15 s") || strings.Contains(out, "1280x720 (--resolution)") {
+		t.Errorf("deprecated clip fields shown:\n%s", out)
+	}
+}
+
+// A server that prices clips by length lists each size's tiers.
+func TestAccountClipSizesTiered(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},
+		"limits":{"apiAccess":true,"videoGeneration":false,"v2Resolutions":[{"width":512,"height":512},{"width":384,"height":640}]},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+			"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0,
+			"generation":{"portraitsMicrocredits":100,"enhancementsMicrocredits":100,"voicesMicrocredits":100,
+				"clipPer15SecondsMicrocredits":2250,"clipPerSecondMicrocredits":150,
+				"clipSizes":[{"width":480,"height":480,"microcredits":50},{"width":1280,"height":720,"microcredits":200}],"clipPrices":[{"width":480,"height":480,"prices":[{"upToSeconds":5,"microcredits":10},{"upToSeconds":10,"microcredits":30},{"upToSeconds":15,"microcredits":50}]},{"width":1280,"height":720,"prices":[{"upToSeconds":5,"microcredits":80},{"upToSeconds":10,"microcredits":140},{"upToSeconds":15,"microcredits":200}]}],
+				"clipResolutions":[{"width":480,"height":480},{"width":1280,"height":720}],"clipAnySize":false}},
+		"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
+	out, errOut, code := run(t, "", "account")
+	if code != 0 {
+		t.Fatalf("%d %s", code, errOut)
+	}
+	for _, want := range []string{"Generation   portraits 1.00 · enhance 1.00 · voice 1.00 credits",
+		"Clip sizes   480x480 0.10/0.30/0.50, 1280x720 0.80/1.40/2.00 credits a clip up to 5/10/15 s, charged at the next length up",
 		"Video clips  not in this plan (Growth and up)", "v2 sizes     512x512, 384x640 (--resolution)"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
@@ -158,7 +187,55 @@ func TestAccountFreeGeneration(t *testing.T) {
 	}
 }
 
-// Atmee V2 Pro shows only where the server reports it: offered with its
+// The balance shows what is usable on Atmee V2 where the server reports
+// them, and nothing about them where it does not.
+func TestBalanceV2Credits(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t).URL)
+	if out := ok(t, "balance"); strings.Contains(out, "Atmee V2") {
+		t.Errorf("a v2 figure the server did not report:\n%s", out)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"wallet":"direct","spendableMicrocredits":4998500,"planMicrocredits":98500,"topupMicrocredits":4900000,
+			"couponMicrocredits":0,"couponSpendable":true,"v2SpendableMicrocredits":120000,"heldByLiveSessionsMicrocredits":0,
+			"unlimited":false,"nextExpiry":[]}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	if out := ok(t, "balance"); !strings.Contains(out, "Usable on Atmee V2  1,200.00") {
+		t.Errorf("missing the v2 figure:\n%s", out)
+	}
+	if out := ok(t, "balance", "--json"); !strings.Contains(out, `"v2SpendableMicrocredits": 120000`) {
+		t.Errorf("--json: %s", out)
+	}
+}
+
+// An account no invite code unlocked is told how Atmee V2 comes (Growth
+// and up, or an invite code), and V2 HD on its plan is not said to wait for
+// an invite.
+func TestAccountV2Access(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"invite_required",
+		"limits":{"apiAccess":true,"v2Pro":true,"videoGeneration":true},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+			"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
+	out := ok(t, "account")
+	for _, want := range []string{"v2 avatars   not unlocked by an invite code", "Growth and up", "`atmee redeem CODE`",
+		"V2 HD        yes, where Atmee V2 is on this account"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	for _, not := range []string{"invite only", "not in this plan", "Video clips", "credits for"} {
+		if strings.Contains(out, not) {
+			t.Errorf("%q in:\n%s", not, out)
+		}
+	}
+}
+
+// Atmee V2 HD shows only where the server reports it: offered with its
 // sizes, not in the plan, or absent.
 func TestAccountV2Pro(t *testing.T) {
 	isolate(t)
@@ -170,8 +247,8 @@ func TestAccountV2Pro(t *testing.T) {
 	}
 	for limits, want := range map[string][]string{
 		`,"v2Pro":true,"v2ProResolutions":[{"width":640,"height":640},{"width":864,"height":480}]`: {
-			"V2 Pro       yes (--engine v2pro", "V2 Pro sizes 640x640, 864x480 (--resolution)"},
-		`,"v2Pro":false`: {"V2 Pro       not in this plan (Growth and up)", "v2_pro_not_in_plan"},
+			"V2 HD        yes (--engine v2hd", "V2 HD sizes  640x640, 864x480 (--resolution)"},
+		`,"v2Pro":false`: {"V2 HD        not in this plan (Growth and up)", "v2_pro_not_in_plan"},
 		``:               nil,
 	} {
 		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(limits)).URL)
@@ -184,8 +261,8 @@ func TestAccountV2Pro(t *testing.T) {
 				t.Errorf("%s: missing %q in:\n%s", limits, w, out)
 			}
 		}
-		if want == nil && strings.Contains(out, "V2 Pro") {
-			t.Errorf("V2 Pro shown where the server does not offer it:\n%s", out)
+		if want == nil && strings.Contains(out, "V2 HD") {
+			t.Errorf("V2 HD shown where the server does not offer it:\n%s", out)
 		}
 	}
 }
@@ -214,6 +291,40 @@ func TestAccountPerEnginePrices(t *testing.T) {
 	}
 	if strings.Contains(out, "/s ") {
 		t.Errorf("per-second clip price shown:\n%s", out)
+	}
+}
+
+// Atmee V2 HD's own rates show where the server reports them; where it
+// does not, its price is left unsaid (not taken for v2's), and --json leaves
+// the fields out.
+func TestAccountV2HDRates(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := func(hd string) string {
+		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted",
+			"limits":{"apiAccess":true,"v2Pro":true},
+			"pricing":{"sessionPerMinuteMicrocredits":100,"sessionV2PerMinuteMicrocredits":200,"monetizedPerMinuteMicrocredits":200,
+				"monetizedV2PerMinuteMicrocredits":300,"renderV1PerMinuteMicrocredits":50,"renderV2PerMinuteMicrocredits":100,
+				"previewClipMicrocredits":0` + hd + `},
+			"captureQuota":{"pending":0,"pendingLimit":10}}`
+	}
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(`,"sessionV2HdPerMinuteMicrocredits":300,"renderV2HdPerMinuteMicrocredits":200,"monetizedV2HdPerMinuteMicrocredits":400`)).URL)
+	out := ok(t, "account")
+	if !strings.Contains(out, "conversation v1 1.00/min, v2 2.00/min, V2 HD 3.00/min · avatar session v1 0.50/min, v2 1.00/min, V2 HD 2.00/min") ||
+		strings.Contains(out, "v2's rates") {
+		t.Errorf("reported:\n%s", out)
+	}
+	if js := ok(t, "account", "--json"); !strings.Contains(js, `"monetizedV2HdPerMinuteMicrocredits": 400`) {
+		t.Errorf("--json: %s", js)
+	}
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body("")).URL)
+	out = ok(t, "account")
+	if !strings.Contains(out, "conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min\n") ||
+		strings.Contains(out, "rates") || !strings.Contains(out, "V2 HD        yes (--engine v2hd)\n") {
+		t.Errorf("not reported:\n%s", out)
+	}
+	if js := ok(t, "account", "--json"); strings.Contains(js, "V2Hd") {
+		t.Errorf("--json shows absent V2 HD rates: %s", js)
 	}
 }
 
@@ -308,11 +419,17 @@ func TestRedeem(t *testing.T) {
 	if code != 0 || body["code"] != "V2-LAUNCH" {
 		t.Fatalf("redeem: %d %s (sent %v)", code, errOut, body)
 	}
-	if !strings.Contains(out, "50.00 credits added") || !strings.Contains(out, "v2 avatars are open") {
+	if !strings.Contains(out, "50.00 credits added") || !strings.Contains(out, "Atmee V2 is unlocked") {
 		t.Errorf("output: %q", out)
 	}
 	if out, _, _ := run(t, "", "redeem", "V2-LAUNCH", "--json"); !strings.Contains(out, `"microcreditsGranted": 5000`) {
 		t.Errorf("--json: %q", out)
+	}
+
+	// A credits-only code gives no v2 access, and says how v2 opens.
+	answer = `{"microcreditsGranted":5000,"v2Access":"invite_required"}`
+	if out, _, _ := run(t, "", "redeem", "V2-LAUNCH"); !strings.Contains(out, "did not unlock Atmee V2") || !strings.Contains(out, "invite code unlocks it") {
+		t.Errorf("credits-only code: %q", out)
 	}
 
 	status, answer = http.StatusForbidden, `{"error":"login_required","message":"codes are redeemed by a signed-in user"}`

@@ -30,7 +30,7 @@ type CreateInput struct {
 	Image          string
 	Voice          string
 	Knowledge      []string
-	Engine         string // "v2" (default), "v1" or "v2pro" (Atmee V2 Pro)
+	Engine         string // "v2" (default), "v1" or "v2hd" (Atmee V2 HD; "v2pro" is read as v2hd)
 	Candidates     int    // v2: 1-10; 0 = API default (3)
 	SeedSelection  string // v2: "manual" or "auto"
 	PreviewMessage string
@@ -45,21 +45,41 @@ type CreateInput struct {
 	SponsorMicrocredits, SponsorMaxPerSession *int
 	// RuntimeSeed is the v2 renderer's runtime seed (nil: the default, 42).
 	RuntimeSeed *int
-	// Resolution is the v2 or V2 Pro frame size (nil: the engine's default,
-	// 512x512 for v2, 640x640 for V2 Pro).
+	// Resolution is the v2 or V2 HD frame size (nil: the engine's default,
+	// 512x512 for v2, 640x640 for V2 HD).
 	Resolution *Resolution
 }
 
 // Resolution is a v2 frame size in pixels.
 type Resolution = avatarapi.RenderResolution
 
-// The engines: v1, v2 and Atmee V2 Pro (v2pro), a larger v2 model that
-// builds, previews and serves like v2.
+// The engines: v1, v2 and Atmee V2 HD (v2hd), a larger v2 model that
+// builds, previews and serves like v2. EngineV2ProAlias is V2 HD's first
+// name, which servers before the rename report and every server accepts.
 const (
-	EngineV1    = "v1"
-	EngineV2    = "v2"
-	EngineV2Pro = "v2pro"
+	EngineV1         = "v1"
+	EngineV2         = "v2"
+	EngineV2Pro      = "v2hd"
+	EngineV2ProAlias = "v2pro"
 )
+
+// CanonicalEngine is an engine as given or reported, with V2 HD's first
+// name (v2pro) read as v2hd.
+func CanonicalEngine(e string) string {
+	if e == EngineV2ProAlias {
+		return EngineV2Pro
+	}
+	return e
+}
+
+// WireEngine is the engine as sent to the API: V2 HD goes as v2pro, the
+// name every server accepts (servers before the rename refuse v2hd).
+func WireEngine(e string) string {
+	if CanonicalEngine(e) == EngineV2Pro {
+		return EngineV2ProAlias
+	}
+	return e
+}
 
 // The account's v2 access (v2Access on GET /v1/account and on a
 // redemption).
@@ -70,12 +90,15 @@ const (
 )
 
 // IsV2Family says the engine builds candidates and serves a take: v2 and
-// V2 Pro.
-func IsV2Family(engine string) bool { return engine == EngineV2 || engine == EngineV2Pro }
+// V2 HD.
+func IsV2Family(engine string) bool {
+	e := CanonicalEngine(engine)
+	return e == EngineV2 || e == EngineV2Pro
+}
 
 // The renderers' frame rule: each side a multiple of ResolutionStep from
 // MinResolutionSide to MaxResolutionSide, at most MaxResolutionPixels in all
-// for v2 (512x512) and MaxV2ProResolutionPixels for V2 Pro (864x480).
+// for v2 (512x512) and MaxV2ProResolutionPixels for V2 HD (864x480).
 const (
 	ResolutionStep           = 32
 	MinResolutionSide        = 256
@@ -93,7 +116,7 @@ func parseWxH(s string) (w, h int, ok bool) {
 }
 
 // ParseResolution reads WxH (e.g. 672x384) and checks it against the
-// largest renderer's rule (V2 Pro's); CheckResolutionFor checks an
+// largest renderer's rule (V2 HD's); CheckResolutionFor checks an
 // engine's own. Which sizes a deployment offers is the API's to say.
 func ParseResolution(s string) (Resolution, error) {
 	w, h, ok := parseWxH(s)
@@ -118,13 +141,13 @@ type sizeRule struct {
 var sizeRules = map[string]sizeRule{
 	EngineV2: {label: "v2", maxPixels: MaxResolutionPixels, maxName: "512x512", examples: "672x384 or 384x672",
 		offered: func(l avatarapi.AccountLimits) *[]Resolution { return l.V2Resolutions }},
-	EngineV2Pro: {label: "V2 Pro", maxPixels: MaxV2ProResolutionPixels, maxName: "864x480", examples: "640x640, 864x480 or 480x864",
+	EngineV2Pro: {label: "V2 HD", maxPixels: MaxV2ProResolutionPixels, maxName: "864x480", examples: "640x640, 864x480 or 480x864",
 		offered: func(l avatarapi.AccountLimits) *[]Resolution { return l.V2ProResolutions }},
 }
 
-// ruleFor is the engine's frame rule; any engine but V2 Pro takes v2's.
+// ruleFor is the engine's frame rule; any engine but V2 HD takes v2's.
 func ruleFor(engine string) sizeRule {
-	if r, ok := sizeRules[engine]; ok {
+	if r, ok := sizeRules[CanonicalEngine(engine)]; ok {
 		return r
 	}
 	return sizeRules[EngineV2]
@@ -142,6 +165,7 @@ func CheckResolutionFor(engine string, r Resolution) error {
 		return fmt.Errorf("resolution %dx%d: width and height must each be a multiple of %d from %d to %d",
 			r.Width, r.Height, ResolutionStep, MinResolutionSide, MaxResolutionSide)
 	}
+	engine = CanonicalEngine(engine)
 	rule, px := ruleFor(engine), r.Width*r.Height
 	if px <= rule.maxPixels {
 		return nil
@@ -154,15 +178,15 @@ func CheckResolutionFor(engine string, r Resolution) error {
 	return err
 }
 
-// V2ProSizeError is a frame size too large for v2 that V2 Pro's rule
+// V2ProSizeError is a frame size too large for v2 that V2 HD's rule
 // allows. What to do about it depends on the command: a create can choose
-// V2 Pro; an existing avatar's engine cannot change.
+// V2 HD; an existing avatar's engine cannot change.
 type V2ProSizeError struct{ err error }
 
-func (e *V2ProSizeError) Error() string { return e.err.Error() + "; that size is for V2 Pro avatars" }
+func (e *V2ProSizeError) Error() string { return e.err.Error() + "; that size is for V2 HD avatars" }
 
 // OfferedResolutions are the frame sizes the server offers the engine
-// (limits.v2ProResolutions for v2pro, else limits.v2Resolutions), or nil
+// (limits.v2ProResolutions for v2hd, else limits.v2Resolutions), or nil
 // where it lists none (every size the rule allows).
 func OfferedResolutions(acct *Account, engine string) []Resolution {
 	if acct == nil {
@@ -237,7 +261,7 @@ func engineOf(a *Avatar) string {
 	if a.Engine == nil {
 		return EngineV1
 	}
-	return string(*a.Engine)
+	return CanonicalEngine(string(*a.Engine))
 }
 
 func isURL(s string) bool {
@@ -259,7 +283,7 @@ func expandHome(p string) string {
 
 // Manifest is the avatar.json of a create.
 func (in CreateInput) Manifest() (map[string]any, error) {
-	engine := in.Engine
+	engine := CanonicalEngine(in.Engine)
 	if engine == "" {
 		engine = EngineV2
 	}
@@ -295,7 +319,7 @@ func (in CreateInput) Manifest() (map[string]any, error) {
 	}
 	if r := in.Resolution; r != nil {
 		if engine == EngineV1 {
-			return nil, errors.New("--resolution is only for v2 and V2 Pro avatars")
+			return nil, errors.New("--resolution is only for v2 and V2 HD avatars")
 		}
 		if err := CheckResolutionFor(engine, *r); err != nil {
 			return nil, err
@@ -303,7 +327,7 @@ func (in CreateInput) Manifest() (map[string]any, error) {
 		m["resolution"] = map[string]int{"width": r.Width, "height": r.Height}
 	}
 	if engine != EngineV1 {
-		m["engine"] = engine
+		m["engine"] = WireEngine(engine)
 	}
 	if in.SponsorMicrocredits != nil || in.SponsorMaxPerSession != nil {
 		sp := map[string]int{}

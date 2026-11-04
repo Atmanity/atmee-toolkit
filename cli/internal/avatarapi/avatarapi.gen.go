@@ -229,6 +229,7 @@ func (e ApiKeyUpdateRequestSpendCapWindow) Valid() bool {
 const (
 	AvatarCreateJsonRequestEngineV1    AvatarCreateJsonRequestEngine = "v1"
 	AvatarCreateJsonRequestEngineV2    AvatarCreateJsonRequestEngine = "v2"
+	AvatarCreateJsonRequestEngineV2hd  AvatarCreateJsonRequestEngine = "v2hd"
 	AvatarCreateJsonRequestEngineV2pro AvatarCreateJsonRequestEngine = "v2pro"
 )
 
@@ -238,6 +239,8 @@ func (e AvatarCreateJsonRequestEngine) Valid() bool {
 	case AvatarCreateJsonRequestEngineV1:
 		return true
 	case AvatarCreateJsonRequestEngineV2:
+		return true
+	case AvatarCreateJsonRequestEngineV2hd:
 		return true
 	case AvatarCreateJsonRequestEngineV2pro:
 		return true
@@ -455,9 +458,9 @@ func (e AvatarDetailVisibility) Valid() bool {
 
 // Defines values for AvatarEngine.
 const (
-	AvatarEngineV1    AvatarEngine = "v1"
-	AvatarEngineV2    AvatarEngine = "v2"
-	AvatarEngineV2pro AvatarEngine = "v2pro"
+	AvatarEngineV1   AvatarEngine = "v1"
+	AvatarEngineV2   AvatarEngine = "v2"
+	AvatarEngineV2hd AvatarEngine = "v2hd"
 )
 
 // Valid indicates whether the value is a known member of the AvatarEngine enum.
@@ -467,7 +470,7 @@ func (e AvatarEngine) Valid() bool {
 		return true
 	case AvatarEngineV2:
 		return true
-	case AvatarEngineV2pro:
+	case AvatarEngineV2hd:
 		return true
 	default:
 		return false
@@ -1116,6 +1119,30 @@ func (e CandidateListResponseSeedSelection) Valid() bool {
 	}
 }
 
+// Defines values for ClipStatusResponseStatus.
+const (
+	ClipStatusResponseStatusExpired   ClipStatusResponseStatus = "expired"
+	ClipStatusResponseStatusReady     ClipStatusResponseStatus = "ready"
+	ClipStatusResponseStatusRendering ClipStatusResponseStatus = "rendering"
+	ClipStatusResponseStatusStalled   ClipStatusResponseStatus = "stalled"
+)
+
+// Valid indicates whether the value is a known member of the ClipStatusResponseStatus enum.
+func (e ClipStatusResponseStatus) Valid() bool {
+	switch e {
+	case ClipStatusResponseStatusExpired:
+		return true
+	case ClipStatusResponseStatusReady:
+		return true
+	case ClipStatusResponseStatusRendering:
+		return true
+	case ClipStatusResponseStatusStalled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CodeRedemptionV2Access.
 const (
 	CodeRedemptionV2AccessGranted        CodeRedemptionV2Access = "granted"
@@ -1267,6 +1294,7 @@ func (e EmbedSessionStartResponseBillingMode) Valid() bool {
 const (
 	EnhancePortraitRequestEngineV1    EnhancePortraitRequestEngine = "v1"
 	EnhancePortraitRequestEngineV2    EnhancePortraitRequestEngine = "v2"
+	EnhancePortraitRequestEngineV2hd  EnhancePortraitRequestEngine = "v2hd"
 	EnhancePortraitRequestEngineV2pro EnhancePortraitRequestEngine = "v2pro"
 )
 
@@ -1276,6 +1304,8 @@ func (e EnhancePortraitRequestEngine) Valid() bool {
 	case EnhancePortraitRequestEngineV1:
 		return true
 	case EnhancePortraitRequestEngineV2:
+		return true
+	case EnhancePortraitRequestEngineV2hd:
 		return true
 	case EnhancePortraitRequestEngineV2pro:
 		return true
@@ -1288,6 +1318,7 @@ func (e EnhancePortraitRequestEngine) Valid() bool {
 const (
 	GeneratePortraitsRequestEngineV1    GeneratePortraitsRequestEngine = "v1"
 	GeneratePortraitsRequestEngineV2    GeneratePortraitsRequestEngine = "v2"
+	GeneratePortraitsRequestEngineV2hd  GeneratePortraitsRequestEngine = "v2hd"
 	GeneratePortraitsRequestEngineV2pro GeneratePortraitsRequestEngine = "v2pro"
 )
 
@@ -1297,6 +1328,8 @@ func (e GeneratePortraitsRequestEngine) Valid() bool {
 	case GeneratePortraitsRequestEngineV1:
 		return true
 	case GeneratePortraitsRequestEngineV2:
+		return true
+	case GeneratePortraitsRequestEngineV2hd:
 		return true
 	case GeneratePortraitsRequestEngineV2pro:
 		return true
@@ -1311,6 +1344,7 @@ const (
 	ConcurrentSessionLimit                PaymentRequiredResponseError = "concurrent_session_limit"
 	DailyChatLimit                        PaymentRequiredResponseError = "daily_chat_limit"
 	InsufficientCredits                   PaymentRequiredResponseError = "insufficient_credits"
+	InsufficientV2Credits                 PaymentRequiredResponseError = "insufficient_v2_credits"
 	PaidCreditsRequiredForMonetizedAvatar PaymentRequiredResponseError = "paid_credits_required_for_monetized_avatar"
 	SponsorBudgetExhausted                PaymentRequiredResponseError = "sponsor_budget_exhausted"
 	VisitorDailyLimitReached              PaymentRequiredResponseError = "visitor_daily_limit_reached"
@@ -1326,6 +1360,8 @@ func (e PaymentRequiredResponseError) Valid() bool {
 	case DailyChatLimit:
 		return true
 	case InsufficientCredits:
+		return true
+	case InsufficientV2Credits:
 		return true
 	case PaidCreditsRequiredForMonetizedAvatar:
 		return true
@@ -1603,19 +1639,27 @@ type Account struct {
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
 
-	// V2Access Whether this account may build v2 avatars: `granted`;
-	// `invite_required` (v2 is invite-only and the account has not been
-	// let in, so v2 calls answer `403 v2_access_required` until it redeems
-	// an invite code; use `engine: v1` meanwhile); or `unavailable` (v2 is
-	// not offered here). Absent when it could not be determined.
+	// V2Access Whether an invite code unlocked Atmee V2 on this account:
+	// `granted`; `invite_required` (not unlocked); or `unavailable` (V2 is
+	// not offered here). Absent when it could not be determined. Where
+	// billing still decides V2 by invitation, `invite_required` means V2
+	// calls answer `403 v2_access_required` until the account redeems an
+	// invite code. Elsewhere Atmee V2 comes with Growth and up without an
+	// invite code, and below Growth an invite code unlocks it; the part
+	// of the balance usable on V2 is `v2SpendableMicrocredits` on `GET
+	// /v1/account/balance`.
 	V2Access *AccountV2Access `json:"v2Access,omitempty"`
 }
 
-// AccountV2Access Whether this account may build v2 avatars: `granted`;
-// `invite_required` (v2 is invite-only and the account has not been
-// let in, so v2 calls answer `403 v2_access_required` until it redeems
-// an invite code; use `engine: v1` meanwhile); or `unavailable` (v2 is
-// not offered here). Absent when it could not be determined.
+// AccountV2Access Whether an invite code unlocked Atmee V2 on this account:
+// `granted`; `invite_required` (not unlocked); or `unavailable` (V2 is
+// not offered here). Absent when it could not be determined. Where
+// billing still decides V2 by invitation, `invite_required` means V2
+// calls answer `403 v2_access_required` until the account redeems an
+// invite code. Elsewhere Atmee V2 comes with Growth and up without an
+// invite code, and below Growth an invite code unlocks it; the part
+// of the balance usable on V2 is `v2SpendableMicrocredits` on `GET
+// /v1/account/balance`.
 type AccountV2Access string
 
 // AccountBalance defines model for AccountBalance.
@@ -1623,7 +1667,7 @@ type AccountBalance struct {
 	// CouponMicrocredits Coupon credits left.
 	CouponMicrocredits int64 `json:"couponMicrocredits"`
 
-	// CouponSpendable False for a metered key, which never spends coupon credits.
+	// CouponSpendable False for a metered key where it never spends coupon credits; true for every key where billing lets every key spend them.
 	CouponSpendable bool `json:"couponSpendable"`
 
 	// HeldByLiveSessionsMicrocredits Reserved by sessions running now (already taken out of the buckets); what they do not use comes back when they end.
@@ -1643,6 +1687,9 @@ type AccountBalance struct {
 
 	// Unlimited Sessions are not charged (an unlimited plan, or billing switched off).
 	Unlimited bool `json:"unlimited"`
+
+	// V2SpendableMicrocredits The part of the balance usable on Atmee V2 right now (V2 sessions, clips; building V2 needs more than 0), never more than `spendableMicrocredits`. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it. Absent where billing does not report it.
+	V2SpendableMicrocredits *int64 `json:"v2SpendableMicrocredits,omitempty"`
 
 	// Wallet The wallet API usage spends; always `direct`.
 	Wallet AccountBalanceWallet `json:"wallet"`
@@ -1674,16 +1721,16 @@ type AccountLimits struct {
 	// MaxSessionSeconds Longest session the plan allows; absent = not capped by the plan.
 	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 
-	// V2Pro Whether the plan includes V2 Pro avatars (engine `v2pro`), Growth and up; a V2 Pro create, capture or rebuild answers `403 v2_pro_not_in_plan` when false. V2 Pro also needs v2 access (`v2Access`). Absent where V2 Pro is not offered on this server (engine `v2pro` then answers `503 engine_unavailable`).
+	// V2Pro Whether the plan lets the account build V2 HD avatars (engine `v2hd`); a V2 HD create, capture or rebuild answers `403 v2_pro_not_in_plan` when false. True on every plan where billing decides V2 HD by Atmee V2 access. V2 HD also needs what Atmee V2 needs. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
 	V2Pro *bool `json:"v2Pro,omitempty"`
 
-	// V2ProResolutions The frame sizes V2 Pro avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 Pro is not offered, or every size the V2 Pro rule allows is.
+	// V2ProResolutions The frame sizes V2 HD avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 HD is not offered, or every size the V2 HD rule allows is.
 	V2ProResolutions *[]RenderResolution `json:"v2ProResolutions,omitempty"`
 
 	// V2Resolutions The frame sizes v2 avatars may use here (`resolution`), 512 x 512 first; another is `400 invalid_input`. Absent where every size the rule allows is offered.
 	V2Resolutions *[]RenderResolution `json:"v2Resolutions,omitempty"`
 
-	// VideoGeneration Whether the plan includes generated clips (`POST /v1/generation/clips`), Growth and up; clips answer `403 video_generation_not_in_plan` when false. False where the database does not report it yet, since clips are refused until it does.
+	// VideoGeneration Whether the plan lets the account make generated clips (`POST /v1/generation/clips`); clips answer `403 video_generation_not_in_plan` when false. True on every plan where billing decides clips by Atmee V2 access. False where the database does not report it yet, since clips are refused until it does.
 	VideoGeneration *bool `json:"videoGeneration,omitempty"`
 }
 
@@ -1742,7 +1789,7 @@ type AccountPlan struct {
 
 // AccountPricing defines model for AccountPricing.
 type AccountPricing struct {
-	// Generation The price of each generation operation (per portrait for portraits, per call otherwise), charged only when at
+	// Generation The price of each generation operation, per call, charged only when at
 	// least one output comes back. Portraits, enhancements and voices are paid
 	// from the plan's free generation allowance first (`freeAllowance`), then
 	// from credits; clips are always paid in credits. Absent when this
@@ -1751,6 +1798,9 @@ type AccountPricing struct {
 
 	// MonetizedPerMinuteMicrocredits What a viewer pays per minute with a monetized v1 avatar on atmee.ai (its owner pays `sessionPerMinuteMicrocredits`); API sessions are never charged it.
 	MonetizedPerMinuteMicrocredits int `json:"monetizedPerMinuteMicrocredits"`
+
+	// MonetizedV2HdPerMinuteMicrocredits What a viewer pays per minute with a monetized Atmee V2 HD avatar on atmee.ai (its owner pays `sessionV2HdPerMinuteMicrocredits`); API sessions are never charged it. Absent where billing does not report V2 HD rates.
+	MonetizedV2HdPerMinuteMicrocredits *int `json:"monetizedV2HdPerMinuteMicrocredits,omitempty"`
 
 	// MonetizedV2PerMinuteMicrocredits What a viewer pays per minute with a monetized v2 avatar on atmee.ai (its owner pays `sessionV2PerMinuteMicrocredits`); API sessions are never charged it.
 	MonetizedV2PerMinuteMicrocredits int `json:"monetizedV2PerMinuteMicrocredits"`
@@ -1761,12 +1811,18 @@ type AccountPricing struct {
 	// RenderV1PerMinuteMicrocredits An avatar session (render only, your own agent) of a v1 avatar per minute.
 	RenderV1PerMinuteMicrocredits int `json:"renderV1PerMinuteMicrocredits"`
 
+	// RenderV2HdPerMinuteMicrocredits An avatar session (render only, your own agent) of an Atmee V2 HD avatar per minute. Absent where billing does not report V2 HD rates.
+	RenderV2HdPerMinuteMicrocredits *int `json:"renderV2HdPerMinuteMicrocredits,omitempty"`
+
 	// RenderV2PerMinuteMicrocredits An avatar session (render only, your own agent) of a v2 avatar per minute.
 	RenderV2PerMinuteMicrocredits int `json:"renderV2PerMinuteMicrocredits"`
 
 	// SessionPerMinuteMicrocredits A conversation (`POST /v1/sessions`) with a v1 avatar, per minute:
 	// speech, language model, voice and render.
 	SessionPerMinuteMicrocredits int `json:"sessionPerMinuteMicrocredits"`
+
+	// SessionV2HdPerMinuteMicrocredits A conversation (`POST /v1/sessions`) with an Atmee V2 HD avatar (engine `v2hd`), per minute. Absent where billing does not report V2 HD rates.
+	SessionV2HdPerMinuteMicrocredits *int `json:"sessionV2HdPerMinuteMicrocredits,omitempty"`
 
 	// SessionV2PerMinuteMicrocredits A conversation (`POST /v1/sessions`) with a v2 avatar, per minute.
 	SessionV2PerMinuteMicrocredits int `json:"sessionV2PerMinuteMicrocredits"`
@@ -2021,11 +2077,11 @@ type AvatarCreateJsonRequest struct {
 	// builds nothing. Absent or null keeps the current size (on create:
 	// the default).<!-- v2pro -->
 	//
-	// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+	// A `v2hd` avatar has its own rule and sizes: at most 414,720 pixels
 	// (864 x 480), default 640 x 640, and only the sizes
 	// `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
 	// 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
-	// are not V2 Pro sizes.<!-- /v2pro -->
+	// are not V2 HD sizes.<!-- /v2pro -->
 	Resolution *RenderResolution `json:"resolution,omitempty"`
 
 	// RuntimeSeed The v2 renderer's runtime seed: it seeds a session's noise and motion
@@ -2065,12 +2121,14 @@ type AvatarCreateResponse struct {
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
 	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
-	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// Or `v2hd` (Atmee V2 HD), a larger v2 model on its own GPU pool: it
 	// builds, previews and serves exactly like `v2` (candidates, versions,
-	// conductor, seeds, same session rates) at larger frame sizes
-	// (`resolution`, 640 x 640 by default; `GET /v1/account`
-	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
-	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
+	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
+	// per-minute rates (`GET /v1/account` `pricing`,
+	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
+	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
+	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
 	// offered only where `limits.v2Pro` is reported (elsewhere `503
 	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
@@ -2116,12 +2174,14 @@ type AvatarDetail struct {
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
 	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
-	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// Or `v2hd` (Atmee V2 HD), a larger v2 model on its own GPU pool: it
 	// builds, previews and serves exactly like `v2` (candidates, versions,
-	// conductor, seeds, same session rates) at larger frame sizes
-	// (`resolution`, 640 x 640 by default; `GET /v1/account`
-	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
-	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
+	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
+	// per-minute rates (`GET /v1/account` `pricing`,
+	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
+	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
+	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
 	// offered only where `limits.v2Pro` is reported (elsewhere `503
 	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
@@ -2356,12 +2416,14 @@ type AvatarDetailVisibility string
 
 // AvatarEngine Render engine: `v1`, the original renderer, or `v2`, which serves a
 // selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
-// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+// Or `v2hd` (Atmee V2 HD), a larger v2 model on its own GPU pool: it
 // builds, previews and serves exactly like `v2` (candidates, versions,
-// conductor, seeds, same session rates) at larger frame sizes
-// (`resolution`, 640 x 640 by default; `GET /v1/account`
-// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
-// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
+// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
+// per-minute rates (`GET /v1/account` `pricing`,
+// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
+// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
+// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
 // offered only where `limits.v2Pro` is reported (elsewhere `503
 // engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
@@ -2887,12 +2949,14 @@ type AvatarSummary struct {
 
 	// Engine Render engine: `v1`, the original renderer, or `v2`, which serves a
 	// selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
-	// Or `v2pro` (Atmee V2 Pro), a larger v2 model on its own GPU pool: it
+	// Or `v2hd` (Atmee V2 HD), a larger v2 model on its own GPU pool: it
 	// builds, previews and serves exactly like `v2` (candidates, versions,
-	// conductor, seeds, same session rates) at larger frame sizes
-	// (`resolution`, 640 x 640 by default; `GET /v1/account`
-	// `limits.v2ProResolutions`). `v2pro` needs v2 access and a plan with V2
-	// Pro, Growth and up (`403 v2_pro_not_in_plan`; `limits.v2Pro`), and is
+	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
+	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
+	// per-minute rates (`GET /v1/account` `pricing`,
+	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
+	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
+	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
 	// offered only where `limits.v2Pro` is reported (elsewhere `503
 	// engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
@@ -3039,11 +3103,11 @@ type AvatarUpdateRequest struct {
 	// builds nothing. Absent or null keeps the current size (on create:
 	// the default).<!-- v2pro -->
 	//
-	// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+	// A `v2hd` avatar has its own rule and sizes: at most 414,720 pixels
 	// (864 x 480), default 640 x 640, and only the sizes
 	// `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
 	// 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
-	// are not V2 Pro sizes.<!-- /v2pro -->
+	// are not V2 HD sizes.<!-- /v2pro -->
 	Resolution *RenderResolution `json:"resolution,omitempty"`
 
 	// RuntimeSeed The v2 renderer's runtime seed: it seeds a session's noise and motion
@@ -3297,14 +3361,26 @@ type CaptureQuota struct {
 	PendingLimit int `json:"pendingLimit"`
 }
 
-// ClipResolution A clip's output size in pixels, one of these (credits per clip, any
-// length):
+// ClipPrice defines model for ClipPrice.
+type ClipPrice struct {
+	// Microcredits The price of one clip of up to `upToSeconds` at this size (100 microcredits = 1 credit).
+	Microcredits int `json:"microcredits"`
+
+	// UpToSeconds The longest clip this price covers (5, 10 or 15).
+	UpToSeconds int `json:"upToSeconds"`
+}
+
+// ClipResolution A clip's output size in pixels, one of these. Credits per clip by
+// length; a clip pays the next length up (7 seconds pays the
+// up-to-10-seconds price):
 //
-// | Tier | Square | Standard (4:3, 3:4) | Wide (16:9, 9:16) |
-// |---|---|---|---|
-// | 480p | 480 x 480 (0.5) | 640 x 480, 480 x 640 (0.5) | 832 x 468, 468 x 832 (1) |
-// | 720p | 720 x 720 (1) | 960 x 720, 720 x 960 (1) | 1280 x 720, 720 x 1280 (1.5) |
-// | 1080p | coming soon | coming soon | coming soon |
+// | Size | Sizes | Up to 5 s | Up to 10 s | Up to 15 s |
+// |---|---|---|---|---|
+// | 480p square, 4:3, 3:4 | 480 x 480, 640 x 480, 480 x 640 | 0.1 | 0.3 | 0.5 |
+// | 480p 16:9, 9:16 | 832 x 468, 468 x 832 | 0.3 | 0.7 | 1 |
+// | 720p square, 4:3, 3:4 | 720 x 720, 960 x 720, 720 x 960 | 0.5 | 1 | 1.5 |
+// | 720p 16:9, 9:16 | 1280 x 720, 720 x 1280 | 0.8 | 1.4 | 2 |
+// | 1080p | any | coming soon | | |
 //
 // Default 480 x 480. The renderer works at each side rounded up to a
 // multiple of 32 (1280 x 720 at 1280 x 736) and crops the centre to
@@ -3320,10 +3396,36 @@ type ClipResolution struct {
 type ClipSize struct {
 	Height int `json:"height"`
 
-	// Microcredits The price of one clip at this size, any length.
+	// Microcredits The most a clip at this size costs, its up-to-15-seconds price. A clip is priced by its length too; `pricing.generation.clipPrices` has each size's price for up to 5, 10 and 15 seconds.
 	Microcredits int `json:"microcredits"`
 	Width        int `json:"width"`
 }
+
+// ClipSizePrices defines model for ClipSizePrices.
+type ClipSizePrices struct {
+	Height int `json:"height"`
+
+	// Prices The clip's price by length, shortest first. A clip pays the first tier whose `upToSeconds` it fits, so a 7-second clip pays the up-to-10-seconds price.
+	Prices []ClipPrice `json:"prices"`
+	Width  int         `json:"width"`
+}
+
+// ClipStatusResponse defines model for ClipStatusResponse.
+type ClipStatusResponse struct {
+	Clip *GeneratedClip `json:"clip,omitempty"`
+
+	// RequestId The clip's request id, its POST's `Idempotency-Key`.
+	RequestId openapi_types.UUID `json:"requestId"`
+
+	// RetryAfterSeconds When `status` is `rendering`, seconds to wait before asking again (the same as the `Retry-After` header).
+	RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
+
+	// Status See the table above. `clip` is present when it is `ready` or `expired`.
+	Status ClipStatusResponseStatus `json:"status"`
+}
+
+// ClipStatusResponseStatus See the table above. `clip` is present when it is `ready` or `expired`.
+type ClipStatusResponseStatus string
 
 // CodeRedemption defines model for CodeRedemption.
 type CodeRedemption struct {
@@ -3739,14 +3841,17 @@ type GenerateClipRequest struct {
 	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following".
 	Prompt string `json:"prompt"`
 
-	// Resolution A clip's output size in pixels, one of these (credits per clip, any
-	// length):
+	// Resolution A clip's output size in pixels, one of these. Credits per clip by
+	// length; a clip pays the next length up (7 seconds pays the
+	// up-to-10-seconds price):
 	//
-	// | Tier | Square | Standard (4:3, 3:4) | Wide (16:9, 9:16) |
-	// |---|---|---|---|
-	// | 480p | 480 x 480 (0.5) | 640 x 480, 480 x 640 (0.5) | 832 x 468, 468 x 832 (1) |
-	// | 720p | 720 x 720 (1) | 960 x 720, 720 x 960 (1) | 1280 x 720, 720 x 1280 (1.5) |
-	// | 1080p | coming soon | coming soon | coming soon |
+	// | Size | Sizes | Up to 5 s | Up to 10 s | Up to 15 s |
+	// |---|---|---|---|---|
+	// | 480p square, 4:3, 3:4 | 480 x 480, 640 x 480, 480 x 640 | 0.1 | 0.3 | 0.5 |
+	// | 480p 16:9, 9:16 | 832 x 468, 468 x 832 | 0.3 | 0.7 | 1 |
+	// | 720p square, 4:3, 3:4 | 720 x 720, 960 x 720, 720 x 960 | 0.5 | 1 | 1.5 |
+	// | 720p 16:9, 9:16 | 1280 x 720, 720 x 1280 | 0.8 | 1.4 | 2 |
+	// | 1080p | any | coming soon | | |
 	//
 	// Default 480 x 480. The renderer works at each side rounded up to a
 	// multiple of 32 (1280 x 720 at 1280 x 736) and crops the centre to
@@ -3761,7 +3866,7 @@ type GenerateClipRequest struct {
 
 // GeneratePortraitsRequest defines model for GeneratePortraitsRequest.
 type GeneratePortraitsRequest struct {
-	// Count How many portraits to make, one per image provider in a fixed order (default 4, every provider). Each portrait that comes back is charged.
+	// Count How many portraits to make, 1 or 2 (default 2). 2 is a Gemini and a Grok portrait, 1 the Gemini portrait only; the price is the same. A new call with 3 or 4 is refused as `invalid_input` (the schema allows them so a retry of a call made when four were allowed still returns its result).
 	Count *int `json:"count,omitempty"`
 
 	// Description What the portrait shows (an invented character).
@@ -3800,7 +3905,7 @@ type GeneratedClip struct {
 type GeneratedClipResponse struct {
 	Clip GeneratedClip `json:"clip"`
 
-	// MicrocreditsCharged What this call charged to credits (100 microcredits = 1 credit), the clip size's price (`pricing.generation.clipSizes`), whatever its length; 0 on a replay.
+	// MicrocreditsCharged What this call charged to credits (100 microcredits = 1 credit), the clip's price for its size and length tier (`pricing.generation.clipPrices`); 0 on a replay.
 	MicrocreditsCharged int `json:"microcreditsCharged"`
 
 	// MicrocreditsFree Always 0. A plan's free generation allowance does not cover clips; the field is here so every generation answer has the same shape.
@@ -3872,7 +3977,7 @@ type GenerationFreeAllowance struct {
 	UsedMicrocredits int `json:"usedMicrocredits"`
 }
 
-// GenerationPricing The price of each generation operation (per portrait for portraits, per call otherwise), charged only when at
+// GenerationPricing The price of each generation operation, per call, charged only when at
 // least one output comes back. Portraits, enhancements and voices are paid
 // from the plan's free generation allowance first (`freeAllowance`), then
 // from credits; clips are always paid in credits. Absent when this
@@ -3882,18 +3987,21 @@ type GenerationPricing struct {
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipAnySize *bool `json:"clipAnySize,omitempty"`
 
-	// ClipPer15SecondsMicrocredits Use `clipSizes`; a clip is priced by its size, not its length. Fifteen times the dearest clip's price, so the old `ceil(durationSeconds x this / 15)` never quotes below a clip's price. Absent where clips are not offered.
+	// ClipPer15SecondsMicrocredits Use `clipPrices`; a clip is priced by its size and length tier. Fifteen times the dearest clip's price, so the old `ceil(durationSeconds x this / 15)` never quotes below a clip's price. Absent where clips are not offered.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPer15SecondsMicrocredits *int `json:"clipPer15SecondsMicrocredits,omitempty"`
 
-	// ClipPerSecondMicrocredits Use `clipSizes`. The dearest clip's price, so this times any `durationSeconds` is never below a clip's price. Absent where clips are not offered.
+	// ClipPerSecondMicrocredits Use `clipPrices`. The dearest clip's price, so this times any `durationSeconds` is never below a clip's price. Absent where clips are not offered.
 	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	ClipPerSecondMicrocredits *int `json:"clipPerSecondMicrocredits,omitempty"`
+
+	// ClipPrices The clip sizes served here, in the order of `clipSizes`, each with its price per clip for up to 5, 10 and 15 seconds; a clip pays the next length up. Absent where clips are not offered.
+	ClipPrices *[]ClipSizePrices `json:"clipPrices,omitempty"`
 
 	// ClipResolutions The clip sizes served here, as in `clipSizes` without their prices. Absent where clips are not offered.
 	ClipResolutions *[]ClipResolution `json:"clipResolutions,omitempty"`
 
-	// ClipSizes The clip sizes served here, each with its price per clip, any length (see `ClipResolution`). Absent where clips are not offered.
+	// ClipSizes The clip sizes served here, each with the most a clip at that size costs (its up-to-15-seconds price; see `ClipResolution`). `clipPrices` has the price for each length. Absent where clips are not offered.
 	ClipSizes *[]ClipSize `json:"clipSizes,omitempty"`
 
 	// EnhancementsMicrocredits One `POST /v1/generation/enhancements` call.
@@ -3908,7 +4016,7 @@ type GenerationPricing struct {
 	// Absent when it could not be read.
 	FreeAllowance *GenerationFreeAllowance `json:"freeAllowance,omitempty"`
 
-	// PortraitsMicrocredits One portrait of a `POST /v1/generation/portraits` call (a call costs this times the portraits that come back).
+	// PortraitsMicrocredits One `POST /v1/generation/portraits` call, whether it makes one portrait or two.
 	PortraitsMicrocredits int `json:"portraitsMicrocredits"`
 
 	// VoicesMicrocredits One `POST /v1/generation/voices` call.
@@ -3923,7 +4031,9 @@ type KnowledgeAssetRef struct {
 }
 
 // PaymentRequiredResponse Returned with `402` when the caller lacks the credits or entitlements
-// to start a session.
+// to start a session. `insufficient_v2_credits`: a session on a v2
+// avatar that neither its sponsor pool nor the payer's credits that work
+// for v2 can fund, whatever v1-only credits are left.
 type PaymentRequiredResponse struct {
 	// Error Error code identifying the type of payment issue
 	//
@@ -4009,11 +4119,11 @@ type RedeemCodeRequest struct {
 // builds nothing. Absent or null keeps the current size (on create:
 // the default).<!-- v2pro -->
 //
-// A `v2pro` avatar has its own rule and sizes: at most 414,720 pixels
+// A `v2hd` avatar has its own rule and sizes: at most 414,720 pixels
 // (864 x 480), default 640 x 640, and only the sizes
 // `limits.v2ProResolutions` lists (640 x 640 always; e.g. 864 x 480,
 // 480 x 864, 736 x 544, 544 x 736); 512 x 512 and the other v2 sizes
-// are not V2 Pro sizes.<!-- /v2pro -->
+// are not V2 HD sizes.<!-- /v2pro -->
 type RenderResolution struct {
 	Height int `json:"height"`
 	Width  int `json:"width"`
@@ -4317,6 +4427,9 @@ type AvatarIdPath = openapi_types.UUID
 // AvatarSessionIdPath defines model for AvatarSessionIdPath.
 type AvatarSessionIdPath = openapi_types.UUID
 
+// ClipRequestIdPath defines model for ClipRequestIdPath.
+type ClipRequestIdPath = openapi_types.UUID
+
 // GenerationIdempotencyKey defines model for GenerationIdempotencyKey.
 type GenerationIdempotencyKey = string
 
@@ -4355,6 +4468,9 @@ type GenerationUnavailable = ApiErrorResponse
 
 // RateLimited defines model for RateLimited.
 type RateLimited = RateLimitedResponse
+
+// V2CreditsPaymentRequired defines model for V2CreditsPaymentRequired.
+type V2CreditsPaymentRequired = ApiErrorResponse
 
 // ListAvatarsParams defines parameters for ListAvatars.
 type ListAvatarsParams struct {
@@ -4701,7 +4817,9 @@ type ClientInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build v2 avatars;
+	// - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
+	//   the account; the part of the balance usable on V2 right now is
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -4719,6 +4837,9 @@ type ClientInterface interface {
 	// - `spendableMicrocredits` is what a session is admitted on: every bucket
 	//   for a reserve-mode key or a signed-in user, only the plan and top-up
 	//   buckets for a metered key (`couponSpendable: false`).
+	// - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
+	//   sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
+	//   up; below Growth, an invite code unlocks it.
 	// - Live sessions' reservations are already taken out, and reported as
 	//   `heldByLiveSessionsMicrocredits`.
 	// - `unlimited` is true when sessions are not charged, whatever the
@@ -4747,8 +4868,9 @@ type ClientInterface interface {
 	// RedeemAccountCodeWithBody Redeem a code
 	//
 	// Redeems an invite or credit code for the account. A code can add
-	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-	// /v1/account`), or both, and the answer says what it gave. Each account
+	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+	// both, and the answer says what it gave. Below Growth, an invite code
+	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -4763,8 +4885,9 @@ type ClientInterface interface {
 	// RedeemAccountCode Redeem a code
 	//
 	// Redeems an invite or credit code for the account. A code can add
-	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-	// /v1/account`), or both, and the answer says what it gave. Each account
+	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+	// both, and the answer says what it gave. Below Growth, an invite code
+	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -4967,13 +5090,18 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   (default), serves the first that completes. Atmee V2 comes with
+	//   Growth and up; below Growth, an invite code unlocks it (`402
+	//   insufficient_v2_credits` where it isn't on the account's plan; `403
+	//   v2_access_required` where billing still decides V2 by invitation).
+	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
+	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   Where it is not offered, `engine: v2hd` is `503
+	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
+	//   accepted and read as `v2hd`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -5026,13 +5154,18 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   (default), serves the first that completes. Atmee V2 comes with
+	//   Growth and up; below Growth, an invite code unlocks it (`402
+	//   insufficient_v2_credits` where it isn't on the account's plan; `403
+	//   v2_access_required` where billing still decides V2 by invitation).
+	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
+	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   Where it is not offered, `engine: v2hd` is `503
+	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
+	//   accepted and read as `v2hd`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -5266,7 +5399,10 @@ type ClientInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+	// V2 isn't on the payer's plan and no sponsor pool covers the session:
+	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -5317,7 +5453,10 @@ type ClientInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+	// V2 isn't on the payer's plan and no sponsor pool covers the session:
+	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -5775,18 +5914,26 @@ type ClientInterface interface {
 	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: a fixed price per clip, set by its size and the same
-	//   for any length (`pricing.generation.clipSizes`), charged only when
-	//   the clip comes back.
+	// - **Billing**: a price per clip set by its size and its length tier:
+	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
+	//   7-second clip pays the up-to-10-seconds price
+	//   (`pricing.generation.clipPrices`). Charged only when the
+	//   clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
-	//   seconds the call answers `409 request_in_progress`; retry with the
-	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
-	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
-	//   that includes video generation, Growth and up (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
-	//   scopes.
+	//   seconds the call answers `409 request_in_progress` and the render
+	//   goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+	//   `Idempotency-Key` is the request id, and the `409` names that path
+	//   in `Location`), or retry this call with the same key after
+	//   `Retry-After` to get the clip, charged once.
+	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
+	//   below Growth, an invite code unlocks it. The price must fit in the
+	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+	//   billing still decides clips by invitation and plan, they need V2
+	//   unlocked (`403 v2_access_required`) and a plan with video generation
+	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`). Both need the `generation:write` and
+	//   `avatars:write` scopes.
 	//
 	// | Error | When |
 	// |---|---|
@@ -5818,18 +5965,26 @@ type ClientInterface interface {
 	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: a fixed price per clip, set by its size and the same
-	//   for any length (`pricing.generation.clipSizes`), charged only when
-	//   the clip comes back.
+	// - **Billing**: a price per clip set by its size and its length tier:
+	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
+	//   7-second clip pays the up-to-10-seconds price
+	//   (`pricing.generation.clipPrices`). Charged only when the
+	//   clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
-	//   seconds the call answers `409 request_in_progress`; retry with the
-	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
-	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
-	//   that includes video generation, Growth and up (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
-	//   scopes.
+	//   seconds the call answers `409 request_in_progress` and the render
+	//   goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+	//   `Idempotency-Key` is the request id, and the `409` names that path
+	//   in `Location`), or retry this call with the same key after
+	//   `Retry-After` to get the clip, charged once.
+	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
+	//   below Growth, an invite code unlocks it. The price must fit in the
+	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+	//   billing still decides clips by invitation and plan, they need V2
+	//   unlocked (`403 v2_access_required`) and a plan with video generation
+	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`). Both need the `generation:write` and
+	//   `avatars:write` scopes.
 	//
 	// | Error | When |
 	// |---|---|
@@ -5841,10 +5996,37 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClip(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetClip Get a clip
+	//
+	// Returns the status of the clip that `POST /v1/generation/clips` made or
+	// is making under this request id (the call's `Idempotency-Key`). Use it
+	// after a `409 request_in_progress`, or from a process that did not make
+	// the call, to wait for the clip and download it. Reading charges
+	// nothing and never starts a render.
+	//
+	// | `status` | Meaning |
+	// |---|---|
+	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
+	// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
+	// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
+	//
+	// `404 clip_not_found` means this account has no clip under the id: the
+	// id was never used for a clip, or the call ended without a clip
+	// (flagged, refused or failed: nothing was charged and the id is free
+	// again). The `POST` answers with why; retry it with the same key and
+	// inputs to see the reason or to try again.
+	//
+	// Requires `avatars:read` or `avatars:write`. Account-wide: the same
+	// request id under another account is not found.
+	//
+	// Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
+	GetClip(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// EnhancePortraitWithBody Enhance a portrait
 	//
-	// Crops your photo to a square and returns up to four enhanced portraits
-	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// Crops your photo to a square and returns two enhanced portraits, one
+	// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 	// as the prompt asks ("this person as a 1920s detective"), keeping the
 	// person unless the prompt says otherwise.
 	//
@@ -5864,8 +6046,8 @@ type ClientInterface interface {
 
 	// EnhancePortrait Enhance a portrait
 	//
-	// Crops your photo to a square and returns up to four enhanced portraits
-	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// Crops your photo to a square and returns two enhanced portraits, one
+	// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 	// as the prompt asks ("this person as a 1920s detective"), keeping the
 	// person unless the prompt says otherwise.
 	//
@@ -5885,8 +6067,8 @@ type ClientInterface interface {
 
 	// GeneratePortraitsWithBody Generate portraits
 	//
-	// Generates up to four square portraits of an invented character from a
-	// text description. Never use it to depict a real person: for a real
+	// Generates two square portraits of an invented character from a text
+	// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 	// person, enhance their own photo with `POST /v1/generation/enhancements`,
 	// with their permission.
 	//
@@ -5894,12 +6076,13 @@ type ClientInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
-	//   make, one per image provider in a fixed order.
-	// - **Billing**: priced per portrait (`GET /v1/account`,
-	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
-	//   `count` portraits, and the charge is for the portraits that come
-	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
+	//   new call with a larger count is `400 invalid_input`.
+	// - **Billing**: one flat price per call, whatever the count (`GET
+	//   /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+	//   when at least one portrait comes back: if one provider fails, the
+	//   other's portrait costs the full price. The plan's free generation
 	//   allowance pays first. A flagged, failed or refused call costs
 	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -5914,8 +6097,8 @@ type ClientInterface interface {
 
 	// GeneratePortraits Generate portraits
 	//
-	// Generates up to four square portraits of an invented character from a
-	// text description. Never use it to depict a real person: for a real
+	// Generates two square portraits of an invented character from a text
+	// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 	// person, enhance their own photo with `POST /v1/generation/enhancements`,
 	// with their permission.
 	//
@@ -5923,12 +6106,13 @@ type ClientInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
-	//   make, one per image provider in a fixed order.
-	// - **Billing**: priced per portrait (`GET /v1/account`,
-	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
-	//   `count` portraits, and the charge is for the portraits that come
-	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
+	//   new call with a larger count is `400 invalid_input`.
+	// - **Billing**: one flat price per call, whatever the count (`GET
+	//   /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+	//   when at least one portrait comes back: if one provider fails, the
+	//   other's portrait costs the full price. The plan's free generation
 	//   allowance pays first. A flagged, failed or refused call costs
 	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -6272,7 +6456,9 @@ type ClientInterface interface {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build v2 avatars;
+//   - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
+//     the account; the part of the balance usable on V2 right now is
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -6300,6 +6486,9 @@ func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) 
 //   - `spendableMicrocredits` is what a session is admitted on: every bucket
 //     for a reserve-mode key or a signed-in user, only the plan and top-up
 //     buckets for a metered key (`couponSpendable: false`).
+//   - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
+//     sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
+//     up; below Growth, an invite code unlocks it.
 //   - Live sessions' reservations are already taken out, and reported as
 //     `heldByLiveSessionsMicrocredits`.
 //   - `unlimited` is true when sessions are not charged, whatever the
@@ -6348,8 +6537,9 @@ func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEd
 // RedeemAccountCodeWithBody Redeem a code
 //
 // Redeems an invite or credit code for the account. A code can add
-// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-// /v1/account`), or both, and the answer says what it gave. Each account
+// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+// both, and the answer says what it gave. Below Growth, an invite code
+// is what unlocks V2. Each account
 // redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -6374,8 +6564,9 @@ func (c *Client) RedeemAccountCodeWithBody(ctx context.Context, contentType stri
 // RedeemAccountCode Redeem a code
 //
 // Redeems an invite or credit code for the account. A code can add
-// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-// /v1/account`), or both, and the answer says what it gave. Each account
+// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+// both, and the answer says what it gave. Below Growth, an invite code
+// is what unlocks V2. Each account
 // redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -6698,13 +6889,18 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     (default), serves the first that completes. Atmee V2 comes with
+//     Growth and up; below Growth, an invite code unlocks it (`402
+//     insufficient_v2_credits` where it isn't on the account's plan; `403
+//     v2_access_required` where billing still decides V2 by invitation).
+//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+//     `limits.v2ProResolutions`; it needs what v2 needs (`403
+//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     Where it is not offered, `engine: v2hd` is `503
+//     engine_unavailable`. `v2pro`, V2 HD's former name, is still
+//     accepted and read as `v2hd`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -6767,13 +6963,18 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     (default), serves the first that completes. Atmee V2 comes with
+//     Growth and up; below Growth, an invite code unlocks it (`402
+//     insufficient_v2_credits` where it isn't on the account's plan; `403
+//     v2_access_required` where billing still decides V2 by invitation).
+//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+//     `limits.v2ProResolutions`; it needs what v2 needs (`403
+//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     Where it is not offered, `engine: v2hd` is `503
+//     engine_unavailable`. `v2pro`, V2 HD's former name, is still
+//     accepted and read as `v2hd`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -7087,7 +7288,10 @@ func (c *Client) ReplaceAvatarAppearance(ctx context.Context, avatarId AvatarIdP
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+// V2 isn't on the payer's plan and no sponsor pool covers the session:
+// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -7147,7 +7351,10 @@ func (c *Client) CreateAvatarSessionWithBody(ctx context.Context, avatarId Avata
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+// V2 isn't on the payer's plan and no sponsor pool covers the session:
+// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -7884,18 +8091,26 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: a fixed price per clip, set by its size and the same
-//     for any length (`pricing.generation.clipSizes`), charged only when
-//     the clip comes back.
+//   - **Billing**: a price per clip set by its size and its length tier:
+//     up to 5, 10 or 15 seconds, charged at the next length up, so a
+//     7-second clip pays the up-to-10-seconds price
+//     (`pricing.generation.clipPrices`). Charged only when the
+//     clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
-//     seconds the call answers `409 request_in_progress`; retry with the
-//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
-//     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
-//     that includes video generation, Growth and up (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`), and the `generation:write` and `avatars:write`
-//     scopes.
+//     seconds the call answers `409 request_in_progress` and the render
+//     goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+//     `Idempotency-Key` is the request id, and the `409` names that path
+//     in `Location`), or retry this call with the same key after
+//     `Retry-After` to get the clip, charged once.
+//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
+//     below Growth, an invite code unlocks it. The price must fit in the
+//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+//     billing still decides clips by invitation and plan, they need V2
+//     unlocked (`403 v2_access_required`) and a plan with video generation
+//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`). Both need the `generation:write` and
+//     `avatars:write` scopes.
 //
 // | Error | When |
 // |---|---|
@@ -7937,18 +8152,26 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: a fixed price per clip, set by its size and the same
-//     for any length (`pricing.generation.clipSizes`), charged only when
-//     the clip comes back.
+//   - **Billing**: a price per clip set by its size and its length tier:
+//     up to 5, 10 or 15 seconds, charged at the next length up, so a
+//     7-second clip pays the up-to-10-seconds price
+//     (`pricing.generation.clipPrices`). Charged only when the
+//     clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
-//     seconds the call answers `409 request_in_progress`; retry with the
-//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
-//     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
-//     that includes video generation, Growth and up (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`), and the `generation:write` and `avatars:write`
-//     scopes.
+//     seconds the call answers `409 request_in_progress` and the render
+//     goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+//     `Idempotency-Key` is the request id, and the `409` names that path
+//     in `Location`), or retry this call with the same key after
+//     `Retry-After` to get the clip, charged once.
+//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
+//     below Growth, an invite code unlocks it. The price must fit in the
+//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+//     billing still decides clips by invitation and plan, they need V2
+//     unlocked (`403 v2_access_required`) and a plan with video generation
+//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`). Both need the `generation:write` and
+//     `avatars:write` scopes.
 //
 // | Error | When |
 // |---|---|
@@ -7970,10 +8193,47 @@ func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, b
 	return c.Client.Do(req)
 }
 
+// GetClip Get a clip
+//
+// Returns the status of the clip that `POST /v1/generation/clips` made or
+// is making under this request id (the call's `Idempotency-Key`). Use it
+// after a `409 request_in_progress`, or from a process that did not make
+// the call, to wait for the clip and download it. Reading charges
+// nothing and never starts a render.
+//
+// | `status` | Meaning |
+// |---|---|
+// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
+// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
+// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
+//
+// `404 clip_not_found` means this account has no clip under the id: the
+// id was never used for a clip, or the call ended without a clip
+// (flagged, refused or failed: nothing was charged and the id is free
+// again). The `POST` answers with why; retry it with the same key and
+// inputs to see the reason or to try again.
+//
+// Requires `avatars:read` or `avatars:write`. Account-wide: the same
+// request id under another account is not found.
+//
+// Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
+func (c *Client) GetClip(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetClipRequest(c.Server, requestId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // EnhancePortraitWithBody Enhance a portrait
 //
-// Crops your photo to a square and returns up to four enhanced portraits
-// that keep the subject's identity. With `prompt`, they restyle the photo
+// Crops your photo to a square and returns two enhanced portraits, one
+// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 // as the prompt asks ("this person as a 1920s detective"), keeping the
 // person unless the prompt says otherwise.
 //
@@ -8003,8 +8263,8 @@ func (c *Client) EnhancePortraitWithBody(ctx context.Context, params *EnhancePor
 
 // EnhancePortrait Enhance a portrait
 //
-// Crops your photo to a square and returns up to four enhanced portraits
-// that keep the subject's identity. With `prompt`, they restyle the photo
+// Crops your photo to a square and returns two enhanced portraits, one
+// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 // as the prompt asks ("this person as a 1920s detective"), keeping the
 // person unless the prompt says otherwise.
 //
@@ -8034,8 +8294,8 @@ func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitPar
 
 // GeneratePortraitsWithBody Generate portraits
 //
-// Generates up to four square portraits of an invented character from a
-// text description. Never use it to depict a real person: for a real
+// Generates two square portraits of an invented character from a text
+// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 // person, enhance their own photo with `POST /v1/generation/enhancements`,
 // with their permission.
 //
@@ -8043,12 +8303,13 @@ func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitPar
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
-//     make, one per image provider in a fixed order.
-//   - **Billing**: priced per portrait (`GET /v1/account`,
-//     `pricing.generation.portraitsMicrocredits`). The balance must cover
-//     `count` portraits, and the charge is for the portraits that come
-//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+//     Grok portrait, in that order; 1 makes the Gemini portrait only. A
+//     new call with a larger count is `400 invalid_input`.
+//   - **Billing**: one flat price per call, whatever the count (`GET
+//     /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+//     when at least one portrait comes back: if one provider fails, the
+//     other's portrait costs the full price. The plan's free generation
 //     allowance pays first. A flagged, failed or refused call costs
 //     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -8073,8 +8334,8 @@ func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *Generate
 
 // GeneratePortraits Generate portraits
 //
-// Generates up to four square portraits of an invented character from a
-// text description. Never use it to depict a real person: for a real
+// Generates two square portraits of an invented character from a text
+// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 // person, enhance their own photo with `POST /v1/generation/enhancements`,
 // with their permission.
 //
@@ -8082,12 +8343,13 @@ func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *Generate
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
-//     make, one per image provider in a fixed order.
-//   - **Billing**: priced per portrait (`GET /v1/account`,
-//     `pricing.generation.portraitsMicrocredits`). The balance must cover
-//     `count` portraits, and the charge is for the portraits that come
-//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+//     Grok portrait, in that order; 1 makes the Gemini portrait only. A
+//     new call with a larger count is `400 invalid_input`.
+//   - **Billing**: one flat price per call, whatever the count (`GET
+//     /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+//     when at least one portrait comes back: if one provider fails, the
+//     other's portrait costs the full price. The plan's free generation
 //     allowance pays first. A flagged, failed or refused call costs
 //     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -10140,6 +10402,40 @@ func NewGenerateClipRequestWithBody(server string, params *GenerateClipParams, c
 	return req, nil
 }
 
+// NewGetClipRequest constructs an http.Request for the GetClip method
+func NewGetClipRequest(server string, requestId ClipRequestIdPath) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "requestId", requestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/clips/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewEnhancePortraitRequest calls the generic EnhancePortrait builder with application/json body
 func NewEnhancePortraitRequest(server string, params *EnhancePortraitParams, body EnhancePortraitJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -10578,7 +10874,9 @@ type ClientWithResponsesInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build v2 avatars;
+	// - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
+	//   the account; the part of the balance usable on V2 right now is
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -10598,6 +10896,9 @@ type ClientWithResponsesInterface interface {
 	// - `spendableMicrocredits` is what a session is admitted on: every bucket
 	//   for a reserve-mode key or a signed-in user, only the plan and top-up
 	//   buckets for a metered key (`couponSpendable: false`).
+	// - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
+	//   sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
+	//   up; below Growth, an invite code unlocks it.
 	// - Live sessions' reservations are already taken out, and reported as
 	//   `heldByLiveSessionsMicrocredits`.
 	// - `unlimited` is true when sessions are not charged, whatever the
@@ -10630,8 +10931,9 @@ type ClientWithResponsesInterface interface {
 	// RedeemAccountCodeWithBodyWithResponse Redeem a code
 	//
 	// Redeems an invite or credit code for the account. A code can add
-	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-	// /v1/account`), or both, and the answer says what it gave. Each account
+	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+	// both, and the answer says what it gave. Below Growth, an invite code
+	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -10646,8 +10948,9 @@ type ClientWithResponsesInterface interface {
 	// RedeemAccountCodeWithResponse Redeem a code
 	//
 	// Redeems an invite or credit code for the account. A code can add
-	// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-	// /v1/account`), or both, and the answer says what it gave. Each account
+	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+	// both, and the answer says what it gave. Below Growth, an invite code
+	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -10864,13 +11167,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   (default), serves the first that completes. Atmee V2 comes with
+	//   Growth and up; below Growth, an invite code unlocks it (`402
+	//   insufficient_v2_credits` where it isn't on the account's plan; `403
+	//   v2_access_required` where billing still decides V2 by invitation).
+	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
+	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   Where it is not offered, `engine: v2hd` is `503
+	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
+	//   accepted and read as `v2hd`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -10923,13 +11231,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. v2 is invite-only (`403
-	//   v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+	//   (default), serves the first that completes. Atmee V2 comes with
+	//   Growth and up; below Growth, an invite code unlocks it (`402
+	//   insufficient_v2_credits` where it isn't on the account's plan; `403
+	//   v2_access_required` where billing still decides V2 by invitation).
+	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-	//   Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-	//   `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
+	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   Where it is not offered, `engine: v2hd` is `503
+	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
+	//   accepted and read as `v2hd`.<!-- /v2pro -->
 	// - **Drafts**: the portrait and the voice are optional in zip and JSON
 	//   bodies. Without either (other than a v1 avatar with a portrait, which
 	//   is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -11169,7 +11482,10 @@ type ClientWithResponsesInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+	// V2 isn't on the payer's plan and no sponsor pool covers the session:
+	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -11220,7 +11536,10 @@ type ClientWithResponsesInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+	// V2 isn't on the payer's plan and no sponsor pool covers the session:
+	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -11696,18 +12015,26 @@ type ClientWithResponsesInterface interface {
 	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: a fixed price per clip, set by its size and the same
-	//   for any length (`pricing.generation.clipSizes`), charged only when
-	//   the clip comes back.
+	// - **Billing**: a price per clip set by its size and its length tier:
+	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
+	//   7-second clip pays the up-to-10-seconds price
+	//   (`pricing.generation.clipPrices`). Charged only when the
+	//   clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
-	//   seconds the call answers `409 request_in_progress`; retry with the
-	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
-	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
-	//   that includes video generation, Growth and up (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
-	//   scopes.
+	//   seconds the call answers `409 request_in_progress` and the render
+	//   goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+	//   `Idempotency-Key` is the request id, and the `409` names that path
+	//   in `Location`), or retry this call with the same key after
+	//   `Retry-After` to get the clip, charged once.
+	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
+	//   below Growth, an invite code unlocks it. The price must fit in the
+	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+	//   billing still decides clips by invitation and plan, they need V2
+	//   unlocked (`403 v2_access_required`) and a plan with video generation
+	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`). Both need the `generation:write` and
+	//   `avatars:write` scopes.
 	//
 	// | Error | When |
 	// |---|---|
@@ -11739,18 +12066,26 @@ type ClientWithResponsesInterface interface {
 	//   `GET /v1/account`). 1080p sizes are coming soon.
 	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 	//   short-lived `url` to download it.
-	// - **Billing**: a fixed price per clip, set by its size and the same
-	//   for any length (`pricing.generation.clipSizes`), charged only when
-	//   the clip comes back.
+	// - **Billing**: a price per clip set by its size and its length tier:
+	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
+	//   7-second clip pays the up-to-10-seconds price
+	//   (`pricing.generation.clipPrices`). Charged only when the
+	//   clip comes back.
 	// - **Slow starts**: a cold render can take minutes. After about 45
-	//   seconds the call answers `409 request_in_progress`; retry with the
-	//   same `Idempotency-Key` after `Retry-After` to get the clip, charged
-	//   once.
-	// - **Access**: needs v2 access (`403 v2_access_required`), a plan
-	//   that includes video generation, Growth and up (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`), and the `generation:write` and `avatars:write`
-	//   scopes.
+	//   seconds the call answers `409 request_in_progress` and the render
+	//   goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+	//   `Idempotency-Key` is the request id, and the `409` names that path
+	//   in `Location`), or retry this call with the same key after
+	//   `Retry-After` to get the clip, charged once.
+	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
+	//   below Growth, an invite code unlocks it. The price must fit in the
+	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
+	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+	//   billing still decides clips by invitation and plan, they need V2
+	//   unlocked (`403 v2_access_required`) and a plan with video generation
+	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+	//   `GET /v1/account`). Both need the `generation:write` and
+	//   `avatars:write` scopes.
 	//
 	// | Error | When |
 	// |---|---|
@@ -11762,10 +12097,39 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/generation/clips (the `GenerateClip` operationId).
 	GenerateClipWithResponse(ctx context.Context, params *GenerateClipParams, body GenerateClipJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateClipResponse, error)
 
+	// GetClipWithResponse Get a clip
+	//
+	// Returns the status of the clip that `POST /v1/generation/clips` made or
+	// is making under this request id (the call's `Idempotency-Key`). Use it
+	// after a `409 request_in_progress`, or from a process that did not make
+	// the call, to wait for the clip and download it. Reading charges
+	// nothing and never starts a render.
+	//
+	// | `status` | Meaning |
+	// |---|---|
+	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
+	// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
+	// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
+	//
+	// `404 clip_not_found` means this account has no clip under the id: the
+	// id was never used for a clip, or the call ended without a clip
+	// (flagged, refused or failed: nothing was charged and the id is free
+	// again). The `POST` answers with why; retry it with the same key and
+	// inputs to see the reason or to try again.
+	//
+	// Requires `avatars:read` or `avatars:write`. Account-wide: the same
+	// request id under another account is not found.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
+	GetClipWithResponse(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*GetClipResponse, error)
+
 	// EnhancePortraitWithBodyWithResponse Enhance a portrait
 	//
-	// Crops your photo to a square and returns up to four enhanced portraits
-	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// Crops your photo to a square and returns two enhanced portraits, one
+	// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 	// as the prompt asks ("this person as a 1920s detective"), keeping the
 	// person unless the prompt says otherwise.
 	//
@@ -11785,8 +12149,8 @@ type ClientWithResponsesInterface interface {
 
 	// EnhancePortraitWithResponse Enhance a portrait
 	//
-	// Crops your photo to a square and returns up to four enhanced portraits
-	// that keep the subject's identity. With `prompt`, they restyle the photo
+	// Crops your photo to a square and returns two enhanced portraits, one
+	// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 	// as the prompt asks ("this person as a 1920s detective"), keeping the
 	// person unless the prompt says otherwise.
 	//
@@ -11806,8 +12170,8 @@ type ClientWithResponsesInterface interface {
 
 	// GeneratePortraitsWithBodyWithResponse Generate portraits
 	//
-	// Generates up to four square portraits of an invented character from a
-	// text description. Never use it to depict a real person: for a real
+	// Generates two square portraits of an invented character from a text
+	// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 	// person, enhance their own photo with `POST /v1/generation/enhancements`,
 	// with their permission.
 	//
@@ -11815,12 +12179,13 @@ type ClientWithResponsesInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
-	//   make, one per image provider in a fixed order.
-	// - **Billing**: priced per portrait (`GET /v1/account`,
-	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
-	//   `count` portraits, and the charge is for the portraits that come
-	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
+	//   new call with a larger count is `400 invalid_input`.
+	// - **Billing**: one flat price per call, whatever the count (`GET
+	//   /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+	//   when at least one portrait comes back: if one provider fails, the
+	//   other's portrait costs the full price. The plan's free generation
 	//   allowance pays first. A flagged, failed or refused call costs
 	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -11835,8 +12200,8 @@ type ClientWithResponsesInterface interface {
 
 	// GeneratePortraitsWithResponse Generate portraits
 	//
-	// Generates up to four square portraits of an invented character from a
-	// text description. Never use it to depict a real person: for a real
+	// Generates two square portraits of an invented character from a text
+	// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 	// person, enhance their own photo with `POST /v1/generation/enhancements`,
 	// with their permission.
 	//
@@ -11844,12 +12209,13 @@ type ClientWithResponsesInterface interface {
 	//   /v1/avatars` (`assets.image`) and `PUT
 	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 	//   hours), with a short-lived `url` and a small JPEG `preview`.
-	// - **Count**: `count` (1 to 4, default 4) is how many portraits to
-	//   make, one per image provider in a fixed order.
-	// - **Billing**: priced per portrait (`GET /v1/account`,
-	//   `pricing.generation.portraitsMicrocredits`). The balance must cover
-	//   `count` portraits, and the charge is for the portraits that come
-	//   back (ask for 4, get 3: 3 are charged). The plan's free generation
+	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
+	//   new call with a larger count is `400 invalid_input`.
+	// - **Billing**: one flat price per call, whatever the count (`GET
+	//   /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+	//   when at least one portrait comes back: if one provider fails, the
+	//   other's portrait costs the full price. The plan's free generation
 	//   allowance pays first. A flagged, failed or refused call costs
 	//   nothing.
 	// - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -13028,6 +13394,8 @@ type CreateAvatarResponse struct {
 	JSON202 *AvatarCreateResponse
 	// JSON400 the response for an HTTP 400 `application/json` response
 	JSON400 *ApiErrorResponse
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
 	// JSON403 the response for an HTTP 403 `application/json` response
 	JSON403 *ApiErrorResponse
 	// JSON409 the response for an HTTP 409 `application/json` response
@@ -13055,6 +13423,11 @@ func (r CreateAvatarResponse) GetJSON202() *AvatarCreateResponse {
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
 func (r CreateAvatarResponse) GetJSON400() *ApiErrorResponse {
 	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r CreateAvatarResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
@@ -13200,6 +13573,8 @@ type UpdateAvatarResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *AvatarDetail
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
 	// JSON409 the response for an HTTP 409 `application/json` response
 	JSON409 *ProfileRefusal
 }
@@ -13207,6 +13582,11 @@ type UpdateAvatarResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UpdateAvatarResponse) GetJSON200() *AvatarDetail {
 	return r.JSON200
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r UpdateAvatarResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
@@ -13296,11 +13676,18 @@ type ReplaceAvatarAppearanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *AvatarPartResponse
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ReplaceAvatarAppearanceResponse) GetJSON200() *AvatarPartResponse {
 	return r.JSON200
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r ReplaceAvatarAppearanceResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
 }
 
 // GetBody returns the raw response body bytes
@@ -13496,6 +13883,8 @@ type CreateAvatarCandidatesResponse struct {
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
 	JSON202 *CandidateListResponse
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
 	// JSON429 the response for an HTTP 429 `application/json` response
 	JSON429 *RateLimited
 	// Headers202 the parsed response headers for an HTTP 202 response
@@ -13507,6 +13896,11 @@ type CreateAvatarCandidatesResponse struct {
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
 func (r CreateAvatarCandidatesResponse) GetJSON202() *CandidateListResponse {
 	return r.JSON202
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r CreateAvatarCandidatesResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
 }
 
 // GetJSON429 returns the response for an HTTP 429 `application/json` response
@@ -14205,11 +14599,18 @@ type ReplaceAvatarVoiceResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *AvatarPartResponse
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ReplaceAvatarVoiceResponse) GetJSON200() *AvatarPartResponse {
 	return r.JSON200
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r ReplaceAvatarVoiceResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
 }
 
 // GetBody returns the raw response body bytes
@@ -14243,6 +14644,7 @@ func (r ReplaceAvatarVoiceResponse) ContentType() string {
 
 // GenerateClipResponse409Headers the declared response headers of an HTTP 409 response for GenerateClip
 type GenerateClipResponse409Headers struct {
+	Location   *string
 	RetryAfter *int
 }
 
@@ -14345,8 +14747,92 @@ func (r GenerateClipResponse) ContentType() string {
 	return ""
 }
 
+// GetClipResponse200Headers the declared response headers of an HTTP 200 response for GetClip
+type GetClipResponse200Headers struct {
+	RetryAfter *int
+}
+
+type GetClipResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ClipStatusResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetClipResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetClipResponse) GetJSON200() *ClipStatusResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetClipResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetClipResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetClipResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetClipResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetClipResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetClipResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetClipResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetClipResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetClipResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // EnhancePortraitResponse409Headers the declared response headers of an HTTP 409 response for EnhancePortrait
 type EnhancePortraitResponse409Headers struct {
+	Location   *string
 	RetryAfter *int
 }
 
@@ -14458,6 +14944,7 @@ func (r EnhancePortraitResponse) ContentType() string {
 
 // GeneratePortraitsResponse409Headers the declared response headers of an HTTP 409 response for GeneratePortraits
 type GeneratePortraitsResponse409Headers struct {
+	Location   *string
 	RetryAfter *int
 }
 
@@ -14562,6 +15049,7 @@ func (r GeneratePortraitsResponse) ContentType() string {
 
 // DesignVoiceResponse409Headers the declared response headers of an HTTP 409 response for DesignVoice
 type DesignVoiceResponse409Headers struct {
+	Location   *string
 	RetryAfter *int
 }
 
@@ -15126,7 +15614,9 @@ func (r GetUploadResponse) ContentType() string {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build v2 avatars;
+//   - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
+//     the account; the part of the balance usable on V2 right now is
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -15152,6 +15642,9 @@ func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, reqEdi
 //   - `spendableMicrocredits` is what a session is admitted on: every bucket
 //     for a reserve-mode key or a signed-in user, only the plan and top-up
 //     buckets for a metered key (`couponSpendable: false`).
+//   - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
+//     sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
+//     up; below Growth, an invite code unlocks it.
 //   - Live sessions' reservations are already taken out, and reported as
 //     `heldByLiveSessionsMicrocredits`.
 //   - `unlimited` is true when sessions are not charged, whatever the
@@ -15196,8 +15689,9 @@ func (c *ClientWithResponses) GetAccountEarningsWithResponse(ctx context.Context
 // RedeemAccountCodeWithBodyWithResponse Redeem a code
 //
 // Redeems an invite or credit code for the account. A code can add
-// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-// /v1/account`), or both, and the answer says what it gave. Each account
+// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+// both, and the answer says what it gave. Below Growth, an invite code
+// is what unlocks V2. Each account
 // redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -15218,8 +15712,9 @@ func (c *ClientWithResponses) RedeemAccountCodeWithBodyWithResponse(ctx context.
 // RedeemAccountCodeWithResponse Redeem a code
 //
 // Redeems an invite or credit code for the account. A code can add
-// credits, open v2 avatars (invite-only for now; see `v2Access` on `GET
-// /v1/account`), or both, and the answer says what it gave. Each account
+// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
+// both, and the answer says what it gave. Below Growth, an invite code
+// is what unlocks V2. Each account
 // redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
@@ -15508,13 +16003,18 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     (default), serves the first that completes. Atmee V2 comes with
+//     Growth and up; below Growth, an invite code unlocks it (`402
+//     insufficient_v2_credits` where it isn't on the account's plan; `403
+//     v2_access_required` where billing still decides V2 by invitation).
+//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+//     `limits.v2ProResolutions`; it needs what v2 needs (`403
+//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     Where it is not offered, `engine: v2hd` is `503
+//     engine_unavailable`. `v2pro`, V2 HD's former name, is still
+//     accepted and read as `v2hd`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -15573,13 +16073,18 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. v2 is invite-only (`403
-//     v2_access_required`).<!-- v2pro --> `v2pro` (Atmee V2 Pro, where `GET
+//     (default), serves the first that completes. Atmee V2 comes with
+//     Growth and up; below Growth, an invite code unlocks it (`402
+//     insufficient_v2_credits` where it isn't on the account's plan; `403
+//     v2_access_required` where billing still decides V2 by invitation).
+//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs v2 access and a plan with V2 Pro,
-//     Growth and up (`403 v2_pro_not_in_plan`). Where it is not offered,
-//     `engine: v2pro` is `503 engine_unavailable`.<!-- /v2pro -->
+//     `limits.v2ProResolutions`; it needs what v2 needs (`403
+//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     Where it is not offered, `engine: v2hd` is `503
+//     engine_unavailable`. `v2pro`, V2 HD's former name, is still
+//     accepted and read as `v2hd`.<!-- /v2pro -->
 //   - **Drafts**: the portrait and the voice are optional in zip and JSON
 //     bodies. Without either (other than a v1 avatar with a portrait, which
 //     is render-only) the avatar is a `draft`, and `missingInputs` names
@@ -15867,7 +16372,10 @@ func (c *ClientWithResponses) ReplaceAvatarAppearanceWithResponse(ctx context.Co
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+// V2 isn't on the payer's plan and no sponsor pool covers the session:
+// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -15924,7 +16432,10 @@ func (c *ClientWithResponses) CreateAvatarSessionWithBodyWithResponse(ctx contex
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **v2 avatars** (invite-only) render on a separate GPU pool: the avatar's
+// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
+// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
+// V2 isn't on the payer's plan and no sponsor pool covers the session:
+// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -16567,18 +17078,26 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: a fixed price per clip, set by its size and the same
-//     for any length (`pricing.generation.clipSizes`), charged only when
-//     the clip comes back.
+//   - **Billing**: a price per clip set by its size and its length tier:
+//     up to 5, 10 or 15 seconds, charged at the next length up, so a
+//     7-second clip pays the up-to-10-seconds price
+//     (`pricing.generation.clipPrices`). Charged only when the
+//     clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
-//     seconds the call answers `409 request_in_progress`; retry with the
-//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
-//     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
-//     that includes video generation, Growth and up (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`), and the `generation:write` and `avatars:write`
-//     scopes.
+//     seconds the call answers `409 request_in_progress` and the render
+//     goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+//     `Idempotency-Key` is the request id, and the `409` names that path
+//     in `Location`), or retry this call with the same key after
+//     `Retry-After` to get the clip, charged once.
+//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
+//     below Growth, an invite code unlocks it. The price must fit in the
+//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+//     billing still decides clips by invitation and plan, they need V2
+//     unlocked (`403 v2_access_required`) and a plan with video generation
+//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`). Both need the `generation:write` and
+//     `avatars:write` scopes.
 //
 // | Error | When |
 // |---|---|
@@ -16616,18 +17135,26 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     `GET /v1/account`). 1080p sizes are coming soon.
 //   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
 //     short-lived `url` to download it.
-//   - **Billing**: a fixed price per clip, set by its size and the same
-//     for any length (`pricing.generation.clipSizes`), charged only when
-//     the clip comes back.
+//   - **Billing**: a price per clip set by its size and its length tier:
+//     up to 5, 10 or 15 seconds, charged at the next length up, so a
+//     7-second clip pays the up-to-10-seconds price
+//     (`pricing.generation.clipPrices`). Charged only when the
+//     clip comes back.
 //   - **Slow starts**: a cold render can take minutes. After about 45
-//     seconds the call answers `409 request_in_progress`; retry with the
-//     same `Idempotency-Key` after `Retry-After` to get the clip, charged
-//     once.
-//   - **Access**: needs v2 access (`403 v2_access_required`), a plan
-//     that includes video generation, Growth and up (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`), and the `generation:write` and `avatars:write`
-//     scopes.
+//     seconds the call answers `409 request_in_progress` and the render
+//     goes on. Follow it with `GET /v1/generation/clips/{requestId}` (the
+//     `Idempotency-Key` is the request id, and the `409` names that path
+//     in `Location`), or retry this call with the same key after
+//     `Retry-After` to get the clip, charged once.
+//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
+//     below Growth, an invite code unlocks it. The price must fit in the
+//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
+//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
+//     billing still decides clips by invitation and plan, they need V2
+//     unlocked (`403 v2_access_required`) and a plan with video generation
+//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
+//     `GET /v1/account`). Both need the `generation:write` and
+//     `avatars:write` scopes.
 //
 // | Error | When |
 // |---|---|
@@ -16645,10 +17172,45 @@ func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, para
 	return ParseGenerateClipResponse(rsp)
 }
 
+// GetClipWithResponse Get a clip
+//
+// Returns the status of the clip that `POST /v1/generation/clips` made or
+// is making under this request id (the call's `Idempotency-Key`). Use it
+// after a `409 request_in_progress`, or from a process that did not make
+// the call, to wait for the clip and download it. Reading charges
+// nothing and never starts a render.
+//
+// | `status` | Meaning |
+// |---|---|
+// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
+// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
+// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
+//
+// `404 clip_not_found` means this account has no clip under the id: the
+// id was never used for a clip, or the call ended without a clip
+// (flagged, refused or failed: nothing was charged and the id is free
+// again). The `POST` answers with why; retry it with the same key and
+// inputs to see the reason or to try again.
+//
+// Requires `avatars:read` or `avatars:write`. Account-wide: the same
+// request id under another account is not found.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
+func (c *ClientWithResponses) GetClipWithResponse(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*GetClipResponse, error) {
+	rsp, err := c.GetClip(ctx, requestId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetClipResponse(rsp)
+}
+
 // EnhancePortraitWithBodyWithResponse Enhance a portrait
 //
-// Crops your photo to a square and returns up to four enhanced portraits
-// that keep the subject's identity. With `prompt`, they restyle the photo
+// Crops your photo to a square and returns two enhanced portraits, one
+// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 // as the prompt asks ("this person as a 1920s detective"), keeping the
 // person unless the prompt says otherwise.
 //
@@ -16674,8 +17236,8 @@ func (c *ClientWithResponses) EnhancePortraitWithBodyWithResponse(ctx context.Co
 
 // EnhancePortraitWithResponse Enhance a portrait
 //
-// Crops your photo to a square and returns up to four enhanced portraits
-// that keep the subject's identity. With `prompt`, they restyle the photo
+// Crops your photo to a square and returns two enhanced portraits, one
+// from Gemini and one from Grok, that keep the subject's identity. With `prompt`, they restyle the photo
 // as the prompt asks ("this person as a 1920s detective"), keeping the
 // person unless the prompt says otherwise.
 //
@@ -16701,8 +17263,8 @@ func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, p
 
 // GeneratePortraitsWithBodyWithResponse Generate portraits
 //
-// Generates up to four square portraits of an invented character from a
-// text description. Never use it to depict a real person: for a real
+// Generates two square portraits of an invented character from a text
+// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 // person, enhance their own photo with `POST /v1/generation/enhancements`,
 // with their permission.
 //
@@ -16710,12 +17272,13 @@ func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, p
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
-//     make, one per image provider in a fixed order.
-//   - **Billing**: priced per portrait (`GET /v1/account`,
-//     `pricing.generation.portraitsMicrocredits`). The balance must cover
-//     `count` portraits, and the charge is for the portraits that come
-//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+//     Grok portrait, in that order; 1 makes the Gemini portrait only. A
+//     new call with a larger count is `400 invalid_input`.
+//   - **Billing**: one flat price per call, whatever the count (`GET
+//     /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+//     when at least one portrait comes back: if one provider fails, the
+//     other's portrait costs the full price. The plan's free generation
 //     allowance pays first. A flagged, failed or refused call costs
 //     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -16736,8 +17299,8 @@ func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.
 
 // GeneratePortraitsWithResponse Generate portraits
 //
-// Generates up to four square portraits of an invented character from a
-// text description. Never use it to depict a real person: for a real
+// Generates two square portraits of an invented character from a text
+// description, one from Gemini and one from Grok. Never use it to depict a real person: for a real
 // person, enhance their own photo with `POST /v1/generation/enhancements`,
 // with their permission.
 //
@@ -16745,12 +17308,13 @@ func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.
 //     /v1/avatars` (`assets.image`) and `PUT
 //     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
 //     hours), with a short-lived `url` and a small JPEG `preview`.
-//   - **Count**: `count` (1 to 4, default 4) is how many portraits to
-//     make, one per image provider in a fixed order.
-//   - **Billing**: priced per portrait (`GET /v1/account`,
-//     `pricing.generation.portraitsMicrocredits`). The balance must cover
-//     `count` portraits, and the charge is for the portraits that come
-//     back (ask for 4, get 3: 3 are charged). The plan's free generation
+//   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
+//     Grok portrait, in that order; 1 makes the Gemini portrait only. A
+//     new call with a larger count is `400 invalid_input`.
+//   - **Billing**: one flat price per call, whatever the count (`GET
+//     /v1/account`, `pricing.generation.portraitsMicrocredits`), charged
+//     when at least one portrait comes back: if one provider fails, the
+//     other's portrait costs the full price. The plan's free generation
 //     allowance pays first. A flagged, failed or refused call costs
 //     nothing.
 //   - **Idempotency**: `Idempotency-Key` is required. A retry with the same
@@ -17865,6 +18429,13 @@ func ParseCreateAvatarResponse(rsp *http.Response) (*CreateAvatarResponse, error
 	case rsp.StatusCode == 401:
 		break // No content-type
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
 		var dest ApiErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -18052,6 +18623,13 @@ func ParseUpdateAvatarResponse(rsp *http.Response) (*UpdateAvatarResponse, error
 	case rsp.StatusCode == 401:
 		break // No content-type
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
 	case rsp.StatusCode == 403:
 		break // No content-type
 
@@ -18141,6 +18719,13 @@ func ParseReplaceAvatarAppearanceResponse(rsp *http.Response) (*ReplaceAvatarApp
 
 	case rsp.StatusCode == 401:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
 
 	case rsp.StatusCode == 403:
 		break // No content-type
@@ -18334,6 +18919,13 @@ func ParseCreateAvatarCandidatesResponse(rsp *http.Response) (*CreateAvatarCandi
 
 	case rsp.StatusCode == 401:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
 
 	case rsp.StatusCode == 403:
 		break // No content-type
@@ -19033,6 +19625,13 @@ func ParseReplaceAvatarVoiceResponse(rsp *http.Response) (*ReplaceAvatarVoiceRes
 	case rsp.StatusCode == 401:
 		break // No content-type
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
 	case rsp.StatusCode == 403:
 		break // No content-type
 
@@ -19131,6 +19730,13 @@ func ParseGenerateClipResponse(rsp *http.Response) (*GenerateClipResponse, error
 	switch {
 	case rsp.StatusCode == 409:
 		var headers GenerateClipResponse409Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
@@ -19149,6 +19755,83 @@ func ParseGenerateClipResponse(rsp *http.Response) (*GenerateClipResponse, error
 			headers.RetryAfter = &value
 		}
 		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetClipResponse parses an HTTP response from a GetClipWithResponse call
+func ParseGetClipResponse(rsp *http.Response) (*GetClipResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetClipResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ClipStatusResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetClipResponse200Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil
@@ -19242,6 +19925,13 @@ func ParseEnhancePortraitResponse(rsp *http.Response) (*EnhancePortraitResponse,
 	switch {
 	case rsp.StatusCode == 409:
 		var headers EnhancePortraitResponse409Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
@@ -19346,6 +20036,13 @@ func ParseGeneratePortraitsResponse(rsp *http.Response) (*GeneratePortraitsRespo
 	switch {
 	case rsp.StatusCode == 409:
 		var headers GeneratePortraitsResponse409Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
@@ -19450,6 +20147,13 @@ func ParseDesignVoiceResponse(rsp *http.Response) (*DesignVoiceResponse, error) 
 	switch {
 	case rsp.StatusCode == 409:
 		var headers DesignVoiceResponse409Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
 		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
 			var value int
 			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {

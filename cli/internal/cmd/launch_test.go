@@ -336,6 +336,20 @@ func TestGenerateClipNotInPlan(t *testing.T) {
 	}
 }
 
+// A clip refused Atmee V2 says how to get it.
+func TestGenerateClipInsufficientV2Credits(t *testing.T) {
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusPaymentRequired)
+		_, _ = io.WriteString(w, `{"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`)
+	})
+	_, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod")
+	if code == 0 || !strings.Contains(errOut, "insufficient_v2_credits") || !strings.Contains(errOut, "upgrade to Growth and up") ||
+		!strings.Contains(errOut, "`atmee redeem CODE`") || strings.Contains(errOut, "--engine") {
+		t.Fatalf("%d %s", code, errOut)
+	}
+}
+
 // Local files go up first, each as its kind, and a lost answer hands both
 // uploads back with the key, so a retry sends the same inputs.
 func TestGenerateClipLocalFilesAndLostAnswer(t *testing.T) {
@@ -559,5 +573,83 @@ func TestEnhanceRetryKeepsTheUpload(t *testing.T) {
 	}
 	if _, errOut, code := run(t, "", "generate", "enhance", "--image", photo, "--idempotency-key", "k"); code != 2 || !strings.Contains(errOut, "upload:ID") {
 		t.Fatalf("%d %s", code, errOut)
+	}
+}
+
+const clipReq = "5b0c1f4e-7a2d-4c3b-9e8f-1a2b3c4d5e6f"
+
+// clip-status reads GET /v1/generation/clips/{id} and prints each status:
+// the clip and its link when ready, the upload when expired, a hint when
+// rendering; a stalled call exits non-zero and says how to resume it.
+func TestGenerateClipStatus(t *testing.T) {
+	const clip = `"clip":{"upload":"upload:clip","url":"https://store.example/clip.mp4","expiresAt":"2026-11-02T00:00:00Z",` +
+		`"durationSeconds":8,"width":480,"height":480,"unavailable":false}`
+	const gone = `"clip":{"upload":"upload:clip","expiresAt":"2026-11-02T00:00:00Z","durationSeconds":8,"width":480,"height":480,"unavailable":true}`
+	for _, tc := range []struct {
+		name, body string
+		code       int
+		out, err   string
+	}{
+		{"ready", `{"requestId":"` + clipReq + `","status":"ready",` + clip + `}`, 0, "https://store.example/clip.mp4", ""},
+		{"expired", `{"requestId":"` + clipReq + `","status":"expired",` + gone + `}`, 0, "upload:clip  expired", ""},
+		{"rendering", `{"requestId":"` + clipReq + `","status":"rendering","retryAfterSeconds":10}`, 0, "check again in 10 s", ""},
+		{"stalled", `{"requestId":"` + clipReq + `","status":"stalled"}`, 1, "", "--idempotency-key " + clipReq},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var method, path string
+			signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+				method, path = r.Method, r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, tc.body)
+			})
+			out, errOut, code := run(t, "", "generate", "clip-status", clipReq)
+			if method != http.MethodGet || path != "/v1/generation/clips/"+clipReq {
+				t.Fatalf("%s %s", method, path)
+			}
+			if (code == 0) != (tc.code == 0) || !strings.Contains(out, tc.out) || !strings.Contains(errOut, tc.err) {
+				t.Fatalf("%d %q %q", code, out, errOut)
+			}
+		})
+	}
+}
+
+// --wait reads again after retryAfterSeconds until the clip is done; --json
+// prints the API's answer.
+func TestGenerateClipStatusWaits(t *testing.T) {
+	var calls atomic.Int32
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if calls.Add(1) == 1 {
+			_, _ = io.WriteString(w, `{"requestId":"`+clipReq+`","status":"rendering","retryAfterSeconds":1}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"requestId":"`+clipReq+`","status":"ready","clip":{"upload":"upload:clip","url":"https://store.example/clip.mp4",`+
+			`"expiresAt":"2026-11-02T00:00:00Z","durationSeconds":8,"width":480,"height":480,"unavailable":false}}`)
+	})
+	out, errOut, code := run(t, "", "generate", "clip-status", clipReq, "--wait", "--json")
+	if code != 0 || calls.Load() != 2 {
+		t.Fatalf("%d %q, %d calls", code, errOut, calls.Load())
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil || got["status"] != "ready" {
+		t.Fatalf("%q %v", out, err)
+	}
+}
+
+// A request id that is not a UUID is refused before anything is sent; one
+// with no clip is the API's clip_not_found.
+func TestGenerateClipStatusErrors(t *testing.T) {
+	var calls atomic.Int32
+	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = io.WriteString(w, `{"error":"clip_not_found","message":"no clip under this request id"}`)
+	})
+	if _, errOut, code := run(t, "", "generate", "clip-status", "not-a-uuid"); code == 0 || calls.Load() != 0 || !strings.Contains(errOut, "request id") {
+		t.Fatalf("bad id: %d %q, %d calls", code, errOut, calls.Load())
+	}
+	if _, errOut, code := run(t, "", "generate", "clip-status", clipReq); code == 0 || !strings.Contains(errOut, "clip_not_found") {
+		t.Fatalf("not found: %d %q", code, errOut)
 	}
 }

@@ -136,9 +136,11 @@ func (a *app) createCmd() *cobra.Command {
 			"person speaking, which is cloned): one candidate, a short talking clip, used as soon as it is finished. If " +
 			"its lips don't match, build more (`atmee avatars candidates add`) and choose one " +
 			"(`atmee avatars candidates pick` or `select`).\n\n" +
-			"--engine v2pro makes an Atmee V2 Pro avatar where the server offers it (`atmee account` shows a V2 Pro " +
+			"--engine v2hd makes an Atmee V2 HD avatar where the server offers it (`atmee account` shows a V2 HD " +
 			"line and its sizes only there): a larger v2 model that builds, previews and serves like v2, at the same " +
-			"rates, at larger frame sizes (640x640 by default). It needs v2 access and a plan with V2 Pro (Growth and up).\n\n" +
+			"rates, at larger frame sizes (640x640 by default). It needs what V2 needs (Growth and up, or " +
+			"an invite code that unlocks Atmee V2), and, where billing still decides V2 HD by plan, " +
+			"a plan with it (`atmee account` shows it).\n\n" +
 			"Both files can come later: without one the avatar is a draft (status draft) whose persona and knowledge " +
 			"build; give them with `atmee avatars replace-appearance` and `replace-voice`, in either order, and it " +
 			"builds then. A v1 avatar with only --image is render-only (no voice).\n\n" +
@@ -277,14 +279,18 @@ func (a *app) createCmd() *cobra.Command {
 			}
 			// v2 is the default, with one candidate used as soon as it is
 			// finished, wherever the flags and --config chose nothing. An
-			// account without v2 (invite-only, or v2 not on this server) gets
-			// v1 instead, unless v2-only options were asked for. A draft (no
-			// portrait or no voice yet) gets the candidate options from the
-			// API when it is completed.
-			if in.Engine == "" {
+			// account that cannot build v2 (Atmee V2 not on its plan or not
+			// in where v2 is still invite-only, or v2 not on this server)
+			// gets v1 instead, unless v2-only options were asked for. A draft
+			// (no portrait or no voice yet) gets the candidate options from
+			// the API when it is completed.
+			defaulted := in.Engine == ""
+			v2Options := in.Candidates != 0 || in.SeedSelection != "" || in.Resolution != nil
+			userCandidates, userSelection := in.Candidates, in.SeedSelection
+			if defaulted {
 				in.Engine = api.EngineV2
-				if why := noV2Reason(cl.Account(ctx())); why != "" {
-					if in.Candidates != 0 || in.SeedSelection != "" || in.Resolution != nil {
+				if why := noV2Reason(cl); why != "" {
+					if v2Options {
 						return fmt.Errorf("%s; --candidates, --seed-selection and --resolution are for v2 avatars: drop them to make a v1 avatar", why)
 					}
 					in.Engine = api.EngineV1
@@ -302,12 +308,19 @@ func (a *app) createCmd() *cobra.Command {
 				if err := cl.CheckSize(ctx(), in.Engine, *r); err != nil {
 					var pro *api.V2ProSizeError
 					if errors.As(err, &pro) {
-						return usagef("%v: make one with --engine v2pro, where the server offers it (`atmee account` shows a V2 Pro line)", err)
+						return usagef("%v: make one with --engine v2hd, where the server offers it (`atmee account` shows a V2 HD line)", err)
 					}
 					return usagef("%v", err)
 				}
 			}
 			res, quota, err := cl.Create(ctx(), in)
+			// A v2 create the CLI chose, refused for the account before
+			// anything was made: make it v1 instead.
+			if err != nil && defaulted && !v2Options && in.Engine == api.EngineV2 && v2Refused(err) {
+				in.Engine, in.Candidates, in.SeedSelection = api.EngineV1, userCandidates, userSelection
+				a.note("Making a v1 avatar: %v.\n", err)
+				res, quota, err = cl.Create(ctx(), in)
+			}
 			if err != nil {
 				return err
 			}
@@ -336,7 +349,7 @@ func (a *app) createCmd() *cobra.Command {
 	_ = c.MarkFlagRequired("name")
 	f.StringVar(&image, "image", "", "Portrait: local file, https URL or upload:ID (from atmee generate). Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
 	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file, https URL or upload:ID (from atmee generate) (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
-	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2pro (Atmee V2 Pro, where the server offers it: `atmee account` shows it; Growth and up)")
+	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2hd (Atmee V2 HD; v2pro, its first name, also works; where the server offers it: `atmee account` shows it)")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
 	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 300 characters)")
@@ -791,7 +804,7 @@ const runtimeSeedHelp = "v2: the renderer's runtime seed, 0-2147483647 (default 
 
 // resolutionHelp is the --resolution flag's help on create and update.
 const resolutionHelp = "v2: the frame size as `WxH`, one the server offers: 512x512 (1:1, the default), 672x384 (16:9), " +
-	"384x672 (9:16), 576x448 (4:3) or 448x576 (3:4). V2 Pro: 640x640 (1:1, the default), 864x480 (16:9), 480x864 (9:16), " +
+	"384x672 (9:16), 576x448 (4:3) or 448x576 (3:4). V2 HD: 640x640 (1:1, the default), 864x480 (16:9), 480x864 (9:16), " +
 	"736x544 (4:3) or 544x736 (3:4). A size not offered is refused with the list (`atmee account` lists what the server " +
 	"offers for both). The portrait is framed at that size, so a new size builds new candidates"
 
@@ -872,20 +885,31 @@ func download(link, path string) error {
 
 const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
 
+// noV2Plan is the refusal of Atmee V2 to an account whose plan doesn't
+// include it and that no invite code unlocked, and getV2Hint how to get it.
+const (
+	noV2Plan  = "Atmee V2 isn't on this account's plan"
+	getV2Hint = "upgrade to Growth and up, or `atmee redeem CODE` with an invite code"
+)
+
 // engineOffer says where `atmee account` shows which engines a server offers.
-const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 Pro line only where V2 Pro is offered"
+const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 HD line only where V2 HD is offered"
 
 // engineHints are what to do about an engine or plan refusal, by its code:
 // on a create, which takes --engine, and on any other command (an update,
 // a capture, a session), where the avatar's engine is already set.
 var engineHints = map[string]struct{ create, other string }{
 	"v2_pro_not_in_plan": {
-		create: "V2 Pro avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use --engine v2",
-		other:  "V2 Pro avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use a v2 avatar",
+		create: "V2 HD avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use --engine v2",
+		other:  "V2 HD avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use a v2 avatar",
 	},
 	"v2_access_required": {
-		create: "v2 is invite-only for now (v2 and V2 Pro avatars and video clips need it): " + redeemV2Hint + ", or use --engine v1",
-		other:  "v2 is invite-only for now (v2 and V2 Pro avatars and video clips need it): " + redeemV2Hint,
+		create: "an invite code hasn't unlocked Atmee V2 on this account yet (V2 and V2 HD avatars and video clips need it here): " + redeemV2Hint + ", or use --engine v1",
+		other:  "an invite code hasn't unlocked Atmee V2 on this account yet (V2 and V2 HD avatars and video clips need it here): " + redeemV2Hint,
+	},
+	"insufficient_v2_credits": {
+		create: noV2Plan + ": " + getV2Hint + " (or use --engine v1)",
+		other:  noV2Plan + ": " + getV2Hint,
 	},
 	"engine_unavailable": {
 		create: "this server does not offer that engine (" + engineOffer + "): use another --engine",
@@ -911,16 +935,43 @@ func engineHint(cmd *cobra.Command, err error) string {
 }
 
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
-// or the account could not be read (the create then says so itself).
-func noV2Reason(acct *api.Account, err error) string {
-	if err != nil || acct.V2Access == nil {
+// or that can't be told (the create then says so itself). A reported
+// balance usable on Atmee V2 decides for every account: above 0 it can
+// build v2, 0 it can't. v2Access decides only where the balance leaves the
+// figure out (billing still deciding v2 by invite). A balance that can't be
+// read decides nothing.
+func noV2Reason(cl *api.Client) string {
+	acct, err := cl.Account(ctx())
+	if err != nil {
 		return ""
 	}
-	switch string(*acct.V2Access) {
-	case api.V2AccessInviteRequired:
-		return "v2 avatars are invite-only for now and this account has not been let in; " + redeemV2Hint + " to make v2"
-	case api.V2AccessUnavailable:
+	if acct.V2Access != nil && string(*acct.V2Access) == api.V2AccessUnavailable {
 		return "v2 avatars are not offered on this server"
 	}
+	noV2 := noV2Plan + " (Growth and up), and no invite code has unlocked it; to make V2, " + getV2Hint
+	b, err := cl.Balance(ctx())
+	if err != nil {
+		// The balance could not be read: let the create decide rather
+		// than quietly make v1 for an account that may have credits.
+		return ""
+	}
+	if b.V2SpendableMicrocredits != nil {
+		if *b.V2SpendableMicrocredits > 0 {
+			return ""
+		}
+		return noV2
+	}
+	if acct.V2Access != nil && string(*acct.V2Access) == api.V2AccessInviteRequired {
+		return noV2
+	}
 	return ""
+}
+
+// v2Refused says the API refused v2 to the account: not unlocked (403
+// v2_access_required) or nothing usable on Atmee V2 (402
+// insufficient_v2_credits).
+func v2Refused(err error) bool {
+	var apiErr *api.Error
+	return errors.As(err, &apiErr) && ((apiErr.Status == http.StatusForbidden && apiErr.Code == "v2_access_required") ||
+		(apiErr.Status == http.StatusPaymentRequired && apiErr.Code == "insufficient_v2_credits"))
 }

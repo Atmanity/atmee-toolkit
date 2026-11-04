@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
@@ -16,20 +17,20 @@ import (
 // Generation answers with upload:<uploadId> references, which create and the
 // replace commands take as they are.
 
-// portraitsNote replaces generationNote's first sentence for portraits,
-// which are priced per portrait.
-const portraitsNote = "Costs the portrait price (`atmee account`, portraits ... each) for every portrait that comes back, so up to four " +
-	"times it; a flagged, failed or refused call costs nothing. A paid plan's free generation allowance pays first. Results last " +
-	"24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
+// portraitsNote replaces generationNote's first sentence for portraits:
+// one flat price per call, whether one portrait comes back or two.
+const portraitsNote = "Costs the portrait price (`atmee account`) once per call, charged when at least one portrait comes back, so one " +
+	"portrait costs the same as two; a flagged, failed or refused call costs nothing. A paid plan's free generation allowance pays " +
+	"first. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
 
 const generationNote = "Costs the operation's price (`atmee account`), charged only when something comes back; a flagged, failed or refused " +
 	"call costs nothing. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
 
 const (
-	enhanceEngineHelp = "The engine the avatar will be created with, v1, v2 or v2pro (Atmee V2 Pro, where the server offers it): " +
-		"v1 turns the face to the camera, shoulders up, v2 and v2pro keep the pose, framing and background (the API's default is v1)"
-	portraitsEngineHelp = "The engine the avatar will be created with, v1, v2 or v2pro (Atmee V2 Pro, where the server offers it): " +
-		"v1 frames the character from the shoulders up, v2 and v2pro half-body unless the description sets another framing " +
+	enhanceEngineHelp = "The engine the avatar will be created with, v1, v2 or v2hd (Atmee V2 HD, where the server offers it): " +
+		"v1 turns the face to the camera, shoulders up, v2 and v2hd keep the pose, framing and background (the API's default is v1)"
+	portraitsEngineHelp = "The engine the avatar will be created with, v1, v2 or v2hd (Atmee V2 HD, where the server offers it): " +
+		"v1 frames the character from the shoulders up, v2 and v2hd half-body unless the description sets another framing " +
 		"(the API's default is v1)"
 )
 
@@ -37,7 +38,7 @@ const (
 // request; both generation requests take the same engines.
 func checkPortraitEngine(engine string) error {
 	if engine != "" && !avatarapi.EnhancePortraitRequestEngine(engine).Valid() {
-		return usagef("--engine takes v1, v2 or v2pro (%s)", engine)
+		return usagef("--engine takes v1, v2 or v2hd (%s)", engine)
 	}
 	return nil
 }
@@ -45,8 +46,8 @@ func checkPortraitEngine(engine string) error {
 const idempotencyHelp = "Reuse the key a failed call printed to retry it: the same key never charges twice and returns the first result"
 
 func (a *app) generateCmd() *cobra.Command {
-	return group("generate", "Make portraits and voices for an avatar, or a video clip (portraits, enhance, voice, clip)",
-		a.generatePortraitsCmd(), a.generateEnhanceCmd(), a.generateVoiceCmd(), a.generateClipCmd())
+	return group("generate", "Make portraits and voices for an avatar, or a video clip (portraits, enhance, voice, clip, clip-status)",
+		a.generatePortraitsCmd(), a.generateEnhanceCmd(), a.generateVoiceCmd(), a.generateClipCmd(), a.generateClipStatusCmd())
 }
 
 func (a *app) generatePortraitsCmd() *cobra.Command {
@@ -55,7 +56,7 @@ func (a *app) generatePortraitsCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "portraits --description TEXT",
 		Short: "Generate portraits of an invented character from a description.",
-		Long: "Generate up to four square portraits of an invented character, one from each image provider. Never use it to depict a " +
+		Long: "Generate up to two square portraits of an invented character, one from Gemini and one from Grok. Never use it to depict a " +
 			"real person from a description: for a real person, with their permission, use `atmee generate enhance` on their own photo. " + portraitsNote,
 		Example: `  atmee generate portraits --description "a weathered lighthouse keeper, sixties, warm smile"`,
 		Args:    cobra.NoArgs,
@@ -91,7 +92,7 @@ func (a *app) generateEnhanceCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "enhance --image PATH",
 		Short: "Enhance a photo, or restyle it with --prompt.",
-		Long: "Crop a photo to a square and return up to four portraits, one per image provider. Without --prompt they are enhanced " +
+		Long: "Crop a photo to a square and return up to two portraits, one from Gemini and one from Grok. Without --prompt they are enhanced " +
 			"versions that keep the subject's identity; with it they restyle the photo as asked, keeping the person unless the prompt " +
 			"says otherwise. If the photo shows a real person other than you, have their permission first. " + generationNote,
 		Example: `  atmee generate enhance --image ./me.jpg
@@ -232,12 +233,15 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"A clip lasts at least 1 second, up to the server's limit (15 seconds on current servers); a longer --duration " +
 			"is refused with the limit.\n\n" +
 			"--resolution is the clip's size, one the server serves: `atmee account` lists this server's sizes and, on a " +
-			"current server, each one's fixed price per clip whatever its length (for example 480x480, the default there, " +
+			"current server, each one's price per clip for up to 5, 10 and 15 seconds, charged at the next length up, so a 7-second " +
+			"clip pays the up-to-10-seconds price (for example 480x480, the default there, " +
 			"or 1280x720). Without --resolution the server's default size is used. A size it doesn't serve is refused " +
 			"with its list.\n\n" +
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 24 hours. Needs v2 access and a plan with video generation (Growth and up). " +
+			"The result lasts 24 hours. A clip uses Atmee V2: it needs Growth and up, or an invite code that unlocks Atmee V2 " +
+			"(`atmee redeem CODE`); otherwise it is 402 insufficient_v2_credits. " +
+			"Where billing still decides clips by invitation and plan, they need v2 access and a plan with video generation. " +
 			"A signed-in user, or an API key with generation:write and avatars:write.",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
   atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 480x640
@@ -312,17 +316,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 			if jsonOut {
 				return a.printJSON(out)
 			}
-			clip := out.Clip
-			a.printf("Clip of %s at %dx%d (%s credits charged%s)\n", seconds(clip.DurationSeconds), clip.Width, clip.Height,
-				credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed))
-			if clip.Unavailable {
-				a.printf("  %s  expired\n", clip.Upload)
-				return nil
-			}
-			a.printf("  %s  until %s\n", clip.Upload, stamp(clip.ExpiresAt))
-			if clip.Url != nil {
-				a.printf("    %s\n", *clip.Url)
-			}
+			a.printClip(out.Clip, fmt.Sprintf(" (%s credits charged%s)", credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed)))
 			return nil
 		},
 	}
@@ -334,6 +328,92 @@ func (a *app) generateClipCmd() *cobra.Command {
 	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, one this server serves (`atmee account` lists them; e.g. 480x480, the default on current servers)")
 	f.Int64Var(&seed, "seed", 0, "The render's seed; another seed gives other motion")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
+	f.BoolVar(&jsonOut, "json", false, jsonHelp)
+	return c
+}
+
+// printClip prints a clip: its length and size (then note), its upload
+// and how long it lasts, and its download link.
+func (a *app) printClip(clip api.GeneratedClipBody, note string) {
+	a.printf("Clip of %s at %dx%d%s\n", seconds(clip.DurationSeconds), clip.Width, clip.Height, note)
+	if clip.Unavailable {
+		a.printf("  %s  expired\n", clip.Upload)
+		return
+	}
+	a.printf("  %s  until %s\n", clip.Upload, stamp(clip.ExpiresAt))
+	if clip.Url != nil {
+		a.printf("    %s\n", *clip.Url)
+	}
+}
+
+// clipWait bounds clip-status --wait: as long as generate clip itself waits.
+const clipWait = 10 * time.Minute
+
+func (a *app) generateClipStatusCmd() *cobra.Command {
+	var wait, jsonOut bool
+	c := &cobra.Command{
+		Use:   "clip-status REQUEST_ID",
+		Short: "Check a video clip by its request id, and get its download link.",
+		Long: "Reads the clip a `generate clip` call made or is making under REQUEST_ID: the Idempotency-Key a `generate clip` printed when it stopped waiting, " +
+			"or the --idempotency-key you gave it. It charges nothing and never starts a render, so it is safe from another " +
+			"shell or machine with the same account.\n\n" +
+			"rendering: still running; --wait keeps reading until it is done (up to 10 minutes). " +
+			"ready: the clip, with a download link signed again on each read, until its upload expires 24 hours after it was made. " +
+			"expired: the clip was made but its upload has ended; it is not made again. " +
+			"stalled: the call stopped without finishing; run `atmee generate clip` again with the same inputs and " +
+			"--idempotency-key REQUEST_ID to resume it, charged at most once (exits non-zero). " +
+			"A request id with no clip (never used, or a call that ended without one and charged nothing) is clip_not_found.",
+		Example: `  atmee generate clip-status 5b0c1f4e-7a2d-4c3b-9e8f-1a2b3c4d5e6f
+  atmee generate clip-status 5b0c1f4e-7a2d-4c3b-9e8f-1a2b3c4d5e6f --wait --json`,
+		Args: exactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			if _, err := api.ParseClipRequestID(args[0]); err != nil {
+				return usageError{err}
+			}
+			cl, err := a.api()
+			if err != nil {
+				return err
+			}
+			var st *api.ClipStatus
+			if wait {
+				st, err = cl.WaitClip(ctx(), args[0], clipWait, 5*time.Second, func(*api.ClipStatus) {
+					if !jsonOut {
+						a.note("Rendering...\n")
+					}
+				})
+			} else {
+				st, err = cl.GetClip(ctx(), args[0])
+			}
+			if err != nil {
+				return err
+			}
+			if jsonOut {
+				if err := a.printJSON(st); err != nil {
+					return err
+				}
+			}
+			switch st.Status {
+			case api.ClipStalled:
+				return fmt.Errorf("the clip call stopped without finishing; resume it with the same inputs and --idempotency-key %s "+
+					"(atmee generate clip ... --idempotency-key %s): it is charged at most once", args[0], args[0])
+			case api.ClipRendering:
+				if !jsonOut {
+					after := ""
+					if st.RetryAfterSeconds != nil {
+						after = fmt.Sprintf("; check again in %d s", *st.RetryAfterSeconds)
+					}
+					a.printf("Rendering%s (or add --wait)\n", after)
+				}
+			default:
+				if !jsonOut && st.Clip != nil {
+					a.printClip(*st.Clip, "")
+				}
+			}
+			return nil
+		},
+	}
+	f := c.Flags()
+	f.BoolVar(&wait, "wait", false, "Keep reading until the clip is ready, expired or stalled (up to 10 minutes)")
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
 }

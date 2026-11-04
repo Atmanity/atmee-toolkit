@@ -23,7 +23,7 @@ func engine(e any) string {
 	if s == "" || s == "<nil>" {
 		return api.EngineV1
 	}
-	return s
+	return api.CanonicalEngine(s)
 }
 
 var stageOrder = []string{"appearance", "voice", "persona", "knowledge", "previews"}

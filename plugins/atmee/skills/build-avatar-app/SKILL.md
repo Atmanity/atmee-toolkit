@@ -54,7 +54,7 @@ They were proven in live sessions, including the timing rules in
 4. **Test sessions cost credits.** Before the first one, read the price per
    minute for the avatar's engine (`get_account`:
    `pricing.sessionPerMinuteMicrocredits` for v1,
-   `pricing.sessionV2PerMinuteMicrocredits` for v2 and V2 Pro, the first where the second
+   `pricing.sessionV2PerMinuteMicrocredits` for v2 and V2 HD, the first where the second
    is absent) and the
    balance (`get_balance`: `spendableMicrocredits`), each divided by 100 for
    credits, say both, and ask. One yes covers the short tests of this piece
@@ -109,12 +109,13 @@ step 0), and go on whatever it says.
 
 Call `list_avatars` (the atmee avatars server; run `atmee-setup` if its tools
 are missing). The app needs one that is `ready`, `readyToChat`, engine `v2`
-or `v2pro` (Atmee V2 Pro, a larger v2 model: everything in this skill works
+or `v2hd` (Atmee V2 HD, a larger v2 model: everything in this skill works
 the same for it, at its own frame size).
-None fits: make one with the `create-avatar` skill first. v2 is invite-only for
-now: when `get_account`'s `v2Access` is `invite_required`, the account needs an
-invite code before it can make one: ask the user for it and redeem it with
-`redeem_code`.
+None fits: make one with the `create-avatar` skill first. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it:
+when `get_account`'s `v2Access` is `invite_required` and `get_balance`'s
+`v2SpendableMicrocredits` is not above 0, the account needs it before it can
+make one: suggest Growth and up, or ask the user for an invite code and
+redeem it with `redeem_code`.
 
 The persona is the avatar's: it greets and introduces itself as it was made,
 whatever the app says, unless the session starts with `welcome: false`, for an

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.10.12 (2026-11-04)
+
+
+### Features
+
+* **atmee:** describe Atmee V2 as paid by credits that work for it
+* **atmee:** follow a video clip by its request id
+* **atmee:** name Atmee V2 HD engine v2hd, keep v2pro working
+* **atmee:** show clip prices by length
+* **cli:** show Atmee V2 HD's own session rates
+
+
+### Bug Fixes
+
+* **atmee:** describe Atmee V2 by access, not by a kind of credit
+* **atmee:** price portraits per call, up to two from Gemini and Grok
+
+
+### Documentation
+
+* **skills:** credit packs are the same on every plan, Free included
+
 ## 0.10.11 (2026-11-03)
 
 

@@ -16,7 +16,7 @@ avatars server with:
 
 - **`engine`:** the one any paid portrait was made for (the
   credits-and-generation reference, The engine a portrait is for), normally
-  `v2`, or `v2hd` when the creator chose Atmee V2 HD (Model, below). Use
+  `v2`, never `v2hd` (Atmee V2 HD is for Enterprise customers: Model, below). Use
   v1 only if the creator asks, or when the account
   can't build v2. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it. The
   account can build v2 when `get_balance` reports `v2SpendableMicrocredits`
@@ -50,8 +50,8 @@ avatars server with:
   it does. The portrait is cropped to that shape at its centre, so
   check the face against it. A later change on `update_avatar` makes new
   seeds, like a new portrait. v1 refuses it: leave it out of a v1 create,
-  and tell the creator the video stays square. A V2 HD avatar has its own
-  sizes: leave it out for 640×640 (square), or pick one of
+  and tell the creator the video stays square. An existing V2 HD avatar
+  (one this skill continues, never a new one) has its own sizes: leave it out for 640×640 (square), or pick one of
   `limits.v2ProResolutions`, the only list to trust (for example a tall
   `{width: 480, height: 864}` or a wide `{width: 864, height: 480}`, if it
   lists them); the v2 sizes (512×512, 672×384,
@@ -59,27 +59,31 @@ avatars server with:
 
 ### Model
 
-There are three models. Name them Atmee V1, Atmee V2 and Atmee V2 HD to the
-creator; the API's `engine` is `v1`, `v2` and `v2hd`.
+Name the models Atmee V1, Atmee V2 and Atmee V2 HD to the creator; the API's
+`engine` is `v1`, `v2` and `v2hd`. This skill makes Atmee V2, and V1 only as
+above. There is no model question.
 
 - **Atmee V2** is the default, and what this skill makes.
-- **Atmee V2 HD** is a larger V2 model on its own GPUs, at larger frames
-  (640×640 by default; `limits.v2ProResolutions` lists the others). It is a V2 avatar in every
-  other way: seeds, picking another, the character, the preview line and its
-  links all work as this skill says; its conversations have their own per-minute rates
-  (`get_account` `pricing.sessionV2HdPerMinuteMicrocredits`).
-  Offer it when the creator wants a bigger video or asks for the best model.
 - **Atmee V1** is the older model, for an account without Atmee V2.
+- **Atmee V2 HD** is a larger V2 model on its own GPUs, at larger frames
+  (640×640 by default), for Enterprise customers on custom plans. This skill
+  never makes one for any account: no `engine: v2hd` (or `v2pro`) on a new
+  avatar or its portraits, whatever `get_account` reports. `limits.v2Pro` is
+  true and the `pricing.*V2Hd*` fields are present for every account, so
+  neither means the creator may have it; never quote those prices.
 
-Whether the account has V2 HD is in `get_account`: `limits.v2Pro: true`, on
-an account that can build v2 (above), means yes. `limits.v2Pro: false` means
-the plan lacks it (where billing still decides V2 HD by plan): mention it only
-if the creator asks for it or for a bigger video, and point to Billing. No `limits.v2Pro` at all means this server
-doesn't offer it: never mention V2 HD. Only when the account has it, add one
-question to step 1's name and language call ("Which model?", with "Atmee V2
-(Recommended)" and "Atmee V2 HD: a larger model, bigger video"), and save
-the answer with the `create` iteration. Every later call on the avatar works
-the same either way; `get_avatar` reads `engine: v2hd` for a V2 HD one.
+When the creator asks for V2 HD, the HD model or the best model: say Atmee
+V2 HD is for Enterprise customers on custom plans, and that they can contact
+us through the Studio help center. Its link is the origin of
+`get_account` `links.billing` plus `/studio/help-center` (for
+`https://www.atmee.ai/studio/billing`, `https://www.atmee.ai/studio/help-center`);
+when `get_account` has no `links`, name the Studio help center without a link
+and never make one up. Then offer Atmee V2 instead. Never name a plan, an
+upgrade or an invite code as the way to V2 HD.
+
+An existing V2 HD avatar (`get_avatar` reads `engine: v2hd`) keeps working:
+seeds, picking another, the character, the preview line and its links all
+work as this skill says, and a new seed or portrait for it keeps its engine.
 
 The avatars server's create tool may default to manual selection or several
 seeds: pass the selection and count above every time.

@@ -107,14 +107,18 @@ always its chat page: never start a session for it (`start_session`,
   they suggest Growth and up or ask for an invite code first, and make v1
   only if there is neither and the creator agrees.
 - **Atmee V2 HD** (engine `v2hd`) is a larger v2 model on its own GPUs, at
-  larger frames (640×640 by default; `limits.v2ProResolutions` lists the others). It builds,
-  picks seeds and serves exactly like v2, through the same tools and
-  sessions, at its own per-minute rates (`get_account` `pricing`,
-  `sessionV2HdPerMinuteMicrocredits` and the like). It needs what v2 needs,
-  Atmee V2 on the account, and only some servers offer it yet: `get_account`'s
-  `limits.v2Pro` is true where the account can make one, false where the
-  plan lacks it (where billing still decides V2 HD by plan), and absent where the server doesn't offer it (then don't
-  mention it). `limits.v2ProResolutions` lists its sizes.
+  larger frames (640×640 by default; `limits.v2ProResolutions` lists the
+  others), for Enterprise customers on custom plans. Agents never create a
+  new V2 HD avatar for any account, whatever `get_account` reports:
+  `limits.v2Pro` is true and the `pricing.*V2Hd*` fields are present for
+  every account, so neither means the user may have it. Never quote a V2 HD
+  price, or name a plan, an upgrade or an invite code as the way to it. When
+  someone asks for it, say it is for Enterprise customers on custom plans,
+  send them to contact us through the Studio help center (the origin of
+  `get_account` `links.billing` plus `/studio/help-center`; with no `links`,
+  name the Studio help center without a link, never a made-up address), and
+  offer Atmee V2. Existing V2 HD avatars keep working: they build, pick seeds
+  and serve exactly like v2, through the same tools and sessions.
 - **`/v1` in a path is the API version, not the engine.** Every endpoint
   starts with `/v1` (`POST /v1/sessions`, `/v1/avatars`), and v1 and v2
   avatars use the same ones. Never infer an avatar's engine from a path or

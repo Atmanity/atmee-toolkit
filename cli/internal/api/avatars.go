@@ -167,8 +167,8 @@ func (c *Client) Appearance(ctx context.Context, avatarID string) (*SourceFile, 
 	return decode[SourceFile](r.HTTPResponse, r.Body, err)
 }
 
-// Voice reads the voice sample last given, as a presigned URL, and the
-// voice engine.
+// Voice reads the voice sample last given, as a presigned URL (its
+// ttsProvider is deprecated and empty).
 func (c *Client) Voice(ctx context.Context, avatarID string) (*VoiceFile, error) {
 	id, err := ParseID(avatarID)
 	if err != nil {

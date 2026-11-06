@@ -611,11 +611,11 @@ func TestV2ProSizeOnV2IsCommandAware(t *testing.T) {
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
 	_, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "640x640")
 	if code != 2 || sent != 0 || !strings.Contains(errOut, "engine can't change") || !strings.Contains(errOut, "pick a v2 size") ||
-		strings.Contains(errOut, "make one with --engine v2hd") {
+		strings.Contains(errOut, "V2 HD is Enterprise-only") {
 		t.Fatalf("update: %d %s", code, errOut)
 	}
 	_, errOut, code = run(t, "", "avatars", "create", "--name", "M", "--resolution", "640x640")
-	if code != 2 || sent != 0 || !strings.Contains(errOut, "make one with --engine v2hd") || strings.Contains(errOut, "can't change") {
+	if code != 2 || sent != 0 || !strings.Contains(errOut, "V2 HD is Enterprise-only") || strings.Contains(errOut, "can't change") {
 		t.Fatalf("create: %d %s", code, errOut)
 	}
 }
@@ -684,7 +684,7 @@ func TestV2ProEngine(t *testing.T) {
 		{[]string{"avatars", "update", id, "--resolution", "512x512"}, "not a V2 HD size on this server; offered: 640x640, 864x480"},
 		{[]string{"avatars", "update", id, "--resolution", "896x480"}, "V2 HD frames are at most"},
 		{[]string{"avatars", "create", "--name", "M", "--engine", "v2pro", "--resolution", "512x512"}, "not a V2 HD size"},
-		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "make one with --engine v2hd"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "V2 HD is Enterprise-only"},
 	} {
 		if _, errOut, code := run(t, "", c.args...); code == 0 || len(got) != 2 || !strings.Contains(errOut, c.want) {
 			t.Errorf("%v: %d %q, sent %v", c.args, code, errOut, got)
@@ -697,7 +697,7 @@ func TestV2ProRefusalHints(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	for body, want := range map[string]string{
-		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Growth and up); upgrade the plan, or use engine v2"}`: "Creator Studio (Billing)",
+		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Growth and up); upgrade the plan, or use engine v2"}`: "for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
 		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`:                                   "a V2 HD line only where V2 HD is offered",
 		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                   "`atmee redeem CODE`",
 		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`:                                                   "upgrade to Growth and up",

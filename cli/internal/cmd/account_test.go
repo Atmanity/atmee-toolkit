@@ -212,8 +212,7 @@ func TestBalanceV2Credits(t *testing.T) {
 }
 
 // An account no invite code unlocked is told how Atmee V2 comes (Growth
-// and up, or an invite code), and V2 HD on its plan is not said to wait for
-// an invite.
+// and up, or an invite code), and V2 HD is not said to come with either.
 func TestAccountV2Access(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -223,45 +222,60 @@ func TestAccountV2Access(t *testing.T) {
 			"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
 	out := ok(t, "account")
 	for _, want := range []string{"v2 avatars   not unlocked by an invite code", "Growth and up", "`atmee redeem CODE`",
-		"V2 HD        yes, where Atmee V2 is on this account"} {
+		"V2 HD        Enterprise only"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
 	}
-	for _, not := range []string{"invite only", "not in this plan", "Video clips", "credits for"} {
+	for _, not := range []string{"invite only", "not in this plan", "Video clips", "credits for", "where Atmee V2 is on this account"} {
 		if strings.Contains(out, not) {
 			t.Errorf("%q in:\n%s", not, out)
 		}
 	}
 }
 
-// Atmee V2 HD shows only where the server reports it: offered with its
-// sizes, not in the plan, or absent.
+// Atmee V2 HD is for Enterprise customers: wherever the server reports
+// it, true or false, the account is told to contact us through the help
+// center on the website its links point to (named without an address when
+// there are none), and never that it can build one or which plan brings it.
+// The sizes stay, for the V2 HD avatars that already exist.
 func TestAccountV2Pro(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
-	body := func(limits string) string {
+	body := func(limits, links string) string {
 		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted","limits":{"apiAccess":true` + limits + `},
 			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
-				"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+				"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}` + links + `}`
 	}
-	for limits, want := range map[string][]string{
-		`,"v2Pro":true,"v2ProResolutions":[{"width":640,"height":640},{"width":864,"height":480}]`: {
-			"V2 HD        yes (--engine v2hd", "V2 HD sizes  640x640, 864x480 (--resolution)"},
-		`,"v2Pro":false`: {"V2 HD        not in this plan (Growth and up)", "v2_pro_not_in_plan"},
-		``:               nil,
+	links := `,"links":{"billing":"https://www.atmee.ai/studio/billing","docs":"https://www.atmee.ai/docs/api","analytics":"https://www.atmee.ai/studio/analytics",
+		"apiKeys":"https://www.atmee.ai/studio/api-keys","avatars":"https://www.atmee.ai/studio/manage","create":"https://www.atmee.ai/studio/create","explore":"https://www.atmee.ai/studio/explore"}`
+	const enterprise = "V2 HD        Enterprise only, on custom plans: contact us through Creator Studio's help center"
+	for _, c := range []struct {
+		limits, links string
+		want          []string
+	}{
+		{`,"v2Pro":true,"v2ProResolutions":[{"width":640,"height":640},{"width":864,"height":480}]`, links,
+			[]string{enterprise + " (https://www.atmee.ai/studio/help-center)", "V2 HD sizes  640x640, 864x480 (--resolution)"}},
+		{`,"v2Pro":false`, links, []string{enterprise + " (https://www.atmee.ai/studio/help-center)"}},
+		{`,"v2Pro":true`, ``, []string{enterprise + "\n"}},
+		{``, links, nil},
 	} {
-		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(limits)).URL)
+		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(c.limits, c.links)).URL)
 		out, errOut, code := run(t, "", "account")
 		if code != 0 {
 			t.Fatalf("%d %s", code, errOut)
 		}
-		for _, w := range want {
+		for _, w := range c.want {
 			if !strings.Contains(out, w) {
-				t.Errorf("%s: missing %q in:\n%s", limits, w, out)
+				t.Errorf("%s: missing %q in:\n%s", c.limits, w, out)
 			}
 		}
-		if want == nil && strings.Contains(out, "V2 HD") {
+		for _, not := range []string{"yes (--engine v2hd", "Growth", "not in this plan", "v2_pro_not_in_plan"} {
+			if strings.Contains(out, not) {
+				t.Errorf("%s: %q in:\n%s", c.limits, not, out)
+			}
+		}
+		if c.want == nil && strings.Contains(out, "V2 HD") {
 			t.Errorf("V2 HD shown where the server does not offer it:\n%s", out)
 		}
 	}
@@ -294,9 +308,9 @@ func TestAccountPerEnginePrices(t *testing.T) {
 	}
 }
 
-// Atmee V2 HD's own rates show where the server reports them; where it
-// does not, its price is left unsaid (not taken for v2's), and --json leaves
-// the fields out.
+// Atmee V2 HD's rates are never printed, even where the server reports
+// them: it is for Enterprise customers on custom plans, not priced per
+// minute here. --json still carries the API's fields as they came.
 func TestAccountV2HDRates(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -308,21 +322,19 @@ func TestAccountV2HDRates(t *testing.T) {
 				"previewClipMicrocredits":0` + hd + `},
 			"captureQuota":{"pending":0,"pendingLimit":10}}`
 	}
-	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(`,"sessionV2HdPerMinuteMicrocredits":300,"renderV2HdPerMinuteMicrocredits":200,"monetizedV2HdPerMinuteMicrocredits":400`)).URL)
-	out := ok(t, "account")
-	if !strings.Contains(out, "conversation v1 1.00/min, v2 2.00/min, V2 HD 3.00/min · avatar session v1 0.50/min, v2 1.00/min, V2 HD 2.00/min") ||
-		strings.Contains(out, "v2's rates") {
-		t.Errorf("reported:\n%s", out)
+	for _, hd := range []string{`,"sessionV2HdPerMinuteMicrocredits":300,"renderV2HdPerMinuteMicrocredits":200,"monetizedV2HdPerMinuteMicrocredits":400`, ``} {
+		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(hd)).URL)
+		out := ok(t, "account")
+		if !strings.Contains(out, "conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min\n") ||
+			strings.Contains(out, "V2 HD 3.00") || strings.Contains(out, "V2 HD 2.00") || strings.Contains(out, "rates") {
+			t.Errorf("%s:\n%s", hd, out)
+		}
 	}
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(`,"monetizedV2HdPerMinuteMicrocredits":400`)).URL)
 	if js := ok(t, "account", "--json"); !strings.Contains(js, `"monetizedV2HdPerMinuteMicrocredits": 400`) {
 		t.Errorf("--json: %s", js)
 	}
 	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body("")).URL)
-	out = ok(t, "account")
-	if !strings.Contains(out, "conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min\n") ||
-		strings.Contains(out, "rates") || !strings.Contains(out, "V2 HD        yes (--engine v2hd)\n") {
-		t.Errorf("not reported:\n%s", out)
-	}
 	if js := ok(t, "account", "--json"); strings.Contains(js, "V2Hd") {
 		t.Errorf("--json shows absent V2 HD rates: %s", js)
 	}

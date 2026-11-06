@@ -54,10 +54,12 @@ They were proven in live sessions, including the timing rules in
 4. **Test sessions cost credits.** Before the first one, read the price per
    minute for the avatar's engine (`get_account`:
    `pricing.sessionPerMinuteMicrocredits` for v1,
-   `pricing.sessionV2PerMinuteMicrocredits` for v2 and V2 HD, the first where the second
+   `pricing.sessionV2PerMinuteMicrocredits` for v2, the first where the second
    is absent) and the
    balance (`get_balance`: `spendableMicrocredits`), each divided by 100 for
-   credits, say both, and ask. One yes covers the short tests of this piece
+   credits, say both, and ask. An existing V2 HD avatar's sessions have their
+   own rate, which is for Enterprise customers: quote no figure, say only that
+   it bills at its own V2 HD rate, give the balance, and ask. One yes covers the short tests of this piece
    of work, since building an app takes many; ask again before a long test or
    when the balance runs low. Keep tests short with `maxDurationSeconds`.
    A link for someone who only wants to talk to the avatar is not a test of
@@ -109,8 +111,11 @@ step 0), and go on whatever it says.
 
 Call `list_avatars` (the atmee avatars server; run `atmee-setup` if its tools
 are missing). The app needs one that is `ready`, `readyToChat`, engine `v2`
-or `v2hd` (Atmee V2 HD, a larger v2 model: everything in this skill works
-the same for it, at its own frame size).
+or `v2hd` (an existing Atmee V2 HD avatar, a larger v2 model: everything in
+this skill works the same for it, at its own frame size). Never make a new
+V2 HD one: it is for Enterprise customers on custom plans (contact us through
+the Studio help center, the origin of `get_account` `links.billing` plus
+`/studio/help-center`); offer Atmee V2.
 None fits: make one with the `create-avatar` skill first. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it:
 when `get_account`'s `v2Access` is `invite_required` and `get_balance`'s
 `v2SpendableMicrocredits` is not above 0, the account needs it before it can

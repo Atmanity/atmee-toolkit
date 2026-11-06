@@ -109,8 +109,9 @@ a generated portrait is framed from the shoulders up. v2 animates whatever
 the portrait shows, so for v2 enhancing keeps the photo's pose, gaze, hands,
 framing and background and only improves its quality, and a generated
 portrait is framed half-body, from the waist up with both hands visible,
-unless the description sets another framing. An Atmee V2 HD portrait
-(`engine: v2hd`, the candidates reference, Model) is made as for v2.
+unless the description sets another framing. A new portrait for an existing
+Atmee V2 HD avatar (`engine: v2hd`, the candidates reference, Model) is made
+as for v2; never make one for a new avatar.
 
 - **Settle the engine before the first paid portrait call,** in step 1:
   v2 when `get_balance` reports `v2SpendableMicrocredits` above 0; when it

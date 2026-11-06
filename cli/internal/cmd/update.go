@@ -366,8 +366,7 @@ func (a *app) updateCmd() *cobra.Command {
 					if err := cl.CheckSize(ctx(), engine(deref(av.Engine)), api.Resolution{Width: r["width"], Height: r["height"]}); err != nil {
 						var pro *api.V2ProSizeError
 						if errors.As(err, &pro) {
-							return usagef("%v, and an avatar's engine can't change: create a V2 HD avatar for it "+
-								"(`atmee avatars create --engine v2hd`, where the server offers it), or pick a v2 size (`atmee account` lists them)", err)
+							return usagef("%v, and an avatar's engine can't change, so pick a v2 size (`atmee account` lists them)", err)
 						}
 						return usagef("%v", err)
 					}

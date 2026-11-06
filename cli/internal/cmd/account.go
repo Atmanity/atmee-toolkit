@@ -93,8 +93,8 @@ func (a *app) printBalance(b *api.Balance) {
 		coupon = "  (not spent by this key: metered keys use plan and top-up credits only)"
 	}
 	a.printf("  Plan     %s\n  Top-up   %s\n  Coupon   %s%s\n", credits(b.PlanMicrocredits), credits(b.TopupMicrocredits), credits(b.CouponMicrocredits), coupon)
-	// The part that pays for Atmee V2 (v2 and V2 HD avatars, their
-	// sessions, video clips), where the server reports it.
+	// The part that pays for Atmee V2 (v2 avatars, their sessions, video
+	// clips, and existing V2 HD avatars), where the server reports it.
 	if v := b.V2SpendableMicrocredits; v != nil {
 		a.printf("Usable on Atmee V2  %s\n", credits(*v))
 	}
@@ -140,6 +140,21 @@ func (a *app) accountCmd() *cobra.Command {
 	}
 	c.Flags().BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
+}
+
+// helpCenter is Creator Studio's help center, where Enterprise customers
+// contact us: on the website the account's links point to, or named
+// without an address when the server reports no links.
+func helpCenter(links *avatarapi.AccountLinks) string {
+	const name = "Creator Studio's help center"
+	if links == nil {
+		return name
+	}
+	u, err := url.Parse(links.Billing)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return name
+	}
+	return name + " (" + u.Scheme + "://" + u.Host + "/studio/help-center)"
 }
 
 func (a *app) printAccount(x *api.Account) {
@@ -195,15 +210,9 @@ func (a *app) printAccount(x *api.Account) {
 	if x.SessionV2Reported {
 		conversation = "v1 " + conversation + ", v2 " + creditsPerMinute(pr.SessionV2PerMinuteMicrocredits)
 	}
-	// Atmee V2 HD's own rates, where the server reports them; otherwise its
-	// price is left unsaid rather than taken for v2's.
-	if v := pr.SessionV2HdPerMinuteMicrocredits; v != nil {
-		conversation += ", V2 HD " + creditsPerMinute(*v)
-	}
+	// Atmee V2 HD's rates are left unsaid even where the server reports
+	// them: it is for Enterprise customers on custom plans (--json keeps them).
 	render := "v1 " + creditsPerMinute(pr.RenderV1PerMinuteMicrocredits) + ", v2 " + creditsPerMinute(pr.RenderV2PerMinuteMicrocredits)
-	if v := pr.RenderV2HdPerMinuteMicrocredits; v != nil {
-		render += ", V2 HD " + creditsPerMinute(*v)
-	}
 	a.printf("Per minute   conversation %s · avatar session %s\n", conversation, render)
 	if pr.SpeechPerMinuteMicrocredits != nil {
 		a.printf("             speech session %s\n", creditsPerMinute(*pr.SpeechPerMinuteMicrocredits))
@@ -258,16 +267,10 @@ func (a *app) printAccount(x *api.Account) {
 	if len(v2Sizes) > 0 {
 		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(v2Sizes, ", "))
 	}
-	// Atmee V2 HD: reported only where this server offers it.
-	if v := l.V2Pro; v != nil {
-		switch {
-		case !*v:
-			a.printf("V2 HD        not in this plan (Growth and up): --engine v2hd answers 403 v2_pro_not_in_plan\n")
-		case x.V2Access != nil && string(*x.V2Access) != api.V2AccessGranted:
-			a.printf("V2 HD        yes, where Atmee V2 is on this account (--engine v2hd)\n")
-		default:
-			a.printf("V2 HD        yes (--engine v2hd)\n")
-		}
+	// Atmee V2 HD, where this server reports it: for Enterprise customers,
+	// whatever limits.v2Pro says. Its sizes stay for existing V2 HD avatars.
+	if l.V2Pro != nil {
+		a.printf("V2 HD        Enterprise only, on custom plans: contact us through %s\n", helpCenter(x.Links))
 		if rs := l.V2ProResolutions; rs != nil && len(*rs) > 0 {
 			sizes := make([]string, len(*rs))
 			for i, r := range *rs {

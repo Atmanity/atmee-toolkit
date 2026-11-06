@@ -136,11 +136,9 @@ func (a *app) createCmd() *cobra.Command {
 			"person speaking, which is cloned): one candidate, a short talking clip, used as soon as it is finished. If " +
 			"its lips don't match, build more (`atmee avatars candidates add`) and choose one " +
 			"(`atmee avatars candidates pick` or `select`).\n\n" +
-			"--engine v2hd makes an Atmee V2 HD avatar where the server offers it (`atmee account` shows a V2 HD " +
-			"line and its sizes only there): a larger v2 model that builds, previews and serves like v2, at the same " +
-			"rates, at larger frame sizes (640x640 by default). It needs what V2 needs (Growth and up, or " +
-			"an invite code that unlocks Atmee V2), and, where billing still decides V2 HD by plan, " +
-			"a plan with it (`atmee account` shows it).\n\n" +
+			"Atmee V2 HD (--engine v2hd), a larger v2 model at larger frame sizes (640x640 by default), is for " +
+			"Enterprise customers on custom plans: contact us through Creator Studio's help center. Existing V2 HD " +
+			"avatars keep working.\n\n" +
 			"Both files can come later: without one the avatar is a draft (status draft) whose persona and knowledge " +
 			"build; give them with `atmee avatars replace-appearance` and `replace-voice`, in either order, and it " +
 			"builds then. A v1 avatar with only --image is render-only (no voice).\n\n" +
@@ -308,7 +306,7 @@ func (a *app) createCmd() *cobra.Command {
 				if err := cl.CheckSize(ctx(), in.Engine, *r); err != nil {
 					var pro *api.V2ProSizeError
 					if errors.As(err, &pro) {
-						return usagef("%v: make one with --engine v2hd, where the server offers it (`atmee account` shows a V2 HD line)", err)
+						return usagef("%v: that size is Atmee V2 HD's, and V2 HD is Enterprise-only (contact us through Creator Studio's help center); pick a v2 size (`atmee account` lists them)", err)
 					}
 					return usagef("%v", err)
 				}
@@ -349,7 +347,7 @@ func (a *app) createCmd() *cobra.Command {
 	_ = c.MarkFlagRequired("name")
 	f.StringVar(&image, "image", "", "Portrait: local file, https URL or upload:ID (from atmee generate). Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
 	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file, https URL or upload:ID (from atmee generate) (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
-	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2hd (Atmee V2 HD; v2pro, its first name, also works; where the server offers it: `atmee account` shows it)")
+	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2hd (Atmee V2 HD, for Enterprise customers on custom plans; v2pro, its first name, also works)")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
 	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 300 characters)")
@@ -731,17 +729,15 @@ func (a *app) getFileCmd(use string) *cobra.Command {
 				res     any
 				link    *string
 				expires *time.Time
-				engine  string
 			)
 			if use == "get-voice" {
 				v, err := cl.Voice(ctx(), args[0])
 				if err != nil {
 					return err
 				}
+				// ttsProvider is deprecated and always "": every avatar
+				// speaks with a Fish Audio voice cloned from its sample.
 				res, link, expires = v, v.Url, v.ExpiresAt
-				if v.TtsProvider != nil {
-					engine = string(*v.TtsProvider)
-				}
 			} else {
 				f, err := cl.Appearance(ctx(), args[0])
 				if err != nil {
@@ -773,9 +769,6 @@ func (a *app) getFileCmd(use string) *cobra.Command {
 				if expires != nil {
 					a.note("Valid until %s\n", expires.Local().Format(time.RFC1123))
 				}
-			}
-			if engine != "" {
-				a.printf("Voice engine: %s\n", engine)
 			}
 			return nil
 		},
@@ -900,12 +893,12 @@ const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 HD line
 // a capture, a session), where the avatar's engine is already set.
 var engineHints = map[string]struct{ create, other string }{
 	"v2_pro_not_in_plan": {
-		create: "V2 HD avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use --engine v2",
-		other:  "V2 HD avatars come with the Growth plan and up: change plans in Creator Studio (Billing), or use a v2 avatar",
+		create: "Atmee V2 HD is for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
+		other:  "Atmee V2 HD is for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use a v2 avatar",
 	},
 	"v2_access_required": {
-		create: "an invite code hasn't unlocked Atmee V2 on this account yet (V2 and V2 HD avatars and video clips need it here): " + redeemV2Hint + ", or use --engine v1",
-		other:  "an invite code hasn't unlocked Atmee V2 on this account yet (V2 and V2 HD avatars and video clips need it here): " + redeemV2Hint,
+		create: "an invite code hasn't unlocked Atmee V2 on this account yet (V2 avatars and video clips need it here): " + redeemV2Hint + ", or use --engine v1",
+		other:  "an invite code hasn't unlocked Atmee V2 on this account yet (V2 avatars and video clips need it here): " + redeemV2Hint,
 	},
 	"insufficient_v2_credits": {
 		create: noV2Plan + ": " + getV2Hint + " (or use --engine v1)",

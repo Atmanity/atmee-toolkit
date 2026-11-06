@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.13 (2026-11-06)
+
+
+### Features
+
+* **atmee:** treat Atmee V2 HD as Enterprise-only
+
 ## 0.10.12 (2026-11-04)
 
 

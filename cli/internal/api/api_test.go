@@ -996,3 +996,30 @@ func TestWaitClipBoundsAReadByItsTimeout(t *testing.T) {
 		t.Fatalf("after %s: %v", time.Since(start), err)
 	}
 }
+
+// ttsProvider is deprecated: the API sends "" now, and older deployments sent
+// null, a stored engine, or no key at all. Every form must still decode, on
+// GET /voice and on the voice settings of GET /avatars/{id}.
+func TestVoiceDecodesEveryTTSProviderForm(t *testing.T) {
+	for _, form := range []string{`""`, `null`, `"fish_audio"`, ``} {
+		field := ""
+		if form != "" {
+			field = `,"ttsProvider":` + form
+		}
+		c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if strings.HasSuffix(r.URL.Path, "/voice") {
+				_, _ = io.WriteString(w, `{"url":"https://x/v.wav","expiresAt":null`+field+`}`)
+				return
+			}
+			_, _ = io.WriteString(w, `{"id":"`+aid+`","name":"Val","engine":"v1","status":"ready","voice":{`+strings.TrimPrefix(field, ",")+`}}`)
+		})
+		v, err := c.Voice(context.Background(), aid)
+		if err != nil || v.Url == nil || *v.Url != "https://x/v.wav" {
+			t.Fatalf("voice with ttsProvider %s: %+v, %v", form, v, err)
+		}
+		if _, err := c.Get(context.Background(), aid); err != nil {
+			t.Fatalf("avatar with ttsProvider %s: %v", form, err)
+		}
+	}
+}

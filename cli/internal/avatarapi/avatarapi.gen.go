@@ -1500,30 +1500,6 @@ func (e SpeechSessionStatusResponseStatus) Valid() bool {
 	}
 }
 
-// Defines values for TtsProvider.
-const (
-	ChatterboxV3 TtsProvider = "chatterbox_v3"
-	Elevenlabs   TtsProvider = "elevenlabs"
-	Fish         TtsProvider = "fish"
-	FishAudio    TtsProvider = "fish_audio"
-)
-
-// Valid indicates whether the value is a known member of the TtsProvider enum.
-func (e TtsProvider) Valid() bool {
-	switch e {
-	case ChatterboxV3:
-		return true
-	case Elevenlabs:
-		return true
-	case Fish:
-		return true
-	case FishAudio:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for UploadStatus.
 const (
 	UploadStatusConsumed UploadStatus = "consumed"
@@ -3156,8 +3132,13 @@ type AvatarUpdateRequestVisibility string
 // AvatarVoice defines model for AvatarVoice.
 type AvatarVoice struct {
 	// ExpiresAt When the URL stops working; GET again for a fresh one.
-	ExpiresAt   *time.Time   `json:"expiresAt,omitempty"`
-	TtsProvider *TtsProvider `json:"ttsProvider,omitempty"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
+
+	// TtsProvider Deprecated, always an empty string. Every avatar speaks with a
+	// Fish Audio voice cloned from its sample; the engine is no longer
+	// reported. Kept so clients that read it still parse.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	TtsProvider string `json:"ttsProvider"`
 
 	// Url A presigned download URL of the file last given; null when none was given or it could not be signed.
 	Url *string `json:"url,omitempty"`
@@ -3170,7 +3151,11 @@ type AvatarVoiceJsonRequest struct {
 
 // AvatarVoiceSettings defines model for AvatarVoiceSettings.
 type AvatarVoiceSettings struct {
-	TtsProvider *TtsProvider `json:"ttsProvider,omitempty"`
+	// TtsProvider Deprecated, always an empty string. Every avatar speaks with a
+	// Fish Audio voice cloned from its sample; the engine is no longer
+	// reported. Kept so clients that read it still parse.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	TtsProvider string `json:"ttsProvider"`
 }
 
 // BlackoutRecovery Blackout recovery of the v2 renderer. While the avatar listens, it
@@ -4336,10 +4321,6 @@ type SponsorWithdrawRequest struct {
 type SponsorWithdrawResponse struct {
 	WithdrawnMicrocredits int `json:"withdrawnMicrocredits"`
 }
-
-// TtsProvider The voice engine (`voice.ttsProvider` on a v1 create). Every v2 avatar
-// speaks with `fish_audio`.
-type TtsProvider string
 
 // Upload defines model for Upload.
 type Upload struct {
@@ -6389,10 +6370,19 @@ type ClientInterface interface {
 	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 	//   until the file arrives.
 	//
-	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-	// upload is used once and expires an hour after it was created.
-	// `contentType`, when given, is the only type accepted. Requires
-	// `avatars:write`.
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+	// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+	// way it is sent); an upload still pending then ends (`expired`). An
+	// upload is used once by a create or replace and expires an hour after
+	// it was created; a generation (a clip, a portrait enhancement) only
+	// reads it, so it can feed several. `contentType`, when given, is the
+	// only type accepted. Requires `avatars:write`.
+	//
+	// An account holds at most 100 unused uploads at once, whoever created
+	// them. An upload stops counting once a create or replace uses it, a
+	// paid generation reads it, it is deleted (`DELETE
+	// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+	// expires.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6422,10 +6412,19 @@ type ClientInterface interface {
 	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 	//   until the file arrives.
 	//
-	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-	// upload is used once and expires an hour after it was created.
-	// `contentType`, when given, is the only type accepted. Requires
-	// `avatars:write`.
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+	// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+	// way it is sent); an upload still pending then ends (`expired`). An
+	// upload is used once by a create or replace and expires an hour after
+	// it was created; a generation (a clip, a portrait enhancement) only
+	// reads it, so it can feed several. `contentType`, when given, is the
+	// only type accepted. Requires `avatars:write`.
+	//
+	// An account holds at most 100 unused uploads at once, whoever created
+	// them. An upload stops counting once a create or replace uses it, a
+	// paid generation reads it, it is deleted (`DELETE
+	// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+	// expires.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6436,8 +6435,9 @@ type ClientInterface interface {
 	//
 	// Returns the upload's `status`: `pending` until the file arrives, then
 	// `uploaded` (usable once), `consumed` once a create or replace used it,
-	// or `expired` an hour after it was created. Only the account that created
-	// it can read it. Requires `avatars:read` or `avatars:write`.
+	// or `expired`: an hour after it was created, when its file did not
+	// arrive within 15 minutes, or once it was deleted. Only the account that
+	// created it can read it. Requires `avatars:read` or `avatars:write`.
 	//
 	// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 	GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8714,10 +8714,19 @@ func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 //     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 //     until the file arrives.
 //
-// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-// upload is used once and expires an hour after it was created.
-// `contentType`, when given, is the only type accepted. Requires
-// `avatars:write`.
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+// way it is sent); an upload still pending then ends (`expired`). An
+// upload is used once by a create or replace and expires an hour after
+// it was created; a generation (a clip, a portrait enhancement) only
+// reads it, so it can feed several. `contentType`, when given, is the
+// only type accepted. Requires `avatars:write`.
+//
+// An account holds at most 100 unused uploads at once, whoever created
+// them. An upload stops counting once a create or replace uses it, a
+// paid generation reads it, it is deleted (`DELETE
+// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+// expires.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8757,10 +8766,19 @@ func (c *Client) CreateUploadWithBody(ctx context.Context, contentType string, b
 //     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 //     until the file arrives.
 //
-// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-// upload is used once and expires an hour after it was created.
-// `contentType`, when given, is the only type accepted. Requires
-// `avatars:write`.
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+// way it is sent); an upload still pending then ends (`expired`). An
+// upload is used once by a create or replace and expires an hour after
+// it was created; a generation (a clip, a portrait enhancement) only
+// reads it, so it can feed several. `contentType`, when given, is the
+// only type accepted. Requires `avatars:write`.
+//
+// An account holds at most 100 unused uploads at once, whoever created
+// them. An upload stops counting once a create or replace uses it, a
+// paid generation reads it, it is deleted (`DELETE
+// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+// expires.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8781,8 +8799,9 @@ func (c *Client) CreateUpload(ctx context.Context, body CreateUploadJSONRequestB
 //
 // Returns the upload's `status`: `pending` until the file arrives, then
 // `uploaded` (usable once), `consumed` once a create or replace used it,
-// or `expired` an hour after it was created. Only the account that created
-// it can read it. Requires `avatars:read` or `avatars:write`.
+// or `expired`: an hour after it was created, when its file did not
+// arrive within 15 minutes, or once it was deleted. Only the account that
+// created it can read it. Requires `avatars:read` or `avatars:write`.
 //
 // Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 func (c *Client) GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -12496,10 +12515,19 @@ type ClientWithResponsesInterface interface {
 	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 	//   until the file arrives.
 	//
-	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-	// upload is used once and expires an hour after it was created.
-	// `contentType`, when given, is the only type accepted. Requires
-	// `avatars:write`.
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+	// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+	// way it is sent); an upload still pending then ends (`expired`). An
+	// upload is used once by a create or replace and expires an hour after
+	// it was created; a generation (a clip, a portrait enhancement) only
+	// reads it, so it can feed several. `contentType`, when given, is the
+	// only type accepted. Requires `avatars:write`.
+	//
+	// An account holds at most 100 unused uploads at once, whoever created
+	// them. An upload stops counting once a create or replace uses it, a
+	// paid generation reads it, it is deleted (`DELETE
+	// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+	// expires.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12529,10 +12557,19 @@ type ClientWithResponsesInterface interface {
 	//   records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 	//   until the file arrives.
 	//
-	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-	// upload is used once and expires an hour after it was created.
-	// `contentType`, when given, is the only type accepted. Requires
-	// `avatars:write`.
+	// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+	// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+	// way it is sent); an upload still pending then ends (`expired`). An
+	// upload is used once by a create or replace and expires an hour after
+	// it was created; a generation (a clip, a portrait enhancement) only
+	// reads it, so it can feed several. `contentType`, when given, is the
+	// only type accepted. Requires `avatars:write`.
+	//
+	// An account holds at most 100 unused uploads at once, whoever created
+	// them. An upload stops counting once a create or replace uses it, a
+	// paid generation reads it, it is deleted (`DELETE
+	// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+	// expires.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12543,8 +12580,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns the upload's `status`: `pending` until the file arrives, then
 	// `uploaded` (usable once), `consumed` once a create or replace used it,
-	// or `expired` an hour after it was created. Only the account that created
-	// it can read it. Requires `avatars:read` or `avatars:write`.
+	// or `expired`: an hour after it was created, when its file did not
+	// arrive within 15 minutes, or once it was deleted. Only the account that
+	// created it can read it. Requires `avatars:read` or `avatars:write`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15456,6 +15494,11 @@ func (r EndSpeechSessionResponse) ContentType() string {
 	return ""
 }
 
+// CreateUploadResponse429Headers the declared response headers of an HTTP 429 response for CreateUpload
+type CreateUploadResponse429Headers struct {
+	RetryAfter *int
+}
+
 type CreateUploadResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -15471,6 +15514,8 @@ type CreateUploadResponse struct {
 	JSON429 *ApiErrorResponse
 	// JSON503 the response for an HTTP 503 `application/json` response
 	JSON503 *ApiErrorResponse
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateUploadResponse429Headers
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
@@ -17648,10 +17693,19 @@ func (c *ClientWithResponses) EndSpeechSessionWithResponse(ctx context.Context, 
 //     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 //     until the file arrives.
 //
-// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-// upload is used once and expires an hour after it was created.
-// `contentType`, when given, is the only type accepted. Requires
-// `avatars:write`.
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+// way it is sent); an upload still pending then ends (`expired`). An
+// upload is used once by a create or replace and expires an hour after
+// it was created; a generation (a clip, a portrait enhancement) only
+// reads it, so it can feed several. `contentType`, when given, is the
+// only type accepted. Requires `avatars:write`.
+//
+// An account holds at most 100 unused uploads at once, whoever created
+// them. An upload stops counting once a create or replace uses it, a
+// paid generation reads it, it is deleted (`DELETE
+// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+// expires.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17687,10 +17741,19 @@ func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Conte
 //     records a voice). It works for 15 minutes (`uploadPageExpiresAt`) and
 //     until the file arrives.
 //
-// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. An
-// upload is used once and expires an hour after it was created.
-// `contentType`, when given, is the only type accepted. Requires
-// `avatars:write`.
+// Then poll `GET /v1/uploads/{uploadId}` until `status` is `uploaded`. The
+// file must arrive within 15 minutes (`uploadPageExpiresAt`, whichever
+// way it is sent); an upload still pending then ends (`expired`). An
+// upload is used once by a create or replace and expires an hour after
+// it was created; a generation (a clip, a portrait enhancement) only
+// reads it, so it can feed several. `contentType`, when given, is the
+// only type accepted. Requires `avatars:write`.
+//
+// An account holds at most 100 unused uploads at once, whoever created
+// them. An upload stops counting once a create or replace uses it, a
+// paid generation reads it, it is deleted (`DELETE
+// /v1/uploads/{uploadId}`), its file did not arrive in time, or it
+// expires.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17707,8 +17770,9 @@ func (c *ClientWithResponses) CreateUploadWithResponse(ctx context.Context, body
 //
 // Returns the upload's `status`: `pending` until the file arrives, then
 // `uploaded` (usable once), `consumed` once a create or replace used it,
-// or `expired` an hour after it was created. Only the account that created
-// it can read it. Requires `avatars:read` or `avatars:write`.
+// or `expired`: an hour after it was created, when its file did not
+// arrive within 15 minutes, or once it was deleted. Only the account that
+// created it can read it. Requires `avatars:read` or `avatars:write`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -20516,6 +20580,19 @@ func ParseCreateUploadResponse(rsp *http.Response) (*CreateUploadResponse, error
 		}
 		response.JSON503 = &dest
 
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers CreateUploadResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil

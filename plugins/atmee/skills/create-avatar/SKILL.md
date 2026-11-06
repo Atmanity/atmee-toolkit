@@ -134,7 +134,7 @@ Read these before anything else, and keep them for the whole conversation.
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
    - `insufficient_v2_credits`: Atmee V2 isn't on this account's plan (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it; `get_balance`'s `v2SpendableMicrocredits`). Say so, and suggest Growth and up (`get_account` `links.billing`) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
    - `v2_access_required`: where V2 is still invite-only, no invite code has unlocked Atmee V2 on this account. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
-   - `v2_pro_not_in_plan`: where billing still decides V2 HD by plan, the plan doesn't include Atmee V2 HD. Say so, give the billing link (`get_account` `links.billing`), and offer Atmee V2 instead; never switch without asking.
+   - `v2_pro_not_in_plan`: a V2 HD call on an existing V2 HD avatar this account may not rebuild. Say Atmee V2 HD is for Enterprise customers on custom plans, give the Studio help center to contact us (rule 13), and offer a new Atmee V2 avatar instead (an avatar's engine can't change); don't repeat the error's plan wording, and never switch without asking.
    - `engine_unavailable` on a V2 HD call: this server doesn't offer V2 HD right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
@@ -166,6 +166,19 @@ Read these before anything else, and keep them for the whole conversation.
     `v2SpendableMicrocredits` (where present) is the part that pays for v2
     sessions and clips. After a paid
     call, read `get_balance` again.
+13. **Atmee V2 HD is for Enterprise customers only.** Never make a new V2 HD
+    avatar or a portrait for one: never pass `engine: v2hd` (or `v2pro`) on a
+    new avatar, whatever `get_account` reports (`limits.v2Pro` is true and the
+    V2 HD prices are there for every account; neither means the creator can
+    have it). Never offer it, quote a V2 HD price, or name a plan, upgrade or
+    invite code as the way to it. When the creator asks for V2 HD, the HD
+    model or the best model, say it is for Enterprise customers on custom
+    plans, give the Studio help center to contact us (the origin of
+    `get_account` `links.billing` plus `/studio/help-center`, for example
+    `https://www.atmee.ai/studio/help-center`; with no `links`, name the
+    Studio help center without a link, never a made-up address), and offer
+    Atmee V2 instead. An existing V2 HD avatar keeps working: continue or fix
+    it as this skill says.
 
 ## The server
 
@@ -283,8 +296,8 @@ portrait call, generated or enhanced, settle the engine from `get_account`'s
 `v2Access` and `get_balance`'s `v2SpendableMicrocredits` and pass it on the call (the same reference, The engine a
 portrait is for).
 
-With a usable portrait and voice, create the avatar as v2 (or V2 HD, when the
-creator chose it: `references/candidates.md`, Model) with one seed that
+With a usable portrait and voice, create the avatar as v2 (never V2 HD,
+rule 13; `references/candidates.md`, Model) with one seed that
 goes live by itself, private, with no persona yet (`references/candidates.md`,
 Create). Save the `create` iteration (`references/iterations.md`). Building
 takes minutes: keep the creator posted in plain words

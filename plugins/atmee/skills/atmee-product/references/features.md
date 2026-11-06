@@ -95,8 +95,8 @@ instead. The API is at `https://api.atmanity.us`.
   by default, or another size the server offers (`get_account`
   `limits.v2Resolutions`): 672×384 (16:9), 384×672 (9:16), 576×448 (4:3)
   or 448×576 (3:4), set with `resolution`; a new size makes new seeds. An Atmee V2 HD avatar
-  (engine `v2hd`, where `get_account` reports `limits.v2Pro`; needs Atmee V2)
-  is a v2 avatar on a larger model: the same seeds, agenda and sessions, at
+  (engine `v2hd`, for Enterprise customers on custom plans; agents never
+  create one) is a v2 avatar on a larger model: the same seeds, agenda and sessions, at
   640×640 by default or another of `limits.v2ProResolutions` (for example
   864×480).
 - **Account:** the balance, the plan with its limits, per-minute prices and

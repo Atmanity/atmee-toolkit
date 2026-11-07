@@ -22,7 +22,10 @@ call, charged only when results come back. Its price comes from
 
 - **The creator has no portrait or voice** in step 1, which needs both before
   it can create the avatar.
-- **A pair is failing** and you've diagnosed which side (the candidates reference).
+- **A coaching menu offers a paid fix:** an enhanced or restyled photo, a new
+  portrait for an invented character, or a designed voice, for a seed or
+  conversation that looks off (the coaching reference). The creator's pick is followed by the price question
+  below, never taken as the yes.
 
 Don't generate up front "to have options". Don't generate a real person's
 likeness from a description, ever (the people-and-publishing reference).
@@ -44,9 +47,8 @@ likeness from a description, ever (the people-and-publishing reference).
    the free part ("covered by your plan's free generation"). A result's
    `microcreditsCharged` is what credits paid, `microcreditsFree` what the
    allowance did.
-   Read the balance from `get_balance`: `spendableMicrocredits` / 100.
-   For a clip, `v2SpendableMicrocredits` / 100 (where present) is what pays:
-   the part of the balance usable on Atmee V2.
+   Read the balance from `get_balance`: `spendableMicrocredits` / 100. One
+   kind of credit pays for everything, clips included.
 2. Ask once for the whole round: every paid call the step needs (portraits
    and a voice together, for example), each with its price, then the total
    and the balance: "Make two portraits (<portrait price>) and voice previews
@@ -114,10 +116,9 @@ Atmee V2 HD avatar (`engine: v2hd`, the candidates reference, Model) is made
 as for v2; never make one for a new avatar.
 
 - **Settle the engine before the first paid portrait call,** in step 1:
-  v2 when `get_balance` reports `v2SpendableMicrocredits` above 0; when it
-  leaves that field out (billing still decides v2 by invite), when
-  `get_account`'s `v2Access` is `granted`. A reported 0 means no v2,
-  whatever `v2Access` says. Otherwise ask for an invite code
+  v2 when `get_account`'s `v2Access` is `granted` (on an older server whose
+  `get_balance` still reports `v2SpendableMicrocredits`, also when that figure
+  is above 0). Otherwise ask for an invite code
   (or suggest Growth and up) as the candidates reference's
   Create says, and use v1 only when the creator has neither and agrees. Use v1 too when the creator asks for
   it.
@@ -270,12 +271,9 @@ make the sample longer.
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
 for a clip (a teaser, a post), not as part of the five steps. Clips need
-Atmee V2 (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it): when `get_balance`'s
-`v2SpendableMicrocredits` doesn't cover the price the call answers
-`insufficient_v2_credits`, so suggest Growth and up or ask for an invite
-code (`redeem_code`); there is no v1 clip. Where billing still
-decides clips by invitation and plan, an account no invite code unlocked gets
-`v2_access_required` (ask for an invite code), and where `get_account`
+Atmee V2 access (Growth and up; below Growth, an invite code unlocks it): without it the call answers
+`v2_access_required`, so suggest Growth and up or ask for an invite
+code (`redeem_code`); there is no v1 clip. Any credits pay for it. Where `get_account`
 `limits.videoGeneration` is false (absent counts as allowed) the call answers
 `video_generation_not_in_plan`, so say the plan doesn't include video clips
 and point to Studio → Billing (`links.billing`) to change plans; don't call
@@ -337,7 +335,8 @@ running it.
 
 The result's `clip.upload` lasts 24 hours and `clip.url` less: save the clip
 at once with `scripts/media.sh save` (kind `seeds`, named `clip_1`, …) and
-show it. You can't watch it, so the creator judges it.
+show it. You can't watch it, so the creator judges it. When they say it
+looks off, coach them (the coaching reference, Clips).
 
 A clip with no avatar has no folder, so save it in `atmee-avatars/clips`.
 Before the call, make that folder and write the `requestId` and exact inputs

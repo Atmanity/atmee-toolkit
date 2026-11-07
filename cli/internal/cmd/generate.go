@@ -240,9 +240,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
 			"The result lasts 24 hours. A clip uses Atmee V2: it needs Growth and up, or an invite code that unlocks Atmee V2 " +
-			"(`atmee redeem CODE`); otherwise it is 402 insufficient_v2_credits. " +
-			"Where billing still decides clips by invitation and plan, they need v2 access and a plan with video generation. " +
-			"A signed-in user, or an API key with generation:write and avatars:write.",
+			"(`atmee redeem CODE`); otherwise it is 403 v2_access_required. Any credits pay for it. " +
+			"A signed-in user, or an API key with generation:write (a clip needs no avatar scope; --image and --audio files upload with it too).",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
   atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 480x640
   atmee generate clip --image ./me.jpg --prompt "he waves at the camera" --resolution 1280x720 --duration 10`,

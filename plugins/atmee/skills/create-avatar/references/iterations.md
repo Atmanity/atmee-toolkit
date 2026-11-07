@@ -103,7 +103,8 @@ When the skill starts and `atmee-avatars/` has avatars:
    avatars server. The server is the source of truth for live fields; the
    file is the source of truth for what the creator intended. Show any
    difference (for example, it was edited in Studio, or it's still building)
-   and ask which to keep.
+   and ask which to keep. If the creator comes back saying it looks or sounds
+   off, coach them (the coaching reference) before anything else.
 
 Where an avatar stands, from its newest files and `get_avatar`. A folder
 begun before 0.9 has drafts with no `applied` field; there the `create` file

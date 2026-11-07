@@ -49,8 +49,9 @@ Check what the creator has against these rules. Warn, don't block.
   wide range of shots and styles: a close-up with the shoulders, a half-body
   or a full-body photo, a photo, a painting or a cartoon. Only the face has to
   stay big enough in the centre crop: narrower than about a fifth of it,
-  the server refuses the portrait (`portrait_face_too_small`). Use whatever
-  framing the creator gives you.
+  the server refuses the portrait (`portrait_face_too_small`). Chest-up or
+  half body animates best; use whatever framing the creator gives you, with
+  the portrait checks' tip when it is head-only or very wide.
 - **Voice sample:**
   - 10–60 seconds of one person speaking clearly, with no music or other voices
   - an expressive, energetic delivery animates noticeably better than flat reading

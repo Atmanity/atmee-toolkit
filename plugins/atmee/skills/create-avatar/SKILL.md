@@ -132,8 +132,8 @@ Read these before anything else, and keep them for the whole conversation.
 
    From the other tools:
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
-   - `insufficient_v2_credits`: Atmee V2 isn't on this account's plan (Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it; `get_balance`'s `v2SpendableMicrocredits`). Say so, and suggest Growth and up (`get_account` `links.billing`) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
-   - `v2_access_required`: where V2 is still invite-only, no invite code has unlocked Atmee V2 on this account. Say so, and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
+   - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Growth and up (every credit counts there) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
+   - `v2_access_required`: the account can't build Atmee V2 yet (building needs Growth and up; below Growth, an invite code unlocks it). Say so, suggest Growth and up (`get_account` `links.billing`), and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
    - `v2_pro_not_in_plan`: a V2 HD call on an existing V2 HD avatar this account may not rebuild. Say Atmee V2 HD is for Enterprise customers on custom plans, give the Studio help center to contact us (rule 13), and offer a new Atmee V2 avatar instead (an avatar's engine can't change); don't repeat the error's plan wording, and never switch without asking.
    - `engine_unavailable` on a V2 HD call: this server doesn't offer V2 HD right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
@@ -143,8 +143,9 @@ Read these before anything else, and keep them for the whole conversation.
    **Two identical failures stop a retry,** on either server, paid or free:
    the same tool with the same inputs failing with the same error twice, or
    two batches in a row on the same portrait and voice where every seed
-   fails or dies. Change the input, diagnose the pair (`references/candidates.md`),
-   or ask the creator; never try a third time unchanged.
+   fails, dies or looks weak. Change the input, coach the creator to another
+   fix (`references/coaching.md`), or ask the creator; never try a third time
+   unchanged.
 9. **Ask with choices,** every time, as in "How to ask the creator" above,
    apart from its one exception.
 10. **Talk about the avatar, not your work.** Tell the creator what happened
@@ -158,13 +159,13 @@ Read these before anything else, and keep them for the whole conversation.
     or why you're working around it: do the work, or say in plain words what
     the creator needs to do.
 11. **Final steps wait for the creator.** The first seed of a face and voice
-    goes live by itself. Switching to another seed (it goes live on the server)
+    goes live by itself, and so does the first seed after a new preview line,
+    photo or voice (`references/coaching.md`, Fixes that rebuild). Switching to another seed (it goes live on the server)
     and making an avatar public happen only when the creator picks one or
     explicitly asks you to. Until then, recommend and wait.
 12. **The balance comes only from `get_balance`:**
-    `spendableMicrocredits` divided by 100 is the credits left;
-    `v2SpendableMicrocredits` (where present) is the part that pays for v2
-    sessions and clips. After a paid
+    `spendableMicrocredits` divided by 100 is the credits left; one kind of
+    credit pays for every model. After a paid
     call, read `get_balance` again.
 13. **Atmee V2 HD is for Enterprise customers only.** Never make a new V2 HD
     avatar or a portrait for one: never pass `engine: v2hd` (or `v2pro`) on a
@@ -293,7 +294,7 @@ uploads" below). Check each portrait as it arrives
 When a portrait or voice is missing, offer to generate it, asking before each
 paid call (`references/credits-and-generation.md`). Before the first paid
 portrait call, generated or enhanced, settle the engine from `get_account`'s
-`v2Access` and `get_balance`'s `v2SpendableMicrocredits` and pass it on the call (the same reference, The engine a
+`v2Access` and pass it on the call (the same reference, The engine a
 portrait is for).
 
 With a usable portrait and voice, create the avatar as v2 (never V2 HD,
@@ -301,7 +302,8 @@ rule 13; `references/candidates.md`, Model) with one seed that
 goes live by itself, private, with no persona yet (`references/candidates.md`,
 Create). Save the `create` iteration (`references/iterations.md`). Building
 takes minutes: keep the creator posted in plain words
-(`references/candidates.md`, Waiting), and offer to start on its character
+(`references/candidates.md`, Waiting), say once that each preview is a random
+take (`references/coaching.md`, When to coach), and offer to start on its character
 (step 3) while it builds: "While Mira's seed is made, shall we work on who
 Mira is?" with "Yes, start now (Recommended)" and "I'll wait for the
 seed".
@@ -310,12 +312,14 @@ seed".
 
 The first seed that finishes goes live by itself. Check it from the contact
 sheet (`references/candidates.md`), show it ("Showing results" above) and
-save a `candidate-selected` iteration once it serves.
+save a `candidate-selected` iteration once it serves. If the heads-up wasn't
+said while it built, say it with the first take (`references/coaching.md`,
+When to coach).
 
-Make another seed only when its lips don't move or the creator asks for one,
-and switch to it only on the creator's choice (rule 11); judge it the same
-way. When seeds keep failing, diagnose the pair and guide a replacement
-(`references/candidates.md`).
+When its lips move weakly or not at all, or the creator says it looks off,
+coach them through the fixes that match (`references/coaching.md`): another
+seed, a livelier line, the photo or the voice. Switch seeds only on the
+creator's choice (rule 11).
 
 The avatar talks now but has no character yet: it answers as a plain
 assistant. Unless step 3 is already under way, say so in one line, then ask
@@ -348,8 +352,7 @@ open the link yourself or say you'll test it
 
 Hand over the chat link and the Studio link
 (`references/test-and-handover.md`, Hand over). When the account has
-Atmee V2 (`get_balance`'s `v2SpendableMicrocredits` above 0, or, where it is
-absent, `v2Access` granted), `get_account`'s `limits.videoGeneration` is not false (absent
+Atmee V2 access (`get_account`'s `v2Access` granted), `get_account`'s `limits.videoGeneration` is not false (absent
 counts as allowed) and its `pricing.generation` has clip prices (`clipSizes`;
 an older server: `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`),
 add one line that Atmee can also make a short video clip from the same photo,
@@ -407,6 +410,7 @@ way. Only when the creator asks, commit as `references/iterations.md`
 | `references/drafting.md` | asking the openers, drafting the character and applying it |
 | `references/grill-layers.md` | running a grill round |
 | `references/candidates.md` | creating the avatar, checking and fixing seeds |
+| `references/coaching.md` | a seed looks weak, or the creator says a preview or conversation looks off |
 | `references/credits-and-generation.md` | before any generation or paid call |
 | `references/test-and-handover.md` | after a seed is selected |
 | `references/people-and-publishing.md` | a real person is involved, or the creator wants it public |

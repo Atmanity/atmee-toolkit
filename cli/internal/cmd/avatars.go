@@ -878,10 +878,11 @@ func download(link, path string) error {
 
 const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
 
-// noV2Plan is the refusal of Atmee V2 to an account whose plan doesn't
-// include it and that no invite code unlocked, and getV2Hint how to get it.
+// noV2Plan is the refusal to build Atmee V2 for an account below Growth that
+// no invite code unlocked, and getV2Hint how to get it. Talking to any
+// avatar never needs it: one kind of credit pays for every model.
 const (
-	noV2Plan  = "Atmee V2 isn't on this account's plan"
+	noV2Plan  = "this account can't build Atmee V2 yet (building V2 avatars and video clips needs Growth and up, or an invite code)"
 	getV2Hint = "upgrade to Growth and up, or `atmee redeem CODE` with an invite code"
 )
 
@@ -897,12 +898,14 @@ var engineHints = map[string]struct{ create, other string }{
 		other:  "Atmee V2 HD is for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use a v2 avatar",
 	},
 	"v2_access_required": {
-		create: "an invite code hasn't unlocked Atmee V2 on this account yet (V2 avatars and video clips need it here): " + redeemV2Hint + ", or use --engine v1",
-		other:  "an invite code hasn't unlocked Atmee V2 on this account yet (V2 avatars and video clips need it here): " + redeemV2Hint,
+		create: noV2Plan + ": " + getV2Hint + " (" + redeemV2Hint + "), or use --engine v1",
+		other:  noV2Plan + ": " + getV2Hint + " (" + redeemV2Hint + ")",
 	},
+	// Older servers that decided Atmee V2 by credits: the balance usable on
+	// V2 (`atmee balance --json`'s v2SpendableMicrocredits) doesn't cover it.
 	"insufficient_v2_credits": {
-		create: noV2Plan + ": " + getV2Hint + " (or use --engine v1)",
-		other:  noV2Plan + ": " + getV2Hint,
+		create: "the part of the balance usable on Atmee V2 doesn't cover this (an older server): " + getV2Hint + " (or use --engine v1)",
+		other:  "the part of the balance usable on Atmee V2 doesn't cover this (an older server): " + getV2Hint,
 	},
 	"engine_unavailable": {
 		create: "this server does not offer that engine (" + engineOffer + "): use another --engine",
@@ -928,41 +931,30 @@ func engineHint(cmd *cobra.Command, err error) string {
 }
 
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
-// or that can't be told (the create then says so itself). A reported
-// balance usable on Atmee V2 decides for every account: above 0 it can
-// build v2, 0 it can't. v2Access decides only where the balance leaves the
-// figure out (billing still deciding v2 by invite). A balance that can't be
-// read decides nothing.
+// or that can't be told (the create then says so itself). The account's
+// v2Access decides: invite_required means no Atmee V2 access (below Growth,
+// no invite code). An older server decided by credits instead: while the
+// balance still reports v2SpendableMicrocredits, an account without an
+// invite but with a positive figure may still build v2.
 func noV2Reason(cl *api.Client) string {
 	acct, err := cl.Account(ctx())
-	if err != nil {
+	if err != nil || acct.V2Access == nil {
 		return ""
 	}
-	if acct.V2Access != nil && string(*acct.V2Access) == api.V2AccessUnavailable {
+	switch string(*acct.V2Access) {
+	case api.V2AccessUnavailable:
 		return "v2 avatars are not offered on this server"
-	}
-	noV2 := noV2Plan + " (Growth and up), and no invite code has unlocked it; to make V2, " + getV2Hint
-	b, err := cl.Balance(ctx())
-	if err != nil {
-		// The balance could not be read: let the create decide rather
-		// than quietly make v1 for an account that may have credits.
-		return ""
-	}
-	if b.V2SpendableMicrocredits != nil {
-		if *b.V2SpendableMicrocredits > 0 {
+	case api.V2AccessInviteRequired:
+		if b, err := cl.Balance(ctx()); err == nil && b.V2SpendableMicrocredits != nil && *b.V2SpendableMicrocredits > 0 {
 			return ""
 		}
-		return noV2
-	}
-	if acct.V2Access != nil && string(*acct.V2Access) == api.V2AccessInviteRequired {
-		return noV2
+		return noV2Plan + "; to make V2, " + getV2Hint
 	}
 	return ""
 }
 
-// v2Refused says the API refused v2 to the account: not unlocked (403
-// v2_access_required) or nothing usable on Atmee V2 (402
-// insufficient_v2_credits).
+// v2Refused says the API refused v2 to the account: no Atmee V2 access (403
+// v2_access_required, or 402 insufficient_v2_credits from an older server).
 func v2Refused(err error) bool {
 	var apiErr *api.Error
 	return errors.As(err, &apiErr) && ((apiErr.Status == http.StatusForbidden && apiErr.Code == "v2_access_required") ||

@@ -26,11 +26,9 @@ the date you read them.
   Pack credits expire one year after they were bought (`nextExpiry` shows
   the soonest); a downgrade doesn't cancel them.
 - `spendableMicrocredits` is what a new session can start on. It is the only
-  balance to report; ignore any balance another tool returns.
-  `v2SpendableMicrocredits`, where present, is the part of it that pays for
-  V2 sessions (existing V2 HD avatars' included) and clips (usable on Atmee
-  V2, below); say it
-  too when the user asks about v2.
+  balance to report; ignore any balance another tool returns. There is
+  one kind of credit: it pays for every model (V1, V2, V2 HD) at that
+  model's rate.
 - A session **reserves** credits when it starts and gives back the unused
   part when it ends (`billingMode: reserve`). Enterprise **metered** keys are
   billed for what they use, with no fixed session length; Atmee sets them up.
@@ -50,20 +48,16 @@ the date you read them.
   page.
   What a credit costs depends on how it was bought: plan credits come cheaper
   than packs (the public costs page has the figures).
-- Every plan has API access, Free included; `get_account`
-  `limits.apiAccess` says whether the account has it (where it is off, a key
-  can't be created, `403 api_access_not_in_plan`, and sessions answer `403
-  api_access_disabled`). Coupon
+- Every account has API access (keys, MCP, CLI), whatever its plan, Free
+  included. Only an admin can switch it off for one account: then
+  `get_account` `limits.apiAccess` is false, a key can't be created (`403
+  api_access_not_in_plan`) and sessions answer `403 api_access_disabled`. Coupon
   credits are not held to the Free plan's daily limit.
-- **Atmee V2.** Atmee V2 avatars, their sessions and video clips need
-  Atmee V2 on the account: it comes with Growth and up; below Growth, an
-  invite code unlocks it. Below Growth only part of a balance may be
-  usable on Atmee V2 (`v2SpendableMicrocredits`); the rest still works on
-  Atmee V1. Clips need nothing more. A V2 call the account can't
-  pay on Atmee V2 answers `402 insufficient_v2_credits`; where V2 is still
-  invite-only, an account no invite code unlocked gets `403
-  v2_access_required`. Viewers of someone else's V2 avatar need Atmee V2
-  too unless the avatar is sponsored.
+- **Atmee V2.** Anyone can talk to any avatar, V2 and V2 HD included, on
+  any credits at that model's rate. Building Atmee V2 avatars and making
+  video clips needs Growth and up; below Growth, an invite code unlocks it
+  (`403 v2_access_required` without it). Creating Atmee V2 HD avatars is
+  for Enterprise customers (`403 v2_pro_not_in_plan`).
 - **Atmee V2 HD** is for Enterprise customers on custom plans: contact us
   through the Studio help center (the origin of `get_account`
   `links.billing` plus `/studio/help-center`; with no `links`, name it
@@ -83,7 +77,7 @@ the date you read them.
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
 | Generating portraits, enhancing a portrait, designing a voice through the avatars server | **per call**, charged when at least one output comes back: a portrait call makes up to two portraits (one from Gemini, one from Grok; `count: 1` makes the Gemini one only) for the same price, and so does an enhancement; a voice design is one price too. A paid plan's **free generation allowance** pays first and credits pay the rest; each answer splits it into `microcreditsFree` and `microcreditsCharged` | `get_account` `pricing.generation` (`portraitsMicrocredits` is one portrait call); what is left of the allowance this cycle: `pricing.generation.freeAllowance.remainingMicrocredits` |
 | A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |
-| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | a price per clip by its size (a larger size costs more) and its length: up to 5, 10 or 15 seconds, charged at the next length up (a 7-second clip pays the 10-second price), only when it comes back; the free generation allowance never pays for clips; needs Atmee V2 (`402 insufficient_v2_credits` when the account can't pay it on Atmee V2; where billing still decides clips by plan, `limits.videoGeneration` false answers `403 video_generation_not_in_plan`) | `pricing.generation.clipPrices`: each size's `prices` (`upToSeconds`, `microcredits`). A server without `clipPrices` charges each size's `pricing.generation.clipSizes` `microcredits` for any length. An older server without it reports `clipPer15SecondsMicrocredits` (pro rata per 15 seconds) or `clipPerSecondMicrocredits` (times the seconds). None of them: clips aren't offered |
+| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | a price per clip by its size (a larger size costs more) and its length: up to 5, 10 or 15 seconds, charged at the next length up (a 7-second clip pays the 10-second price), only when it comes back; the free generation allowance never pays for clips; needs Atmee V2 access (`403 v2_access_required` without it; `limits.videoGeneration` false answers `403 video_generation_not_in_plan`) | `pricing.generation.clipPrices`: each size's `prices` (`upToSeconds`, `microcredits`). A server without `clipPrices` charges each size's `pricing.generation.clipSizes` `microcredits` for any length. An older server without it reports `clipPer15SecondsMicrocredits` (pro rata per 15 seconds) or `clipPerSecondMicrocredits` (times the seconds). None of them: clips aren't offered |
 | Generating in Studio (portraits, enhancement, voice design, thumbnails, covers) | the same prices and free allowance as the avatars server: Studio calls the same API | shown on each button |
 | A minute with a Signature (monetized) avatar on atmee.ai | per minute, paid by a visitor at more than the avatar's standard rate; its owner pays the standard rate, and API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` for a v1 avatar, `pricing.monetizedV2PerMinuteMicrocredits` for a v2 one |
 

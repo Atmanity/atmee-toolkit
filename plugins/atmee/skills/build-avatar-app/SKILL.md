@@ -116,11 +116,11 @@ this skill works the same for it, at its own frame size). Never make a new
 V2 HD one: it is for Enterprise customers on custom plans (contact us through
 the Studio help center, the origin of `get_account` `links.billing` plus
 `/studio/help-center`); offer Atmee V2.
-None fits: make one with the `create-avatar` skill first. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it:
-when `get_account`'s `v2Access` is `invite_required` and `get_balance`'s
-`v2SpendableMicrocredits` is not above 0, the account needs it before it can
+None fits: make one with the `create-avatar` skill first. Building Atmee V2 needs Growth and up; below Growth, an invite code unlocks it:
+when `get_account`'s `v2Access` is `invite_required` (and, on an older server that still
+reports `get_balance`'s `v2SpendableMicrocredits`, that figure is not above 0), the account needs it before it can
 make one: suggest Growth and up, or ask the user for an invite code and
-redeem it with `redeem_code`.
+redeem it with `redeem_code`. Talking to an existing avatar, any model, never needs it.
 
 The persona is the avatar's: it greets and introduces itself as it was made,
 whatever the app says, unless the session starts with `welcome: false`, for an

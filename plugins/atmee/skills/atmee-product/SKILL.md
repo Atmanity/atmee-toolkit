@@ -89,16 +89,14 @@ always its chat page: never start a session for it (`start_session`,
   files. It speaks one language; a session can ask for another.
 - **Two engines.** v1 animates a talking head from one portrait: sharp and
   cheaper. v2 adds emotion,
-  expression and motion. **Atmee V2** comes with Growth and up; below
-  Growth, an invite code unlocks it (the agent redeems it with
-  `redeem_code`, `atmee redeem CODE` in a terminal, or Creator Studio's
-  Billing page), or an email invite does (waitlist:
-  `https://www.atmee.ai/v2signup`). Building spends no credits but needs
-  some balance usable on Atmee V2; viewers of someone else's V2 avatar need
-  Atmee V2 too unless it is sponsored. `get_balance`'s
-  `v2SpendableMicrocredits` is how much of the balance is usable on Atmee
-  V2, and `get_account`'s `v2Access` whether an invite code unlocked it
-  (where V2 is still invite-only, that is what decides). A v2 avatar is captured several times;
+  expression and motion. Anyone can talk to any avatar (V1, V2 or V2 HD),
+  and one kind of credit pays for every model at its rate. **Building
+  Atmee V2** (and clips) needs Growth and up; below Growth, an invite code
+  unlocks it (the agent redeems it with `redeem_code`, `atmee redeem CODE`
+  in a terminal, or Creator Studio's Billing page), or an email invite does
+  (waitlist: `https://www.atmee.ai/v2signup`). Building spends no credits.
+  `get_account`'s `v2Access` says whether the account may build V2.
+  Creating **Atmee V2 HD** is for Enterprise customers. A v2 avatar is captured several times;
   each capture is a **seed** (the server says candidate or take, and the
   API's `seed` field is an informational number, not the clip) and the
   creator picks the one that serves. Studio, the Avatar API and the agent

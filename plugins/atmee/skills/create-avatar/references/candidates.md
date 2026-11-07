@@ -18,12 +18,12 @@ avatars server with:
   credits-and-generation reference, The engine a portrait is for), normally
   `v2`, never `v2hd` (Atmee V2 HD is for Enterprise customers: Model, below). Use
   v1 only if the creator asks, or when the account
-  can't build v2. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it. The
-  account can build v2 when `get_balance` reports `v2SpendableMicrocredits`
-  above 0; when `get_balance` leaves that field out (billing still decides v2
-  by invite), when `get_account`'s `v2Access` is `granted`. A reported 0
-  means no v2, whatever `v2Access` says. Otherwise (or when a
-  v2 call answers `insufficient_v2_credits` or `v2_access_required`) ask the
+  can't build v2. Building Atmee V2 needs Growth and up; below Growth, an invite code unlocks it. The
+  account can build v2 when `get_account`'s `v2Access` is `granted`. On an
+  older server whose `get_balance` still reports `v2SpendableMicrocredits`,
+  also when that figure is above 0 (that server decides by credits; without
+  the figure, access alone decides). Otherwise (or when a
+  v2 call answers `v2_access_required` or `insufficient_v2_credits`) ask the
   creator for an invite code and redeem it with `redeem_code`,
   or suggest Growth and up. Make v2 only once that holds; make v1 only if
   they have neither and agree.
@@ -95,7 +95,8 @@ creator posted in plain words about the avatar, never about your tools:
 
 1. Before the create (or a replace), say what is starting and roughly how
    long it takes: "Creating Manny now. It takes about 5 minutes; I'll tell you
-   as each part finishes."
+   as each part finishes." On the first create, add that each preview is one
+   random take (the coaching reference, When to coach).
 2. Follow it with the avatars server's `wait_for_avatar` on that avatar's id,
    with `timeoutSeconds` 25, and call it again while it hasn't settled. For a
    new batch on an avatar that already serves, follow `list_candidates` the
@@ -163,7 +164,8 @@ To read it:
   the same avatar only: head movement and lighting raise it too, so it is
   not a threshold.
 
-Tell the creator what you see.
+Tell the creator what you see. When the lips move weakly or not at all,
+coach them (the coaching reference).
 
 **Show every seed**, with or without a contact sheet: in an agent with a
 shell, save each completed seed with `scripts/media.sh save` (kind `seeds`)
@@ -174,10 +176,9 @@ Preview links expire in about an hour, so save before showing. Without a shell, 
 that you can't judge the lip sync from here, show the seed as above, and ask
 whether it looks right. Don't invent a verdict.
 
-**Another seed.** When the serving seed is dead, or the creator asks for
-another, make one more (`add_candidates` with `count` 1, within the free
-slots under Limits), check it the same way and show both. Adding seeds never
-changes the serving one.
+**Another seed.** When the serving seed looks weak or dead, or the creator
+asks for another, offer one more as the coaching reference says (Another
+seed). Adding seeds never changes the serving one.
 
 **Selecting.** Ask which to use at the end of the reply that shows the
 seeds, in plain text with no question tool in that turn (SKILL.md, How to ask
@@ -189,33 +190,11 @@ creator chooses, or pick the best surviving one yourself if they ask you to.
 ## When no seed is good
 
 Seeds are the lever, so tell the creator; otherwise they may conclude the
-model doesn't work. Capture another (or up to 3 at once, within the free
-slots under Limits) and judge again.
-
-Diagnose the pair instead of capturing more when either holds:
-
-- two batches in a row have no usable seed, or
-- the server gives a warning that the pair is the problem.
-
-Then try the levers in this order:
-
-- **A more expressive preview line:** the line every seed speaks, a default
-  sentence in the avatar's language until you set one. A livelier sentence
-  often moves the lips more. Write it in the avatar's language, in 60 code
-  points or fewer. Setting it replaces the default sentence and starts a new
-  version, which captures new seeds; judge them the same way.
-
-If that doesn't help, name the likely side:
-
-- **Lips barely move in every seed:** usually a flat or quiet voice
-  sample. Suggest a more expressive recording or a designed voice.
-- **Mouth or face distorted, or motion odd:** usually the portrait (side
-  view, hands near the face, no teeth showing). Suggest a front-facing photo
-  with a slight smile, or an enhanced or generated portrait.
-
-Guide the replacement through the avatars server's replace-portrait or
-replace-voice. That captures new seeds; judge them the same way. Offer
-generation here, and only here (the credits-and-generation reference).
+model doesn't work. The coaching reference says which fixes match what you
+or the creator see, how to offer them, when to stop adding seeds, and what
+happens when a new preview line, photo or voice builds a new version. Guide
+a new photo or voice through the avatars server's replace-portrait or
+replace-voice; that captures new seeds, judged the same way.
 
 ## Limits
 

@@ -1615,27 +1615,25 @@ type Account struct {
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
 
-	// V2Access Whether an invite code unlocked Atmee V2 on this account:
-	// `granted`; `invite_required` (not unlocked); or `unavailable` (V2 is
-	// not offered here). Absent when it could not be determined. Where
-	// billing still decides V2 by invitation, `invite_required` means V2
-	// calls answer `403 v2_access_required` until the account redeems an
-	// invite code. Elsewhere Atmee V2 comes with Growth and up without an
-	// invite code, and below Growth an invite code unlocks it; the part
-	// of the balance usable on V2 is `v2SpendableMicrocredits` on `GET
-	// /v1/account/balance`.
+	// V2Access Whether this account may create Atmee V2 work (builds, takes, new
+	// versions, clips): `granted` (Growth and up, or an invite code
+	// redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
+	// not offered here). Absent when it could not be determined.
+	// `invite_required` means those calls answer `403 v2_access_required`
+	// until the account upgrades to Growth and up or redeems an invite
+	// code. Talking to any avatar never needs it. Creating V2 HD also
+	// needs V2 HD on the account (`limits.v2Pro`).
 	V2Access *AccountV2Access `json:"v2Access,omitempty"`
 }
 
-// AccountV2Access Whether an invite code unlocked Atmee V2 on this account:
-// `granted`; `invite_required` (not unlocked); or `unavailable` (V2 is
-// not offered here). Absent when it could not be determined. Where
-// billing still decides V2 by invitation, `invite_required` means V2
-// calls answer `403 v2_access_required` until the account redeems an
-// invite code. Elsewhere Atmee V2 comes with Growth and up without an
-// invite code, and below Growth an invite code unlocks it; the part
-// of the balance usable on V2 is `v2SpendableMicrocredits` on `GET
-// /v1/account/balance`.
+// AccountV2Access Whether this account may create Atmee V2 work (builds, takes, new
+// versions, clips): `granted` (Growth and up, or an invite code
+// redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
+// not offered here). Absent when it could not be determined.
+// `invite_required` means those calls answer `403 v2_access_required`
+// until the account upgrades to Growth and up or redeems an invite
+// code. Talking to any avatar never needs it. Creating V2 HD also
+// needs V2 HD on the account (`limits.v2Pro`).
 type AccountV2Access string
 
 // AccountBalance defines model for AccountBalance.
@@ -1643,7 +1641,7 @@ type AccountBalance struct {
 	// CouponMicrocredits Coupon credits left.
 	CouponMicrocredits int64 `json:"couponMicrocredits"`
 
-	// CouponSpendable False for a metered key where it never spends coupon credits; true for every key where billing lets every key spend them.
+	// CouponSpendable Whether coupon credits pay for this key's sessions. True for every key (one kind of credit); false only from older billing, for a metered key.
 	CouponSpendable bool `json:"couponSpendable"`
 
 	// HeldByLiveSessionsMicrocredits Reserved by sessions running now (already taken out of the buckets); what they do not use comes back when they end.
@@ -1664,7 +1662,7 @@ type AccountBalance struct {
 	// Unlimited Sessions are not charged (an unlimited plan, or billing switched off).
 	Unlimited bool `json:"unlimited"`
 
-	// V2SpendableMicrocredits The part of the balance usable on Atmee V2 right now (V2 sessions, clips; building V2 needs more than 0), never more than `spendableMicrocredits`. Atmee V2 comes with Growth and up; below Growth, an invite code unlocks it. Absent where billing does not report it.
+	// V2SpendableMicrocredits No longer reported (one kind of credit; Atmee V2 access decides who may build V2, `GET /v1/account` `v2Access`). Kept for older clients.
 	V2SpendableMicrocredits *int64 `json:"v2SpendableMicrocredits,omitempty"`
 
 	// Wallet The wallet API usage spends; always `direct`.
@@ -1685,7 +1683,7 @@ type AccountEarnings struct {
 
 // AccountLimits defines model for AccountLimits.
 type AccountLimits struct {
-	// ApiAccess Whether the account may use the API (sessions answer `403 api_access_disabled` when false).
+	// ApiAccess Whether the account may use the API. True for every account, whatever its plan, unless an admin switched it off (sessions then answer `403 api_access_disabled`).
 	ApiAccess bool `json:"apiAccess"`
 
 	// MaxApiAvatars Live API-created avatars the account may have.
@@ -1697,7 +1695,7 @@ type AccountLimits struct {
 	// MaxSessionSeconds Longest session the plan allows; absent = not capped by the plan.
 	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 
-	// V2Pro Whether the plan lets the account build V2 HD avatars (engine `v2hd`); a V2 HD create, capture or rebuild answers `403 v2_pro_not_in_plan` when false. True on every plan where billing decides V2 HD by Atmee V2 access. V2 HD also needs what Atmee V2 needs. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
+	// V2Pro Whether the account may create Atmee V2 HD avatars (engine `v2hd`), which are for Enterprise customers on custom plans only; a V2 HD create answers `403 v2_pro_not_in_plan` when false. Existing V2 HD avatars keep working (sessions, new takes, rebuilds) either way. V2 HD also needs what Atmee V2 needs. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
 	V2Pro *bool `json:"v2Pro,omitempty"`
 
 	// V2ProResolutions The frame sizes V2 HD avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 HD is not offered, or every size the V2 HD rule allows is.
@@ -1867,8 +1865,9 @@ type ApiKeyCreateRequest struct {
 	// Scopes What the key may do; `sessions` (start and end conversations) is
 	// always included. `avatars:read` / `avatars:write` manage avatars,
 	// `billing:write` moves credits into sponsor pools, `generation:write`
-	// spends credits on portrait and voice generation (together with
-	// `avatars:write`). Default: just `sessions`.
+	// spends credits on generation: on its own it makes video clips
+	// (with the uploads a clip reads and makes); portrait and voice
+	// generation also need `avatars:write`. Default: just `sessions`.
 	Scopes *[]ApiKeyCreateRequestScopes `json:"scopes,omitempty"`
 
 	// SpendCapMicrocredits Default 50000 (500 credits).
@@ -2102,11 +2101,13 @@ type AvatarCreateResponse struct {
 	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
-	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
-	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
-	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
-	// offered only where `limits.v2Pro` is reported (elsewhere `503
-	// engine_unavailable`).<!-- /v2pro -->
+	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
+	// avatar is for Enterprise customers on custom plans only
+	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
+	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
+	// `v2hd` avatar, and an existing one keeps working for its account: new
+	// takes and rebuilds need only what `v2` needs. Offered only where
+	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
 
 	// Kind `conversational` avatars have a voice and a persona and can run a full
@@ -2155,11 +2156,13 @@ type AvatarDetail struct {
 	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
-	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
-	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
-	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
-	// offered only where `limits.v2Pro` is reported (elsewhere `503
-	// engine_unavailable`).<!-- /v2pro -->
+	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
+	// avatar is for Enterprise customers on custom plans only
+	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
+	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
+	// `v2hd` avatar, and an existing one keeps working for its account: new
+	// takes and rebuilds need only what `v2` needs. Offered only where
+	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -2397,11 +2400,13 @@ type AvatarDetailVisibility string
 // conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
 // default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 // per-minute rates (`GET /v1/account` `pricing`,
-// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
-// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
-// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
-// offered only where `limits.v2Pro` is reported (elsewhere `503
-// engine_unavailable`).<!-- /v2pro -->
+// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
+// avatar is for Enterprise customers on custom plans only
+// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
+// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
+// `v2hd` avatar, and an existing one keeps working for its account: new
+// takes and rebuilds need only what `v2` needs. Offered only where
+// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
 
 // AvatarKind `conversational` avatars have a voice and a persona and can run a full
@@ -2653,6 +2658,26 @@ type AvatarSessionCreateRequest struct {
 	// reserved for the avatar).
 	AgentIdentity *string `json:"agentIdentity,omitempty"`
 
+	// Daily Render into your Daily room instead of a LiveKit one. The avatar
+	// joins the room as its own participant and publishes the lip-synced
+	// video and audio there; your bot sends it the speech as Daily app
+	// messages (the `pipecat-atmee` package does this). Not combined with
+	// `livekitUrl`/`livekitToken`.
+	Daily *struct {
+		// ParticipantId Your bot's Daily participant (session) id. The avatar renders
+		// speech from this participant only.
+		ParticipantId string `json:"participantId"`
+
+		// RoomUrl The Daily room URL (`https://<domain>.daily.co/<room>`).
+		//
+		// Examples: https://my-domain.daily.co/my-room
+		RoomUrl string `json:"roomUrl"`
+
+		// Token A Daily meeting token for the avatar, minted with your Daily API
+		// key. Needed for a private room.
+		Token *string `json:"token,omitempty"`
+	} `json:"daily,omitempty"`
+
 	// LivekitToken A LiveKit access token for the avatar participant, minted with your
 	// project's API key and secret: the avatar's `identity` (the plugin
 	// uses `atmee-avatar-agent`), `kind: agent`, a `roomJoin` grant for
@@ -2689,8 +2714,11 @@ type AvatarSessionCreateResponse struct {
 	AgentToken *string `json:"agentToken,omitempty"`
 
 	// AvatarParticipantIdentity The identity the avatar joins the room with (from your token; `atmee-avatar-agent` in a hosted room).
-	AvatarParticipantIdentity string                                 `json:"avatarParticipantIdentity"`
-	BillingMode               AvatarSessionCreateResponseBillingMode `json:"billingMode"`
+	AvatarParticipantIdentity string `json:"avatarParticipantIdentity"`
+
+	// BillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	BillingMode *AvatarSessionCreateResponseBillingMode `json:"billingMode,omitempty"`
 
 	// LivekitUrl Atmee-hosted room only: the LiveKit server (`wss://...`) your agent
 	// joins.
@@ -2707,7 +2735,9 @@ type AvatarSessionCreateResponse struct {
 	Status AvatarSessionCreateResponseStatus `json:"status"`
 }
 
-// AvatarSessionCreateResponseBillingMode defines model for AvatarSessionCreateResponse.BillingMode.
+// AvatarSessionCreateResponseBillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type AvatarSessionCreateResponseBillingMode string
 
 // AvatarSessionCreateResponseStatus How far the start had progressed when this response was sent.
@@ -2738,8 +2768,11 @@ type AvatarSessionStatusResponse struct {
 
 	// BilledSeconds Seconds billed (the time both parties were in the room); null while
 	// it is live, or when the settlement cannot be read.
-	BilledSeconds *int                                    `json:"billedSeconds,omitempty"`
-	BillingMode   *AvatarSessionStatusResponseBillingMode `json:"billingMode,omitempty"`
+	BilledSeconds *int `json:"billedSeconds,omitempty"`
+
+	// BillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	BillingMode *AvatarSessionStatusResponseBillingMode `json:"billingMode,omitempty"`
 
 	// ChargedMicrocredits What the session cost once it ended, in microcredits (100 = 1
 	// credit), from the account's balance and the avatar's sponsor pool;
@@ -2777,7 +2810,9 @@ type AvatarSessionStatusResponse struct {
 	UserJoinedAt *time.Time `json:"userJoinedAt,omitempty"`
 }
 
-// AvatarSessionStatusResponseBillingMode defines model for AvatarSessionStatusResponse.BillingMode.
+// AvatarSessionStatusResponseBillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type AvatarSessionStatusResponseBillingMode string
 
 // AvatarSessionStatusResponseEndReason Why the session ended; null while it is live. `user_left` the
@@ -2930,11 +2965,13 @@ type AvatarSummary struct {
 	// conductor, seeds) at larger frame sizes (`resolution`, 640 x 640 by
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
-	// `sessionV2HdPerMinuteMicrocredits` and the like). `v2hd` needs what `v2` needs, Atmee V2 on
-	// the account's plan (`402 insufficient_v2_credits`; `403 v2_pro_not_in_plan`
-	// where billing still decides V2 HD by plan; `limits.v2Pro`), and is
-	// offered only where `limits.v2Pro` is reported (elsewhere `503
-	// engine_unavailable`).<!-- /v2pro -->
+	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
+	// avatar is for Enterprise customers on custom plans only
+	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
+	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
+	// `v2hd` avatar, and an existing one keeps working for its account: new
+	// takes and rebuilds need only what `v2` needs. Offered only where
+	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
 
@@ -3557,9 +3594,6 @@ type CurrentCaller struct {
 	// AvatarId The one avatar an avatar-scoped key may use; absent for an account-wide key.
 	AvatarId *string `json:"avatarId,omitempty"`
 
-	// BillingMode reserve or metered.
-	BillingMode *string `json:"billingMode,omitempty"`
-
 	// Id The key's id (kind api_key).
 	Id   *string           `json:"id,omitempty"`
 	Kind CurrentCallerKind `json:"kind"`
@@ -3712,22 +3746,25 @@ type EmbedSessionStartRequest struct {
 // `userToken` are what `livekit-client`'s `Room.connect()` needs.
 type EmbedSessionStartResponse struct {
 	// ActualDurationSeconds The granted session length in seconds, counted from when both the
-	// visitor and the avatar are in the room. Absent when the session is
-	// uncapped (a `metered` key without a session cap): do not start a
-	// countdown then. A metered session ends when the balance or the key's
-	// spend cap runs out, after a short grace, or at the service's maximum
-	// length.
+	// visitor and the avatar are in the room: the longest the session can
+	// run under the key's, the plan's and your own limits. It is not what
+	// the balance covers: the session is billed as it runs and ends
+	// earlier if the balance or the key's spend cap runs out. Absent when
+	// the session has no length cap (a key set up for metered billing
+	// without a session cap): do not start a countdown then; such a
+	// session ends at the service's maximum length at the latest.
 	ActualDurationSeconds *int `json:"actualDurationSeconds,omitempty"`
 
-	// BillingMode How the session is billed. `reserve` locks the whole granted
-	// duration when the session starts and releases the unused part at
-	// the end. `metered` charges the elapsed time in one-minute ticks
-	// while the session runs; nothing is locked up front.
-	BillingMode EmbedSessionStartResponseBillingMode `json:"billingMode"`
+	// BillingMode Deprecated, kept for clients that read it: every billed session is
+	// charged as it runs, so this is `metered`. Do not rely on it; it
+	// will be removed.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	BillingMode *EmbedSessionStartResponseBillingMode `json:"billingMode,omitempty"`
 
 	// DurationCapped True when `actualDurationSeconds` is shorter than
-	// `requestedDurationSeconds`: the key's, the plan's or the
-	// balance's limit cut the session you asked for.
+	// `requestedDurationSeconds`: the key's or the plan's limit cut the
+	// session you asked for. The balance never does (see
+	// `actualDurationSeconds`).
 	DurationCapped *bool `json:"durationCapped,omitempty"`
 
 	// FundedSeconds Anonymous sessions only, present when the avatar's sponsor budget
@@ -3768,10 +3805,11 @@ type EmbedSessionStartResponse struct {
 	Watermark bool `json:"watermark"`
 }
 
-// EmbedSessionStartResponseBillingMode How the session is billed. `reserve` locks the whole granted
-// duration when the session starts and releases the unused part at
-// the end. `metered` charges the elapsed time in one-minute ticks
-// while the session runs; nothing is locked up front.
+// EmbedSessionStartResponseBillingMode Deprecated, kept for clients that read it: every billed session is
+// charged as it runs, so this is `metered`. Do not rely on it; it
+// will be removed.
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type EmbedSessionStartResponseBillingMode string
 
 // EnhancePortraitRequest defines model for EnhancePortraitRequest.
@@ -4016,9 +4054,10 @@ type KnowledgeAssetRef struct {
 }
 
 // PaymentRequiredResponse Returned with `402` when the caller lacks the credits or entitlements
-// to start a session. `insufficient_v2_credits`: a session on a v2
-// avatar that neither its sponsor pool nor the payer's credits that work
-// for v2 can fund, whatever v1-only credits are left.
+// to start a session. Anyone can talk to any avatar: a session on a
+// V1, V2 or V2 HD avatar spends any credits at that model's rate.
+// `insufficient_v2_credits` is no longer sent; it stays in the list for
+// older clients.
 type PaymentRequiredResponse struct {
 	// Error Error code identifying the type of payment issue
 	//
@@ -4150,9 +4189,12 @@ type SpeechSessionCreateRequest struct {
 
 // SpeechSessionCreateResponse defines model for SpeechSessionCreateResponse.
 type SpeechSessionCreateResponse struct {
-	// ActualDurationSeconds The length granted by the key's, the plan's and the balance's limits, counted from the reservation (this call), whenever the connection opens; the session ends at the reservation plus this many seconds (`endsAt` on GET).
-	ActualDurationSeconds int                                    `json:"actualDurationSeconds"`
-	BillingMode           SpeechSessionCreateResponseBillingMode `json:"billingMode"`
+	// ActualDurationSeconds The length granted by the key's and the plan's limits (the balance does not shorten it; the session ends earlier if the balance or the key's spend cap runs out), counted from the reservation (this call), whenever the connection opens; the session ends at the reservation plus this many seconds (`endsAt` on GET).
+	ActualDurationSeconds int `json:"actualDurationSeconds"`
+
+	// BillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	BillingMode *SpeechSessionCreateResponseBillingMode `json:"billingMode,omitempty"`
 
 	// DurationCapped True when `actualDurationSeconds` is shorter than `requestedDurationSeconds`.
 	DurationCapped bool          `json:"durationCapped"`
@@ -4170,7 +4212,9 @@ type SpeechSessionCreateResponse struct {
 	Url string `json:"url"`
 }
 
-// SpeechSessionCreateResponseBillingMode defines model for SpeechSessionCreateResponse.BillingMode.
+// SpeechSessionCreateResponseBillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type SpeechSessionCreateResponseBillingMode string
 
 // SpeechSessionEndResponse defines model for SpeechSessionEndResponse.
@@ -4263,11 +4307,14 @@ type SpeechSessionPinnedSettingsDelegationType string
 // SpeechSessionStatusResponse defines model for SpeechSessionStatusResponse.
 type SpeechSessionStatusResponse struct {
 	// ActualDurationSeconds The length granted.
-	ActualDurationSeconds int                                    `json:"actualDurationSeconds"`
-	AvatarId              *openapi_types.UUID                    `json:"avatarId,omitempty"`
-	BilledSeconds         *int                                   `json:"billedSeconds,omitempty"`
-	BillingMode           SpeechSessionStatusResponseBillingMode `json:"billingMode"`
-	ChargedMicrocredits   *int                                   `json:"chargedMicrocredits,omitempty"`
+	ActualDurationSeconds int                 `json:"actualDurationSeconds"`
+	AvatarId              *openapi_types.UUID `json:"avatarId,omitempty"`
+	BilledSeconds         *int                `json:"billedSeconds,omitempty"`
+
+	// BillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	BillingMode         *SpeechSessionStatusResponseBillingMode `json:"billingMode,omitempty"`
+	ChargedMicrocredits *int                                    `json:"chargedMicrocredits,omitempty"`
 
 	// ConnectedAt When billing started (the speech server's first usage report); null until then.
 	ConnectedAt *time.Time `json:"connectedAt,omitempty"`
@@ -4288,7 +4335,9 @@ type SpeechSessionStatusResponse struct {
 	Status      SpeechSessionStatusResponseStatus `json:"status"`
 }
 
-// SpeechSessionStatusResponseBillingMode defines model for SpeechSessionStatusResponse.BillingMode.
+// SpeechSessionStatusResponseBillingMode Deprecated; always `metered` for a billed session (see EmbedSessionStartResponse.billingMode).
+//
+// Deprecated: this type has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 type SpeechSessionStatusResponseBillingMode string
 
 // SpeechSessionStatusResponseStatus defines model for SpeechSessionStatusResponse.Status.
@@ -4798,9 +4847,8 @@ type ClientInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
-	//   the account; the part of the balance usable on V2 right now is
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`.
+	// - **v2**: `v2Access` says whether the account may build Atmee V2 and
+	//   make clips (Growth and up, or an invite code).
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -4815,12 +4863,9 @@ type ClientInterface interface {
 	// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
 	// (see `GET /v1/avatars/{avatarId}/sponsor`).
 	//
-	// - `spendableMicrocredits` is what a session is admitted on: every bucket
-	//   for a reserve-mode key or a signed-in user, only the plan and top-up
-	//   buckets for a metered key (`couponSpendable: false`).
-	// - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
-	//   sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
-	//   up; below Growth, an invite code unlocks it.
+	// - `spendableMicrocredits` is what a session is admitted on: every
+	//   bucket, for every key and signed-in user. There is one kind of
+	//   credit: it pays for every model, each at its own rate.
 	// - Live sessions' reservations are already taken out, and reported as
 	//   `heldByLiveSessionsMicrocredits`.
 	// - `unlimited` is true when sessions are not charged, whatever the
@@ -4942,8 +4987,13 @@ type ClientInterface interface {
 	// as `GET /v1/account/balance`.
 	//
 	// - **API key** (`kind: api_key`): its name, scopes, the avatar it is
-	//   restricted to, its billing mode, its session caps and how much of its
-	//   spend cap the current window used. The secret is never returned.
+	//   restricted to, its session caps and how much of its spend cap the
+	//   current window used. The secret is never returned. The key's billing
+	//   mode is not reported: its billed sessions are charged as they run,
+	//   within the key's spend cap, session length and concurrency limits. A
+	//   key set up for metered billing may also have no session cap
+	//   (`maxSessionSeconds` absent) and spend fewer kinds of credit
+	//   (`couponSpendable` on `GET /v1/account/balance`).
 	//   `spendCap.enforced` is false when the cap is not applied;
 	//   `limitMicrocredits` and `remainingMicrocredits` are absent when the
 	//   key has no cap, and `windowResetsAt` for a lifetime cap (`window:
@@ -5071,15 +5121,15 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Atmee V2 comes with
-	//   Growth and up; below Growth, an invite code unlocks it (`402
-	//   insufficient_v2_credits` where it isn't on the account's plan; `403
-	//   v2_access_required` where billing still decides V2 by invitation).
-	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Building Atmee V2 needs
+	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
-	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
+	//   other account; contact us through Creator Studio's help center);
+	//   beyond that it needs V2 access, like v2.
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -5135,15 +5185,15 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Atmee V2 comes with
-	//   Growth and up; below Growth, an invite code unlocks it (`402
-	//   insufficient_v2_credits` where it isn't on the account's plan; `403
-	//   v2_access_required` where billing still decides V2 by invitation).
-	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Building Atmee V2 needs
+	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
-	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
+	//   other account; contact us through Creator Studio's help center);
+	//   beyond that it needs V2 access, like v2.
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -5380,10 +5430,19 @@ type ClientInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-	// V2 isn't on the payer's plan and no sponsor pool covers the session:
-	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+	// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+	// meeting `token` for the avatar, your bot's `participantId`) instead of
+	// the LiveKit fields. The avatar joins your Daily room as its own
+	// participant (`Atmee avatar`) and publishes its lip-synced video and
+	// audio there; your bot sends it the speech as Daily app messages
+	// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+	// and the avatar acks with `ready`, `playback_started` and
+	// `playback_finished`. It leaves when your bot leaves the room or sends
+	// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+	//
+	// **Atmee V2 avatars** are paid like any other session, from
+	// the sponsor pool or any of the payer's credits at their own rates
+	// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -5434,10 +5493,19 @@ type ClientInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-	// V2 isn't on the payer's plan and no sponsor pool covers the session:
-	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+	// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+	// meeting `token` for the avatar, your bot's `participantId`) instead of
+	// the LiveKit fields. The avatar joins your Daily room as its own
+	// participant (`Atmee avatar`) and publishes its lip-synced video and
+	// audio there; your bot sends it the speech as Daily app messages
+	// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+	// and the avatar acks with `ready`, `playback_started` and
+	// `playback_finished`. It leaves when your bot leaves the room or sends
+	// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+	//
+	// **Atmee V2 avatars** are paid like any other session, from
+	// the sponsor pool or any of the payer's credits at their own rates
+	// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -5906,15 +5974,16 @@ type ClientInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
-	//   below Growth, an invite code unlocks it. The price must fit in the
-	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-	//   billing still decides clips by invitation and plan, they need V2
-	//   unlocked (`403 v2_access_required`) and a plan with video generation
-	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`). Both need the `generation:write` and
-	//   `avatars:write` scopes.
+	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+	//   and up, or an invite code below Growth (`403 v2_access_required`
+	//   without it), and video generation on the account (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+	//   /v1/account`). Any credits pay for them.
+	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
+	//   needs no avatar scope: with `generation:write` alone a key can upload
+	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+	//   /v1/uploads/{uploadId}`).
 	//
 	// | Error | When |
 	// |---|---|
@@ -5957,15 +6026,16 @@ type ClientInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
-	//   below Growth, an invite code unlocks it. The price must fit in the
-	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-	//   billing still decides clips by invitation and plan, they need V2
-	//   unlocked (`403 v2_access_required`) and a plan with video generation
-	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`). Both need the `generation:write` and
-	//   `avatars:write` scopes.
+	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+	//   and up, or an invite code below Growth (`403 v2_access_required`
+	//   without it), and video generation on the account (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+	//   /v1/account`). Any credits pay for them.
+	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
+	//   needs no avatar scope: with `generation:write` alone a key can upload
+	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+	//   /v1/uploads/{uploadId}`).
 	//
 	// | Error | When |
 	// |---|---|
@@ -5998,8 +6068,8 @@ type ClientInterface interface {
 	// again). The `POST` answers with why; retry it with the same key and
 	// inputs to see the reason or to try again.
 	//
-	// Requires `avatars:read` or `avatars:write`. Account-wide: the same
-	// request id under another account is not found.
+	// Requires `generation:write`, `avatars:read` or `avatars:write`.
+	// Account-wide: the same request id under another account is not found.
 	//
 	// Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
 	GetClip(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6161,11 +6231,13 @@ type ClientInterface interface {
 	// `livekit-client`'s `Room.connect()` needs directly.
 	//
 	// **Length.** `maxDurationSeconds` is capped server-side at the
-	// smallest of the key's own `maxSessionSeconds`, the plan's
-	// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-	// billing, what the balance can pay for. The response reports what you
-	// asked for (`requestedDurationSeconds`), what you got
+	// smaller of the key's own `maxSessionSeconds` and the plan's
+	// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+	// what you asked for (`requestedDurationSeconds`), what you got
 	// (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+	// The balance does not shorten what you got: the session is billed as
+	// it runs and ends earlier if the balance or the key's spend cap runs
+	// out.
 	// The granted length counts from the moment both the visitor and the
 	// avatar are in the room, which is also when billing starts.
 	//
@@ -6210,11 +6282,13 @@ type ClientInterface interface {
 	// `livekit-client`'s `Room.connect()` needs directly.
 	//
 	// **Length.** `maxDurationSeconds` is capped server-side at the
-	// smallest of the key's own `maxSessionSeconds`, the plan's
-	// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-	// billing, what the balance can pay for. The response reports what you
-	// asked for (`requestedDurationSeconds`), what you got
+	// smaller of the key's own `maxSessionSeconds` and the plan's
+	// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+	// what you asked for (`requestedDurationSeconds`), what you got
 	// (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+	// The balance does not shorten what you got: the session is billed as
+	// it runs and ends earlier if the balance or the key's spend cap runs
+	// out.
 	// The granted length counts from the moment both the visitor and the
 	// avatar are in the room, which is also when billing starts.
 	//
@@ -6376,7 +6450,12 @@ type ClientInterface interface {
 	// upload is used once by a create or replace and expires an hour after
 	// it was created; a generation (a clip, a portrait enhancement) only
 	// reads it, so it can feed several. `contentType`, when given, is the
-	// only type accepted. Requires `avatars:write`.
+	// only type accepted.
+	//
+	// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+	// `generation:write` or `avatars:write`; `knowledge` uploads need
+	// `avatars:write`. A key with `generation:write` alone can feed clips
+	// but still cannot create or change an avatar with the upload.
 	//
 	// An account holds at most 100 unused uploads at once, whoever created
 	// them. An upload stops counting once a create or replace uses it, a
@@ -6418,7 +6497,12 @@ type ClientInterface interface {
 	// upload is used once by a create or replace and expires an hour after
 	// it was created; a generation (a clip, a portrait enhancement) only
 	// reads it, so it can feed several. `contentType`, when given, is the
-	// only type accepted. Requires `avatars:write`.
+	// only type accepted.
+	//
+	// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+	// `generation:write` or `avatars:write`; `knowledge` uploads need
+	// `avatars:write`. A key with `generation:write` alone can feed clips
+	// but still cannot create or change an avatar with the upload.
 	//
 	// An account holds at most 100 unused uploads at once, whoever created
 	// them. An upload stops counting once a create or replace uses it, a
@@ -6437,7 +6521,11 @@ type ClientInterface interface {
 	// `uploaded` (usable once), `consumed` once a create or replace used it,
 	// or `expired`: an hour after it was created, when its file did not
 	// arrive within 15 minutes, or once it was deleted. Only the account that
-	// created it can read it. Requires `avatars:read` or `avatars:write`.
+	// created it can read it.
+	//
+	// Scopes: `avatars:read` or `avatars:write` read any upload;
+	// `generation:write` reads `portrait`, `voice` and `clip` uploads (a
+	// clip's inputs and output).
 	//
 	// Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 	GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6456,9 +6544,8 @@ type ClientInterface interface {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
-//     the account; the part of the balance usable on V2 right now is
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`.
+//   - **v2**: `v2Access` says whether the account may build Atmee V2 and
+//     make clips (Growth and up, or an invite code).
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -6483,12 +6570,9 @@ func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) 
 // (100 microcredits = 1 credit). An avatar's sponsor pool is not included
 // (see `GET /v1/avatars/{avatarId}/sponsor`).
 //
-//   - `spendableMicrocredits` is what a session is admitted on: every bucket
-//     for a reserve-mode key or a signed-in user, only the plan and top-up
-//     buckets for a metered key (`couponSpendable: false`).
-//   - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
-//     sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
-//     up; below Growth, an invite code unlocks it.
+//   - `spendableMicrocredits` is what a session is admitted on: every
+//     bucket, for every key and signed-in user. There is one kind of
+//     credit: it pays for every model, each at its own rate.
 //   - Live sessions' reservations are already taken out, and reported as
 //     `heldByLiveSessionsMicrocredits`.
 //   - `unlimited` is true when sessions are not charged, whatever the
@@ -6680,8 +6764,13 @@ func (c *Client) CreateApiKey(ctx context.Context, body CreateApiKeyJSONRequestB
 // as `GET /v1/account/balance`.
 //
 //   - **API key** (`kind: api_key`): its name, scopes, the avatar it is
-//     restricted to, its billing mode, its session caps and how much of its
-//     spend cap the current window used. The secret is never returned.
+//     restricted to, its session caps and how much of its spend cap the
+//     current window used. The secret is never returned. The key's billing
+//     mode is not reported: its billed sessions are charged as they run,
+//     within the key's spend cap, session length and concurrency limits. A
+//     key set up for metered billing may also have no session cap
+//     (`maxSessionSeconds` absent) and spend fewer kinds of credit
+//     (`couponSpendable` on `GET /v1/account/balance`).
 //     `spendCap.enforced` is false when the cap is not applied;
 //     `limitMicrocredits` and `remainingMicrocredits` are absent when the
 //     key has no cap, and `windowResetsAt` for a lifetime cap (`window:
@@ -6889,15 +6978,15 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Atmee V2 comes with
-//     Growth and up; below Growth, an invite code unlocks it (`402
-//     insufficient_v2_credits` where it isn't on the account's plan; `403
-//     v2_access_required` where billing still decides V2 by invitation).
-//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Building Atmee V2 needs
+//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs what v2 needs (`403
-//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
+//     other account; contact us through Creator Studio's help center);
+//     beyond that it needs V2 access, like v2.
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -6963,15 +7052,15 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Atmee V2 comes with
-//     Growth and up; below Growth, an invite code unlocks it (`402
-//     insufficient_v2_credits` where it isn't on the account's plan; `403
-//     v2_access_required` where billing still decides V2 by invitation).
-//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Building Atmee V2 needs
+//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs what v2 needs (`403
-//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
+//     other account; contact us through Creator Studio's help center);
+//     beyond that it needs V2 access, like v2.
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -7288,10 +7377,19 @@ func (c *Client) ReplaceAvatarAppearance(ctx context.Context, avatarId AvatarIdP
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-// V2 isn't on the payer's plan and no sponsor pool covers the session:
-// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+// meeting `token` for the avatar, your bot's `participantId`) instead of
+// the LiveKit fields. The avatar joins your Daily room as its own
+// participant (`Atmee avatar`) and publishes its lip-synced video and
+// audio there; your bot sends it the speech as Daily app messages
+// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+// and the avatar acks with `ready`, `playback_started` and
+// `playback_finished`. It leaves when your bot leaves the room or sends
+// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+//
+// **Atmee V2 avatars** are paid like any other session, from
+// the sponsor pool or any of the payer's credits at their own rates
+// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -7351,10 +7449,19 @@ func (c *Client) CreateAvatarSessionWithBody(ctx context.Context, avatarId Avata
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-// V2 isn't on the payer's plan and no sponsor pool covers the session:
-// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+// meeting `token` for the avatar, your bot's `participantId`) instead of
+// the LiveKit fields. The avatar joins your Daily room as its own
+// participant (`Atmee avatar`) and publishes its lip-synced video and
+// audio there; your bot sends it the speech as Daily app messages
+// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+// and the avatar acks with `ready`, `playback_started` and
+// `playback_finished`. It leaves when your bot leaves the room or sends
+// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+//
+// **Atmee V2 avatars** are paid like any other session, from
+// the sponsor pool or any of the payer's credits at their own rates
+// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -8102,15 +8209,16 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
-//     below Growth, an invite code unlocks it. The price must fit in the
-//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-//     billing still decides clips by invitation and plan, they need V2
-//     unlocked (`403 v2_access_required`) and a plan with video generation
-//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`). Both need the `generation:write` and
-//     `avatars:write` scopes.
+//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+//     and up, or an invite code below Growth (`403 v2_access_required`
+//     without it), and video generation on the account (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+//     /v1/account`). Any credits pay for them.
+//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
+//     needs no avatar scope: with `generation:write` alone a key can upload
+//     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+//     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+//     /v1/uploads/{uploadId}`).
 //
 // | Error | When |
 // |---|---|
@@ -8163,15 +8271,16 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
-//     below Growth, an invite code unlocks it. The price must fit in the
-//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-//     billing still decides clips by invitation and plan, they need V2
-//     unlocked (`403 v2_access_required`) and a plan with video generation
-//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`). Both need the `generation:write` and
-//     `avatars:write` scopes.
+//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+//     and up, or an invite code below Growth (`403 v2_access_required`
+//     without it), and video generation on the account (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+//     /v1/account`). Any credits pay for them.
+//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
+//     needs no avatar scope: with `generation:write` alone a key can upload
+//     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+//     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+//     /v1/uploads/{uploadId}`).
 //
 // | Error | When |
 // |---|---|
@@ -8214,8 +8323,8 @@ func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, b
 // again). The `POST` answers with why; retry it with the same key and
 // inputs to see the reason or to try again.
 //
-// Requires `avatars:read` or `avatars:write`. Account-wide: the same
-// request id under another account is not found.
+// Requires `generation:write`, `avatars:read` or `avatars:write`.
+// Account-wide: the same request id under another account is not found.
 //
 // Corresponds with GET /v1/generation/clips/{requestId} (the `GetClip` operationId).
 func (c *Client) GetClip(ctx context.Context, requestId ClipRequestIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8447,11 +8556,13 @@ func (c *Client) DesignVoice(ctx context.Context, params *DesignVoiceParams, bod
 // `livekit-client`'s `Room.connect()` needs directly.
 //
 // **Length.** `maxDurationSeconds` is capped server-side at the
-// smallest of the key's own `maxSessionSeconds`, the plan's
-// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-// billing, what the balance can pay for. The response reports what you
-// asked for (`requestedDurationSeconds`), what you got
+// smaller of the key's own `maxSessionSeconds` and the plan's
+// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+// what you asked for (`requestedDurationSeconds`), what you got
 // (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+// The balance does not shorten what you got: the session is billed as
+// it runs and ends earlier if the balance or the key's spend cap runs
+// out.
 // The granted length counts from the moment both the visitor and the
 // avatar are in the room, which is also when billing starts.
 //
@@ -8505,11 +8616,13 @@ func (c *Client) StartEmbedSessionWithBody(ctx context.Context, contentType stri
 // `livekit-client`'s `Room.connect()` needs directly.
 //
 // **Length.** `maxDurationSeconds` is capped server-side at the
-// smallest of the key's own `maxSessionSeconds`, the plan's
-// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-// billing, what the balance can pay for. The response reports what you
-// asked for (`requestedDurationSeconds`), what you got
+// smaller of the key's own `maxSessionSeconds` and the plan's
+// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+// what you asked for (`requestedDurationSeconds`), what you got
 // (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+// The balance does not shorten what you got: the session is billed as
+// it runs and ends earlier if the balance or the key's spend cap runs
+// out.
 // The granted length counts from the moment both the visitor and the
 // avatar are in the room, which is also when billing starts.
 //
@@ -8720,7 +8833,12 @@ func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 // upload is used once by a create or replace and expires an hour after
 // it was created; a generation (a clip, a portrait enhancement) only
 // reads it, so it can feed several. `contentType`, when given, is the
-// only type accepted. Requires `avatars:write`.
+// only type accepted.
+//
+// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+// `generation:write` or `avatars:write`; `knowledge` uploads need
+// `avatars:write`. A key with `generation:write` alone can feed clips
+// but still cannot create or change an avatar with the upload.
 //
 // An account holds at most 100 unused uploads at once, whoever created
 // them. An upload stops counting once a create or replace uses it, a
@@ -8772,7 +8890,12 @@ func (c *Client) CreateUploadWithBody(ctx context.Context, contentType string, b
 // upload is used once by a create or replace and expires an hour after
 // it was created; a generation (a clip, a portrait enhancement) only
 // reads it, so it can feed several. `contentType`, when given, is the
-// only type accepted. Requires `avatars:write`.
+// only type accepted.
+//
+// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+// `generation:write` or `avatars:write`; `knowledge` uploads need
+// `avatars:write`. A key with `generation:write` alone can feed clips
+// but still cannot create or change an avatar with the upload.
 //
 // An account holds at most 100 unused uploads at once, whoever created
 // them. An upload stops counting once a create or replace uses it, a
@@ -8801,7 +8924,11 @@ func (c *Client) CreateUpload(ctx context.Context, body CreateUploadJSONRequestB
 // `uploaded` (usable once), `consumed` once a create or replace used it,
 // or `expired`: an hour after it was created, when its file did not
 // arrive within 15 minutes, or once it was deleted. Only the account that
-// created it can read it. Requires `avatars:read` or `avatars:write`.
+// created it can read it.
+//
+// Scopes: `avatars:read` or `avatars:write` read any upload;
+// `generation:write` reads `portrait`, `voice` and `clip` uploads (a
+// clip's inputs and output).
 //
 // Corresponds with GET /v1/uploads/{uploadId} (the `GetUpload` operationId).
 func (c *Client) GetUpload(ctx context.Context, uploadId UploadIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10893,9 +11020,8 @@ type ClientWithResponsesInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
-	//   the account; the part of the balance usable on V2 right now is
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`.
+	// - **v2**: `v2Access` says whether the account may build Atmee V2 and
+	//   make clips (Growth and up, or an invite code).
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -10912,12 +11038,9 @@ type ClientWithResponsesInterface interface {
 	// (100 microcredits = 1 credit). An avatar's sponsor pool is not included
 	// (see `GET /v1/avatars/{avatarId}/sponsor`).
 	//
-	// - `spendableMicrocredits` is what a session is admitted on: every bucket
-	//   for a reserve-mode key or a signed-in user, only the plan and top-up
-	//   buckets for a metered key (`couponSpendable: false`).
-	// - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
-	//   sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
-	//   up; below Growth, an invite code unlocks it.
+	// - `spendableMicrocredits` is what a session is admitted on: every
+	//   bucket, for every key and signed-in user. There is one kind of
+	//   credit: it pays for every model, each at its own rate.
 	// - Live sessions' reservations are already taken out, and reported as
 	//   `heldByLiveSessionsMicrocredits`.
 	// - `unlimited` is true when sessions are not charged, whatever the
@@ -11045,8 +11168,13 @@ type ClientWithResponsesInterface interface {
 	// as `GET /v1/account/balance`.
 	//
 	// - **API key** (`kind: api_key`): its name, scopes, the avatar it is
-	//   restricted to, its billing mode, its session caps and how much of its
-	//   spend cap the current window used. The secret is never returned.
+	//   restricted to, its session caps and how much of its spend cap the
+	//   current window used. The secret is never returned. The key's billing
+	//   mode is not reported: its billed sessions are charged as they run,
+	//   within the key's spend cap, session length and concurrency limits. A
+	//   key set up for metered billing may also have no session cap
+	//   (`maxSessionSeconds` absent) and spend fewer kinds of credit
+	//   (`couponSpendable` on `GET /v1/account/balance`).
 	//   `spendCap.enforced` is false when the cap is not applied;
 	//   `limitMicrocredits` and `remainingMicrocredits` are absent when the
 	//   key has no cap, and `windowResetsAt` for a lifetime cap (`window:
@@ -11186,15 +11314,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Atmee V2 comes with
-	//   Growth and up; below Growth, an invite code unlocks it (`402
-	//   insufficient_v2_credits` where it isn't on the account's plan; `403
-	//   v2_access_required` where billing still decides V2 by invitation).
-	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Building Atmee V2 needs
+	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
-	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
+	//   other account; contact us through Creator Studio's help center);
+	//   beyond that it needs V2 access, like v2.
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -11250,15 +11378,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Atmee V2 comes with
-	//   Growth and up; below Growth, an invite code unlocks it (`402
-	//   insufficient_v2_credits` where it isn't on the account's plan; `403
-	//   v2_access_required` where billing still decides V2 by invitation).
-	//   Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Building Atmee V2 needs
+	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`; it needs what v2 needs (`403
-	//   v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
+	//   other account; contact us through Creator Studio's help center);
+	//   beyond that it needs V2 access, like v2.
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -11501,10 +11629,19 @@ type ClientWithResponsesInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-	// V2 isn't on the payer's plan and no sponsor pool covers the session:
-	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+	// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+	// meeting `token` for the avatar, your bot's `participantId`) instead of
+	// the LiveKit fields. The avatar joins your Daily room as its own
+	// participant (`Atmee avatar`) and publishes its lip-synced video and
+	// audio there; your bot sends it the speech as Daily app messages
+	// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+	// and the avatar acks with `ready`, `playback_started` and
+	// `playback_finished`. It leaves when your bot leaves the room or sends
+	// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+	//
+	// **Atmee V2 avatars** are paid like any other session, from
+	// the sponsor pool or any of the payer's credits at their own rates
+	// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -11555,10 +11692,19 @@ type ClientWithResponsesInterface interface {
 	// The room is deleted when the session ends. Requires the `sessions`
 	// scope; the avatar must be on the key's allow-list.
 	//
-	// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-	// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-	// V2 isn't on the payer's plan and no sponsor pool covers the session:
-	// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+	// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+	// meeting `token` for the avatar, your bot's `participantId`) instead of
+	// the LiveKit fields. The avatar joins your Daily room as its own
+	// participant (`Atmee avatar`) and publishes its lip-synced video and
+	// audio there; your bot sends it the speech as Daily app messages
+	// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+	// and the avatar acks with `ready`, `playback_started` and
+	// `playback_finished`. It leaves when your bot leaves the room or sends
+	// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+	//
+	// **Atmee V2 avatars** are paid like any other session, from
+	// the sponsor pool or any of the payer's credits at their own rates
+	// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
@@ -12045,15 +12191,16 @@ type ClientWithResponsesInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
-	//   below Growth, an invite code unlocks it. The price must fit in the
-	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-	//   billing still decides clips by invitation and plan, they need V2
-	//   unlocked (`403 v2_access_required`) and a plan with video generation
-	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`). Both need the `generation:write` and
-	//   `avatars:write` scopes.
+	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+	//   and up, or an invite code below Growth (`403 v2_access_required`
+	//   without it), and video generation on the account (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+	//   /v1/account`). Any credits pay for them.
+	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
+	//   needs no avatar scope: with `generation:write` alone a key can upload
+	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+	//   /v1/uploads/{uploadId}`).
 	//
 	// | Error | When |
 	// |---|---|
@@ -12096,15 +12243,16 @@ type ClientWithResponsesInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2, which comes with Growth and up;
-	//   below Growth, an invite code unlocks it. The price must fit in the
-	//   part of the balance usable on V2 (`402 insufficient_v2_credits`;
-	//   `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-	//   billing still decides clips by invitation and plan, they need V2
-	//   unlocked (`403 v2_access_required`) and a plan with video generation
-	//   (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-	//   `GET /v1/account`). Both need the `generation:write` and
-	//   `avatars:write` scopes.
+	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+	//   and up, or an invite code below Growth (`403 v2_access_required`
+	//   without it), and video generation on the account (`403
+	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+	//   /v1/account`). Any credits pay for them.
+	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
+	//   needs no avatar scope: with `generation:write` alone a key can upload
+	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+	//   /v1/uploads/{uploadId}`).
 	//
 	// | Error | When |
 	// |---|---|
@@ -12137,8 +12285,8 @@ type ClientWithResponsesInterface interface {
 	// again). The `POST` answers with why; retry it with the same key and
 	// inputs to see the reason or to try again.
 	//
-	// Requires `avatars:read` or `avatars:write`. Account-wide: the same
-	// request id under another account is not found.
+	// Requires `generation:write`, `avatars:read` or `avatars:write`.
+	// Account-wide: the same request id under another account is not found.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12302,11 +12450,13 @@ type ClientWithResponsesInterface interface {
 	// `livekit-client`'s `Room.connect()` needs directly.
 	//
 	// **Length.** `maxDurationSeconds` is capped server-side at the
-	// smallest of the key's own `maxSessionSeconds`, the plan's
-	// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-	// billing, what the balance can pay for. The response reports what you
-	// asked for (`requestedDurationSeconds`), what you got
+	// smaller of the key's own `maxSessionSeconds` and the plan's
+	// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+	// what you asked for (`requestedDurationSeconds`), what you got
 	// (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+	// The balance does not shorten what you got: the session is billed as
+	// it runs and ends earlier if the balance or the key's spend cap runs
+	// out.
 	// The granted length counts from the moment both the visitor and the
 	// avatar are in the room, which is also when billing starts.
 	//
@@ -12351,11 +12501,13 @@ type ClientWithResponsesInterface interface {
 	// `livekit-client`'s `Room.connect()` needs directly.
 	//
 	// **Length.** `maxDurationSeconds` is capped server-side at the
-	// smallest of the key's own `maxSessionSeconds`, the plan's
-	// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-	// billing, what the balance can pay for. The response reports what you
-	// asked for (`requestedDurationSeconds`), what you got
+	// smaller of the key's own `maxSessionSeconds` and the plan's
+	// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+	// what you asked for (`requestedDurationSeconds`), what you got
 	// (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+	// The balance does not shorten what you got: the session is billed as
+	// it runs and ends earlier if the balance or the key's spend cap runs
+	// out.
 	// The granted length counts from the moment both the visitor and the
 	// avatar are in the room, which is also when billing starts.
 	//
@@ -12521,7 +12673,12 @@ type ClientWithResponsesInterface interface {
 	// upload is used once by a create or replace and expires an hour after
 	// it was created; a generation (a clip, a portrait enhancement) only
 	// reads it, so it can feed several. `contentType`, when given, is the
-	// only type accepted. Requires `avatars:write`.
+	// only type accepted.
+	//
+	// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+	// `generation:write` or `avatars:write`; `knowledge` uploads need
+	// `avatars:write`. A key with `generation:write` alone can feed clips
+	// but still cannot create or change an avatar with the upload.
 	//
 	// An account holds at most 100 unused uploads at once, whoever created
 	// them. An upload stops counting once a create or replace uses it, a
@@ -12563,7 +12720,12 @@ type ClientWithResponsesInterface interface {
 	// upload is used once by a create or replace and expires an hour after
 	// it was created; a generation (a clip, a portrait enhancement) only
 	// reads it, so it can feed several. `contentType`, when given, is the
-	// only type accepted. Requires `avatars:write`.
+	// only type accepted.
+	//
+	// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+	// `generation:write` or `avatars:write`; `knowledge` uploads need
+	// `avatars:write`. A key with `generation:write` alone can feed clips
+	// but still cannot create or change an avatar with the upload.
 	//
 	// An account holds at most 100 unused uploads at once, whoever created
 	// them. An upload stops counting once a create or replace uses it, a
@@ -12582,7 +12744,11 @@ type ClientWithResponsesInterface interface {
 	// `uploaded` (usable once), `consumed` once a create or replace used it,
 	// or `expired`: an hour after it was created, when its file did not
 	// arrive within 15 minutes, or once it was deleted. Only the account that
-	// created it can read it. Requires `avatars:read` or `avatars:write`.
+	// created it can read it.
+	//
+	// Scopes: `avatars:read` or `avatars:write` read any upload;
+	// `generation:write` reads `portrait`, `voice` and `clip` uploads (a
+	// clip's inputs and output).
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15659,9 +15825,8 @@ func (r GetUploadResponse) ContentType() string {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether an invite code unlocked Atmee V2 on
-//     the account; the part of the balance usable on V2 right now is
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`.
+//   - **v2**: `v2Access` says whether the account may build Atmee V2 and
+//     make clips (Growth and up, or an invite code).
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -15684,12 +15849,9 @@ func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, reqEdi
 // (100 microcredits = 1 credit). An avatar's sponsor pool is not included
 // (see `GET /v1/avatars/{avatarId}/sponsor`).
 //
-//   - `spendableMicrocredits` is what a session is admitted on: every bucket
-//     for a reserve-mode key or a signed-in user, only the plan and top-up
-//     buckets for a metered key (`couponSpendable: false`).
-//   - `v2SpendableMicrocredits` is the part of it usable on Atmee V2 (V2
-//     sessions, clips, building V2 avatars). Atmee V2 comes with Growth and
-//     up; below Growth, an invite code unlocks it.
+//   - `spendableMicrocredits` is what a session is admitted on: every
+//     bucket, for every key and signed-in user. There is one kind of
+//     credit: it pays for every model, each at its own rate.
 //   - Live sessions' reservations are already taken out, and reported as
 //     `heldByLiveSessionsMicrocredits`.
 //   - `unlimited` is true when sessions are not charged, whatever the
@@ -15859,8 +16021,13 @@ func (c *ClientWithResponses) CreateApiKeyWithResponse(ctx context.Context, body
 // as `GET /v1/account/balance`.
 //
 //   - **API key** (`kind: api_key`): its name, scopes, the avatar it is
-//     restricted to, its billing mode, its session caps and how much of its
-//     spend cap the current window used. The secret is never returned.
+//     restricted to, its session caps and how much of its spend cap the
+//     current window used. The secret is never returned. The key's billing
+//     mode is not reported: its billed sessions are charged as they run,
+//     within the key's spend cap, session length and concurrency limits. A
+//     key set up for metered billing may also have no session cap
+//     (`maxSessionSeconds` absent) and spend fewer kinds of credit
+//     (`couponSpendable` on `GET /v1/account/balance`).
 //     `spendCap.enforced` is false when the cap is not applied;
 //     `limitMicrocredits` and `remainingMicrocredits` are absent when the
 //     key has no cap, and `windowResetsAt` for a lifetime cap (`window:
@@ -16048,15 +16215,15 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Atmee V2 comes with
-//     Growth and up; below Growth, an invite code unlocks it (`402
-//     insufficient_v2_credits` where it isn't on the account's plan; `403
-//     v2_access_required` where billing still decides V2 by invitation).
-//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Building Atmee V2 needs
+//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs what v2 needs (`403
-//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
+//     other account; contact us through Creator Studio's help center);
+//     beyond that it needs V2 access, like v2.
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -16118,15 +16285,15 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Atmee V2 comes with
-//     Growth and up; below Growth, an invite code unlocks it (`402
-//     insufficient_v2_credits` where it isn't on the account's plan; `403
-//     v2_access_required` where billing still decides V2 by invitation).
-//     Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Building Atmee V2 needs
+//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`; it needs what v2 needs (`403
-//     v2_pro_not_in_plan` where billing still decides V2 HD by plan).
+//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
+//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
+//     other account; contact us through Creator Studio's help center);
+//     beyond that it needs V2 access, like v2.
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -16417,10 +16584,19 @@ func (c *ClientWithResponses) ReplaceAvatarAppearanceWithResponse(ctx context.Co
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-// V2 isn't on the payer's plan and no sponsor pool covers the session:
-// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+// meeting `token` for the avatar, your bot's `participantId`) instead of
+// the LiveKit fields. The avatar joins your Daily room as its own
+// participant (`Atmee avatar`) and publishes its lip-synced video and
+// audio there; your bot sends it the speech as Daily app messages
+// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+// and the avatar acks with `ready`, `playback_started` and
+// `playback_finished`. It leaves when your bot leaves the room or sends
+// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+//
+// **Atmee V2 avatars** are paid like any other session, from
+// the sponsor pool or any of the payer's credits at their own rates
+// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -16477,10 +16653,19 @@ func (c *ClientWithResponses) CreateAvatarSessionWithBodyWithResponse(ctx contex
 // The room is deleted when the session ends. Requires the `sessions`
 // scope; the avatar must be on the key's allow-list.
 //
-// **Atmee V2 avatars** are paid from the sponsor pool or the part of the
-// payer's balance usable on V2 (`402 insufficient_v2_credits` when Atmee
-// V2 isn't on the payer's plan and no sponsor pool covers the session:
-// upgrade to Growth and up, or redeem an invite code), and render on a separate GPU pool: the avatar's
+// **Daily room** (a Pipecat bot on Daily): send `daily` (`roomUrl`, a
+// meeting `token` for the avatar, your bot's `participantId`) instead of
+// the LiveKit fields. The avatar joins your Daily room as its own
+// participant (`Atmee avatar`) and publishes its lip-synced video and
+// audio there; your bot sends it the speech as Daily app messages
+// addressed to it (`{"atmee": "audio" | "audio_end" | "clear_buffer"}`),
+// and the avatar acks with `ready`, `playback_started` and
+// `playback_finished`. It leaves when your bot leaves the room or sends
+// `{"atmee": "end"}`. `roomName` in the response is the Daily room name.
+//
+// **Atmee V2 avatars** are paid like any other session, from
+// the sponsor pool or any of the payer's credits at their own rates
+// (anyone can talk to any avatar), and render on a separate GPU pool: the avatar's
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
@@ -17134,15 +17319,16 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
-//     below Growth, an invite code unlocks it. The price must fit in the
-//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-//     billing still decides clips by invitation and plan, they need V2
-//     unlocked (`403 v2_access_required`) and a plan with video generation
-//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`). Both need the `generation:write` and
-//     `avatars:write` scopes.
+//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+//     and up, or an invite code below Growth (`403 v2_access_required`
+//     without it), and video generation on the account (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+//     /v1/account`). Any credits pay for them.
+//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
+//     needs no avatar scope: with `generation:write` alone a key can upload
+//     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+//     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+//     /v1/uploads/{uploadId}`).
 //
 // | Error | When |
 // |---|---|
@@ -17191,15 +17377,16 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2, which comes with Growth and up;
-//     below Growth, an invite code unlocks it. The price must fit in the
-//     part of the balance usable on V2 (`402 insufficient_v2_credits`;
-//     `v2SpendableMicrocredits` on `GET /v1/account/balance`). Where
-//     billing still decides clips by invitation and plan, they need V2
-//     unlocked (`403 v2_access_required`) and a plan with video generation
-//     (`403 video_generation_not_in_plan`; `limits.videoGeneration` on
-//     `GET /v1/account`). Both need the `generation:write` and
-//     `avatars:write` scopes.
+//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
+//     and up, or an invite code below Growth (`403 v2_access_required`
+//     without it), and video generation on the account (`403
+//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
+//     /v1/account`). Any credits pay for them.
+//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
+//     needs no avatar scope: with `generation:write` alone a key can upload
+//     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
+//     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
+//     /v1/uploads/{uploadId}`).
 //
 // | Error | When |
 // |---|---|
@@ -17238,8 +17425,8 @@ func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, para
 // again). The `POST` answers with why; retry it with the same key and
 // inputs to see the reason or to try again.
 //
-// Requires `avatars:read` or `avatars:write`. Account-wide: the same
-// request id under another account is not found.
+// Requires `generation:write`, `avatars:read` or `avatars:write`.
+// Account-wide: the same request id under another account is not found.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17445,11 +17632,13 @@ func (c *ClientWithResponses) DesignVoiceWithResponse(ctx context.Context, param
 // `livekit-client`'s `Room.connect()` needs directly.
 //
 // **Length.** `maxDurationSeconds` is capped server-side at the
-// smallest of the key's own `maxSessionSeconds`, the plan's
-// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-// billing, what the balance can pay for. The response reports what you
-// asked for (`requestedDurationSeconds`), what you got
+// smaller of the key's own `maxSessionSeconds` and the plan's
+// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+// what you asked for (`requestedDurationSeconds`), what you got
 // (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+// The balance does not shorten what you got: the session is billed as
+// it runs and ends earlier if the balance or the key's spend cap runs
+// out.
 // The granted length counts from the moment both the visitor and the
 // avatar are in the room, which is also when billing starts.
 //
@@ -17500,11 +17689,13 @@ func (c *ClientWithResponses) StartEmbedSessionWithBodyWithResponse(ctx context.
 // `livekit-client`'s `Room.connect()` needs directly.
 //
 // **Length.** `maxDurationSeconds` is capped server-side at the
-// smallest of the key's own `maxSessionSeconds`, the plan's
-// `limits.maxSessionSeconds` (`GET /v1/account`) and, for `reserve`
-// billing, what the balance can pay for. The response reports what you
-// asked for (`requestedDurationSeconds`), what you got
+// smaller of the key's own `maxSessionSeconds` and the plan's
+// `limits.maxSessionSeconds` (`GET /v1/account`). The response reports
+// what you asked for (`requestedDurationSeconds`), what you got
 // (`actualDurationSeconds`) and whether it was cut (`durationCapped`).
+// The balance does not shorten what you got: the session is billed as
+// it runs and ends earlier if the balance or the key's spend cap runs
+// out.
 // The granted length counts from the moment both the visitor and the
 // avatar are in the room, which is also when billing starts.
 //
@@ -17699,7 +17890,12 @@ func (c *ClientWithResponses) EndSpeechSessionWithResponse(ctx context.Context, 
 // upload is used once by a create or replace and expires an hour after
 // it was created; a generation (a clip, a portrait enhancement) only
 // reads it, so it can feed several. `contentType`, when given, is the
-// only type accepted. Requires `avatars:write`.
+// only type accepted.
+//
+// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+// `generation:write` or `avatars:write`; `knowledge` uploads need
+// `avatars:write`. A key with `generation:write` alone can feed clips
+// but still cannot create or change an avatar with the upload.
 //
 // An account holds at most 100 unused uploads at once, whoever created
 // them. An upload stops counting once a create or replace uses it, a
@@ -17747,7 +17943,12 @@ func (c *ClientWithResponses) CreateUploadWithBodyWithResponse(ctx context.Conte
 // upload is used once by a create or replace and expires an hour after
 // it was created; a generation (a clip, a portrait enhancement) only
 // reads it, so it can feed several. `contentType`, when given, is the
-// only type accepted. Requires `avatars:write`.
+// only type accepted.
+//
+// Scopes: `portrait` and `voice` uploads (a clip's inputs) need
+// `generation:write` or `avatars:write`; `knowledge` uploads need
+// `avatars:write`. A key with `generation:write` alone can feed clips
+// but still cannot create or change an avatar with the upload.
 //
 // An account holds at most 100 unused uploads at once, whoever created
 // them. An upload stops counting once a create or replace uses it, a
@@ -17772,7 +17973,11 @@ func (c *ClientWithResponses) CreateUploadWithResponse(ctx context.Context, body
 // `uploaded` (usable once), `consumed` once a create or replace used it,
 // or `expired`: an hour after it was created, when its file did not
 // arrive within 15 minutes, or once it was deleted. Only the account that
-// created it can read it. Requires `avatars:read` or `avatars:write`.
+// created it can read it.
+//
+// Scopes: `avatars:read` or `avatars:write` read any upload;
+// `generation:write` reads `portrait`, `voice` and `clip` uploads (a
+// clip's inputs and output).
 //
 // Returns a wrapper object for the known response body format(s).
 //

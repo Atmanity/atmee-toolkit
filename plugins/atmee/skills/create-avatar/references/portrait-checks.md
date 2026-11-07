@@ -2,12 +2,13 @@
 
 Check every portrait before you use it: the creator's own photos, and the
 portraits you generate or enhance. The aim is to catch photos that will
-animate badly, never to steer the creator's style or framing. A v2 avatar
-takes close-ups, half-body and full-body shots, photos, paintings and cartoons
+animate badly, never to steer the creator's style. A v2 avatar takes
+close-ups, half-body and full-body shots, photos, paintings and cartoons
 alike, as long as the face is big enough in the centre crop and has a
-visible, uncovered mouth and jaw. A wider shot shows more of the body moving
-as the avatar talks, so never ask for a closer photo because of the framing
-alone. The `create_avatar` tool's own text still says "head and shoulders,
+visible, uncovered mouth and jaw. Chest-up or half body animates best: a
+head-only close-up gives no hand or body gestures, and in a wide full-body
+shot the face gets small and artifacts grow. For a head-only or very wide v2
+photo, say that once as a tip, then use the photo the creator chooses. The `create_avatar` tool's own text still says "head and shoulders,
 face at least about a third of the frame": that is out of date for v2, so
 follow this file and don't repeat it to the creator of a v2 avatar.
 

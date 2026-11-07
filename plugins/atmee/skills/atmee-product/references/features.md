@@ -110,11 +110,12 @@ instead. The API is at `https://api.atmanity.us`.
   default), 640×480, 480×640, 832×468, 468×832, 720×720, 960×720, 720×960,
   1280×720 or 720×1280. 1080p (1080×1080, 1920×1080, 1080×1920, 1440×1080,
   1080×1440) is coming soon. No avatar is made; it
-  needs Atmee V2 (Growth and up; below Growth, an invite code unlocks it; where
-  billing still decides clips by invitation and plan, v2 access and
-  `get_account` `limits.videoGeneration`), and each size has a price per
+  needs Atmee V2 access (Growth and up; below Growth, an invite code unlocks
+  it) and `get_account` `limits.videoGeneration`, and each size has a price per
   clip for up to 5, 10 and 15 seconds, charged at the next length up
-  (`pricing.generation.clipPrices`).
+  (`pricing.generation.clipPrices`). A clip is not avatar editing: a key
+  needs only `generation:write`, which also covers the clip's uploads and
+  reading it back.
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest

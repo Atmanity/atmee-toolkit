@@ -34,7 +34,7 @@ func accountAPI(t *testing.T, account ...string) *httptest.Server {
 					"clipResolutions":[{"width":512,"height":512},{"width":384,"height":640}],"clipAnySize":true}},
 			"captureQuota":{"pending":2,"pendingLimit":10},"payouts":{"status":"verified","verifiedAt":"2026-09-01T12:00:00Z"}}`,
 		"/v1/api_keys/current": `{"kind":"api_key","id":"k-1","accountId":"11111111-1111-4111-8111-111111111111","name":"prod backend",
-			"scopes":["sessions","avatars:read"],"billingMode":"metered","active":true,"maxSessionSeconds":600,
+			"scopes":["sessions","avatars:read"],"active":true,"maxSessionSeconds":600,
 			"spendCap":{"limitMicrocredits":50000,"window":"monthly","spentMicrocredits":1250,"remainingMicrocredits":48750,
 				"windowResetsAt":"2026-11-01T12:00:00Z","enforced":true}}`,
 	}
@@ -187,15 +187,11 @@ func TestAccountFreeGeneration(t *testing.T) {
 	}
 }
 
-// The balance shows what is usable on Atmee V2 where the server reports
-// them, and nothing about them where it does not.
-func TestBalanceV2Credits(t *testing.T) {
+// The balance is one number: no Atmee V2 figure, even from a server that
+// still reports one.
+func TestBalanceOneKindOfCredit(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
-	t.Setenv("ATMEE_BASE_URL", accountAPI(t).URL)
-	if out := ok(t, "balance"); strings.Contains(out, "Atmee V2") {
-		t.Errorf("a v2 figure the server did not report:\n%s", out)
-	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"wallet":"direct","spendableMicrocredits":4998500,"planMicrocredits":98500,"topupMicrocredits":4900000,
 			"couponMicrocredits":0,"couponSpendable":true,"v2SpendableMicrocredits":120000,"heldByLiveSessionsMicrocredits":0,
@@ -203,16 +199,13 @@ func TestBalanceV2Credits(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
-	if out := ok(t, "balance"); !strings.Contains(out, "Usable on Atmee V2  1,200.00") {
-		t.Errorf("missing the v2 figure:\n%s", out)
-	}
-	if out := ok(t, "balance", "--json"); !strings.Contains(out, `"v2SpendableMicrocredits": 120000`) {
-		t.Errorf("--json: %s", out)
+	if out := ok(t, "balance"); strings.Contains(out, "Atmee V2") {
+		t.Errorf("the balance shows a V2 figure:\n%s", out)
 	}
 }
 
-// An account no invite code unlocked is told how Atmee V2 comes (Growth
-// and up, or an invite code), and V2 HD is not said to come with either.
+// An account without Atmee V2 access is told how to get it (Growth and up,
+// or an invite code), and V2 HD is not said to come with either.
 func TestAccountV2Access(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -221,7 +214,7 @@ func TestAccountV2Access(t *testing.T) {
 		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
 			"renderV2PerMinuteMicrocredits":100,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`).URL)
 	out := ok(t, "account")
-	for _, want := range []string{"v2 avatars   not unlocked by an invite code", "Growth and up", "`atmee redeem CODE`",
+	for _, want := range []string{"v2 avatars   can't build yet", "Growth and up", "`atmee redeem CODE`", "Anyone can talk to any avatar",
 		"V2 HD        Enterprise only"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
@@ -368,7 +361,7 @@ func TestWhoami(t *testing.T) {
 		t.Fatalf("%d %s", code, errOut)
 	}
 	for _, want := range []string{"Key          prod backend  k-1", "Scopes       sessions, avatars:read", "Avatars      any avatar of the account",
-		"Billing      metered", "Spend cap    12.50 of 500.00 credits used this month, 487.50 left (resets 2026-11-0", "Key limits   sessions up to 10m0s"} {
+		"Spend cap    12.50 of 500.00 credits used this month, 487.50 left (resets 2026-11-0", "Key limits   sessions up to 10m0s"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}
@@ -440,7 +433,7 @@ func TestRedeem(t *testing.T) {
 
 	// A credits-only code gives no v2 access, and says how v2 opens.
 	answer = `{"microcreditsGranted":5000,"v2Access":"invite_required"}`
-	if out, _, _ := run(t, "", "redeem", "V2-LAUNCH"); !strings.Contains(out, "did not unlock Atmee V2") || !strings.Contains(out, "invite code unlocks it") {
+	if out, _, _ := run(t, "", "redeem", "V2-LAUNCH"); !strings.Contains(out, "did not unlock building Atmee V2") || !strings.Contains(out, "invite code unlocks it") {
 		t.Errorf("credits-only code: %q", out)
 	}
 

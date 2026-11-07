@@ -73,11 +73,12 @@ instead.
 
 ## Movement while it talks (v2)
 
-If the seed looked right but the movement in the conversation is off (stiff,
-jittery, odd head motion), the cause is not the seed: the seed fixes the face
-and lip sync, and a separate number, the motion setting, varies the movement
-in each conversation. Ask, as a choice: "Try a different motion setting
-(Recommended)", "Keep it as it is". On a try, set another number
+If the movement in the conversation is off (stiff, jittery, odd head
+motion), two things shape it: the motion setting, a number that varies the
+movement in each conversation, and the seed itself. Ask, as a choice: "Try a
+different motion setting (Recommended, free)", "Try another seed", "Keep it
+as it is". For another seed, follow the coaching reference. On a motion
+setting try, set another number
 (`update_avatar` `runtimeSeed`, any whole number from 0 to 2147483647, for
 example 7; the default is 42, and 42 goes back to it; CLI `atmee avatars
 update ID --runtime-seed 7`). It costs nothing, rebuilds nothing and applies

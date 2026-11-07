@@ -60,7 +60,7 @@ func (a *app) balanceCmd() *cobra.Command {
 		Use:   "balance",
 		Short: "Credits left on the account, and what expires when.",
 		Long: "Credits left on your account (the signed-in user's or the API key's; 100 microcredits = 1 credit): what a session can spend now, " +
-			"the plan, top-up and coupon buckets, how much is usable on Atmee V2 (where the server reports it), what running sessions hold, and the credits that expire next. " +
+			"the plan, top-up and coupon buckets, what running sessions hold, and the credits that expire next. One kind of credit pays for every model (V1, V2, V2 HD), each at its rate. " +
 			"Works for a signed-in user, or a key with the sessions or avatars:read scope.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -93,11 +93,6 @@ func (a *app) printBalance(b *api.Balance) {
 		coupon = "  (not spent by this key: metered keys use plan and top-up credits only)"
 	}
 	a.printf("  Plan     %s\n  Top-up   %s\n  Coupon   %s%s\n", credits(b.PlanMicrocredits), credits(b.TopupMicrocredits), credits(b.CouponMicrocredits), coupon)
-	// The part that pays for Atmee V2 (v2 avatars, their sessions, video
-	// clips, and existing V2 HD avatars), where the server reports it.
-	if v := b.V2SpendableMicrocredits; v != nil {
-		a.printf("Usable on Atmee V2  %s\n", credits(*v))
-	}
 	if b.HeldByLiveSessionsMicrocredits > 0 {
 		a.printf("Held by running sessions  %s (what they do not use comes back when they end)\n", credits(b.HeldByLiveSessionsMicrocredits))
 	}
@@ -181,7 +176,7 @@ func (a *app) printAccount(x *api.Account) {
 	l := x.Limits
 	access := "on"
 	if !l.ApiAccess {
-		access = "OFF (sessions answer 403 api_access_disabled)"
+		access = "OFF: switched off for this account by an admin (sessions answer 403 api_access_disabled); contact support"
 	}
 	length := "no plan cap"
 	if l.MaxSessionSeconds != nil {
@@ -197,7 +192,7 @@ func (a *app) printAccount(x *api.Account) {
 	if v := x.V2Access; v != nil {
 		a.printf("v2 avatars   %s\n", map[string]string{
 			api.V2AccessGranted:        "yes",
-			api.V2AccessInviteRequired: "not unlocked by an invite code: Atmee V2 comes with Growth and up; below that, `atmee redeem CODE` with an invite code unlocks it (creates default to V1 without it)",
+			api.V2AccessInviteRequired: "can't build yet: building Atmee V2 and video clips needs Growth and up, or an invite code (`atmee redeem CODE`); creates default to V1 without it. Anyone can talk to any avatar",
 			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
 	}
@@ -404,9 +399,6 @@ func (a *app) printCurrentKey(k *api.CurrentUser) {
 		avatar = "only " + *k.AvatarId
 	}
 	a.printf("Avatars      %s\n", avatar)
-	if k.BillingMode != nil {
-		a.printf("Billing      %s\n", *k.BillingMode)
-	}
 	if sc := k.SpendCap; sc != nil {
 		window := map[string]string{"daily": "today", "monthly": "this month", "total": "in total"}[sc.Window]
 		if window == "" {
@@ -465,7 +457,7 @@ func (a *app) redeemCmd() *cobra.Command {
 			if res.V2Access != nil {
 				parts = append(parts, map[string]string{
 					api.V2AccessGranted:        "Atmee V2 is unlocked",
-					api.V2AccessInviteRequired: "it did not unlock Atmee V2 (Growth and up include it; below that, an invite code unlocks it)",
+					api.V2AccessInviteRequired: "it did not unlock building Atmee V2 (Growth and up include it; below that, an invite code unlocks it)",
 					api.V2AccessUnavailable:    "v2 avatars are not offered on this server",
 				}[string(*res.V2Access)])
 			}

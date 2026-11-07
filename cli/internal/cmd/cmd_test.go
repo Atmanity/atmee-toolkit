@@ -881,9 +881,10 @@ func TestHabitFlag(t *testing.T) {
 }
 
 // A create that chooses no engine makes v1 for an account that cannot build
-// v2 (not unlocked and nothing usable on Atmee V2, or a v2 create refused for the
-// account), and says so; an account with access or a v2 balance
-// gets v2; a chosen engine is sent as is.
+// v2 (no Atmee V2 access, or a v2 create refused for the account), and says
+// so; an account with access gets v2. Against an older server that still
+// reports v2SpendableMicrocredits, a positive figure lets an account without
+// an invite build v2; a chosen engine is sent as is.
 func TestCreateEngineFollowsV2Access(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -898,18 +899,16 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		fails  string // the error, "" when the create succeeds
 		posts  int    // creates sent, 0 for 1
 	}{
-		{access: "invite_required", want: "", note: "isn't on this account's plan"}, // v1, the API's default, is not sent
-		{access: "invite_required", v2: "0", want: "", note: "upgrade to Growth and up"},
-		{access: "invite_required", v2: "500", want: "v2"},
-		{access: "invite_required", v2: "fail", want: "v2"}, // an unreadable balance lets the create decide
+		{access: "invite_required", want: "", note: "can't build Atmee V2 yet"},             // v1, the API's default, is not sent
+		{access: "invite_required", v2: "500", want: "v2"},                                  // an older server's positive V2 balance still lets it build
+		{access: "invite_required", v2: "0", want: "", note: "upgrade to Growth and up"},    // and none usable does not
+		{access: "invite_required", v2: "fail", want: "", note: "can't build Atmee V2 yet"}, // an unreadable balance: access decides
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
 		{access: "unavailable", args: []string{"--resolution", "384x640"}, fails: "drop them to make a v1 avatar"},
 		{access: "granted", want: "v2"},
 		{access: "", want: "v2"},
-		{access: "granted", v2: "0", want: "", note: "isn't on this account's plan"}, // a reported 0 decides over granted
-		{access: "", v2: "0", want: "", note: "isn't on this account's plan"},
-		{access: "granted", v2: "fail", want: "v2"},
+		{access: "granted", v2: "0", want: "v2"},
 		{access: "invite_required", args: []string{"--engine", "v2"}, want: "v2"},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no Atmee V2"}`, want: "", note: "insufficient_v2_credits", posts: 2},
 		{access: "granted", refuse: `403 {"error":"v2_access_required","message":"invite only"}`, want: "", note: "v2_access_required", posts: 2},

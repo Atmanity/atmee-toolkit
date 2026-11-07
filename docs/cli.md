@@ -68,7 +68,6 @@ Spendable  50,000.00 credits
   Plan     1,000.00
   Top-up   49,000.00
   Coupon   0.00
-Usable on Atmee V2  50,000.00
 Next expiry  1,000.00 plan credits on 2026-11-01
 
 $ atmee account
@@ -87,11 +86,9 @@ Captures     0 of 10 queued or running
 Payouts      verified since 2026-09-01
 ```
 
-**Spendable** is what a session can be started on. A metered key spends plan and top-up
-credits only, so its coupon line says it is not spent. **Usable on Atmee V2**
-(`v2SpendableMicrocredits`, shown where the server reports it) is the part that pays for Atmee
-V2 sessions (V2 HD avatars' included) and video clips, and building a V2 avatar needs it above 0. Atmee V2
-comes with Growth and up; below Growth, an invite code unlocks it. Credits held by running sessions
+**Spendable** is what a session can be started on. There is one kind of credit: it pays for
+every model (V1, V2, V2 HD) at its rate, and anyone can talk to any avatar. (An older server may
+still say a metered key spends plan and top-up credits only, in its coupon line.) Credits held by running sessions
 are already out of the buckets; what a session does not use comes back when it ends.
 **Payouts** is the status of the account's payout account (`not started`, `unverified`,
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
@@ -233,7 +230,7 @@ rebuild the account may not make answers `403 v2_pro_not_in_plan`; a server with
 answers `503 engine_unavailable`; the CLI adds what to do. Video clips are the same whatever
 engine you use.
 
-`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: Atmee V2 not on its plan and not unlocked by an invite code (`atmee balance` shows nothing usable on Atmee V2), or a v2 create refused with `insufficient_v2_credits` or `v2_access_required`; v2hd for Atmee V2 HD, for Enterprise customers, above), `--candidates 1-10`
+`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: below Growth and no invite code (`atmee account` shows `v2 avatars` can't build yet), or a v2 create refused with `v2_access_required`; v2hd for Atmee V2 HD, for Enterprise customers, above), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
 used automatically, once completed), `--preview-message` (v2: at most 300
@@ -437,11 +434,9 @@ files). A reference works once and lasts 24 hours.
   The CLI checks only that `--resolution` is two even numbers; a size the server doesn't
   serve is `400 invalid_input`, and the message lists the ones it does. Without
   `--resolution` the server's own default size is used. The renderer works at each side rounded up to a multiple of 32 and crops the
-  centre. Local files go up through `POST /v1/uploads` first. It needs Atmee V2
-  (Growth and up; below Growth, an invite code unlocks it): otherwise it is `402
-  insufficient_v2_credits`. Where billing still
-  decides clips by invitation and plan, it needs v2 access (`403 v2_access_required`) and a
-  plan with video generation (`403 video_generation_not_in_plan`). It comes back as an `upload:<uploadId>` with a download
+  centre. Local files go up through `POST /v1/uploads` first. It needs Atmee V2 access
+  (Growth and up, or an invite code below Growth; `403 v2_access_required` without it) and
+  clips on the account (`403 video_generation_not_in_plan`). Any credits pay for it. It comes back as an `upload:<uploadId>` with a download
   link for 24 hours.
 - **`clip-status`** reads a clip by its request id, the `--idempotency-key` a `clip` call was
   given or printed when it stopped waiting, through `GET /v1/generation/clips/{requestId}`. It

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "about": "Negative examples only: what makes a portrait animate badly. Style is never a problem, and neither is framing: every example is made from one head-and-shoulders photo, but half-body and full-body shots pass too.",
+  "about": "Negative examples only: what makes a portrait animate badly. Style is never a problem. Framing works within limits: on Atmee V2, chest-up or half body animates best, a head-only shot gives no gestures and a very wide one makes the face small. Every example is made from one head-and-shoulders photo.",
   "measure": {
     "min_side": 512,
     "formats": [

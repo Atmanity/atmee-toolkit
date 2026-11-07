@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.14 (2026-11-07)
+
+
+### Features
+
+* one kind of credit; anyone talks to any avatar, two gates for creating v2
+* **skill:** coach creators past a weak avatar preview
+
+
+### Bug Fixes
+
+* say a video clip needs only the generation:write scope
+
 ## 0.10.13 (2026-11-06)
 
 

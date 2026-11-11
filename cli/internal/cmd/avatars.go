@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
 
@@ -22,7 +23,7 @@ import (
 )
 
 func (a *app) avatarsCmd() *cobra.Command {
-	c := group("avatars", "Create, build, pick and talk to your avatars", a.createCmd(), a.listCmd(), a.getCmd(), a.waitCmd(), a.updateCmd(), a.deleteCmd(),
+	c := group("avatars", "Create, build, pick and talk to your avatars", a.createCmd(), a.duplicateCmd(), a.listCmd(), a.getCmd(), a.waitCmd(), a.updateCmd(), a.deleteCmd(),
 		a.deleteVersionCmd(),
 		a.replaceCmd("replace-voice", "Replace the voice sample (a local file, an https URL or upload:ID). v2: builds a new candidate; the current one keeps serving until it is finished (with manual selection, until you pick a new one).", (*api.Client).ReplaceVoice),
 		a.replaceCmd("replace-appearance", "Replace the portrait (a local file, an https URL or upload:ID: front-facing, face at least a third of the frame, lips slightly parted). v2: builds new candidates from it.", (*api.Client).ReplaceAppearance),
@@ -378,6 +379,82 @@ func (a *app) createCmd() *cobra.Command {
 	return c
 }
 
+func (a *app) duplicateCmd() *cobra.Command {
+	var (
+		name, eng     string
+		wait, jsonOut bool
+	)
+	c := &cobra.Command{
+		Use:   "duplicate AVATAR_ID",
+		Short: "Make a new avatar from one of yours, on the same engine or a newer one (e.g. a V1 avatar on Atmee V2).",
+		Long: "Make a new avatar from one of yours. The copy gets its name and description, language, persona, preview " +
+			"message, knowledge (the --facts text, the questionnaire answers and every knowledge file), portrait and voice " +
+			"sample; the files are copied inside storage, nothing is uploaded again. The source is left as it is.\n\n" +
+			"Without --engine the copy keeps the source's engine; --engine v2 makes an Atmee V2 version of a v1 avatar " +
+			"(checked as on create: the account needs Atmee V2). --engine may also name an older model (v2 or v2hd onto v1, " +
+			"v2hd onto v2). Between v2 and v2hd the copy takes the engine's size nearest the source's shape; v1 works best " +
+			"with a front-facing, shoulders-up portrait. " +
+			"Atmee V2 HD (--engine v2hd) is for Enterprise customers on custom plans: contact us through Creator Studio's " +
+			"help center.\n\n" +
+			"Not copied: sharing and money. The copy is private and not monetized, with no sponsor pool, Explore " +
+			"profile or thumbnail, statement or conductor. A v2 copy builds its own candidate (a few minutes) instead " +
+			"of taking the source's; a preview message longer than v2's 300 characters is left out of a v2 copy.\n\n" +
+			"409 source_file_missing names a file of the source that can no longer be copied: replace it on the source " +
+			"(`replace-appearance`, `replace-voice`, `replace-knowledge`) and try again.",
+		Example: `  atmee avatars duplicate AVATAR_ID --wait
+  atmee avatars duplicate AVATAR_ID --engine v2 --name "Ada (V2)" --wait`,
+		Args: exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if _, err := api.ParseID(args[0]); err != nil {
+				return usagef("%v", err)
+			}
+			f := cmd.Flags()
+			if f.Changed("name") {
+				// Sent trimmed, as the copy's default (the source's name) is.
+				name = strings.TrimSpace(name)
+				if n := utf8.RuneCountInString(name); n < 1 || n > 100 {
+					return usagef("--name takes 1-100 characters")
+				}
+			}
+			if f.Changed("engine") {
+				switch api.CanonicalEngine(eng) {
+				case api.EngineV1, api.EngineV2, api.EngineV2Pro:
+				default:
+					return usagef("--engine takes v1, v2 or v2hd")
+				}
+			}
+			cl, err := a.api()
+			if err != nil {
+				return err
+			}
+			res, quota, err := cl.Duplicate(ctx(), args[0], api.DuplicateInput{Name: name, Engine: eng})
+			if err != nil {
+				return err
+			}
+			if !wait {
+				if jsonOut {
+					return a.printJSON(res)
+				}
+				a.printf("Created %s from %s (%s, %s)\n", res.AvatarId, args[0], engine(deref(res.Engine)), res.Status)
+				if res.MissingInputs != nil {
+					a.noteMissing(res.AvatarId.String(), missingNames(*res.MissingInputs))
+				}
+				if quota != nil {
+					a.note("Room for %d more captures\n", quota.Remaining)
+				}
+				return nil
+			}
+			return a.waitAndPrint(cl, res.AvatarId.String(), 15*time.Minute, jsonOut)
+		},
+	}
+	f := c.Flags()
+	f.StringVar(&name, "name", "", "The copy's name (default: the source's)")
+	f.StringVar(&eng, "engine", "", "The copy's engine: the source's or a newer one (v1, v2 or v2hd; Atmee V2 HD is for Enterprise customers on custom plans) (default: the source's)")
+	f.BoolVar(&wait, "wait", false, "Wait until it is ready (a draft, missing its voice, is printed as it is)")
+	f.BoolVar(&jsonOut, "json", false, jsonHelp)
+	return c
+}
+
 // whoPromptHelp and whatPromptHelp describe Creator Studio's two persona
 // prompts, "Who are you" and "What are we doing".
 const (
@@ -448,56 +525,173 @@ func (a *app) waitAndPrint(cl *api.Client, id string, timeout time.Duration, jso
 }
 
 func (a *app) listCmd() *cobra.Command {
-	var limit int
-	var before string
+	var limit, offset int
+	var before, sponsored string
 	var all, jsonOut bool
+	var q api.ListQuery
 	c := &cobra.Command{
 		Use:   "list",
-		Short: "List your avatars, newest first.",
-		Long:  "List your avatars, newest first. One page at a time: --all fetches every page, --before continues from the nextBefore a page printed.",
+		Short: "List your avatars: sort, search and filter them, with each one's usage.",
+		Long: "List your avatars, newest created first, with each one's usage (users, average and total chat minutes) " +
+			"and the Atmee V2 copy made from it by an upgrade, if any. --sort, --order, --q and the filters run on the server " +
+			"across every avatar; --all fetches every page, --offset continues from the nextOffset a page printed. " +
+			"--before pages by creation time as before, without usage, and cannot be combined with the others.",
 		Example: `  atmee avatars list
-  atmee avatars list --all --json`,
+  atmee avatars list --sort users --order desc --limit 10
+  atmee avatars list --q mira --engine v1
+  atmee avatars list --visibility public,unlisted --frame portrait --all --json`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			var cursor *time.Time
+			if limit < 1 || limit > 100 {
+				return usagef("--limit takes 1 to 100")
+			}
+			if err := checkOneOf("--sort", q.Sort, "created", "updated", "name", "users", "avgChat", "totalChat"); err != nil {
+				return err
+			}
+			if err := checkOneOf("--order", q.Order, "asc", "desc"); err != nil {
+				return err
+			}
+			for _, f := range []struct {
+				flag, value string
+				allowed     []string
+			}{
+				{"--visibility", q.Visibility, []string{"public", "unlisted", "private"}},
+				{"--engine", q.Engine, []string{"v1", "v2", "v2hd"}},
+				{"--frame", q.Frame, []string{"square", "landscape", "portrait"}},
+				{"--badge", q.Badge, []string{"verified", "monetizing", "standard"}},
+			} {
+				if err := checkList(f.flag, f.value, f.allowed...); err != nil {
+					return err
+				}
+			}
+			for _, v := range []*string{&q.Visibility, &q.Engine, &q.Frame, &q.Badge} {
+				*v = strings.ReplaceAll(*v, " ", "")
+			}
+			switch sponsored {
+			case "":
+			case "true", "false":
+				v := sponsored == "true"
+				q.Sponsored = &v
+			default:
+				return usagef("--sponsored takes true or false")
+			}
+			if cmd.Flags().Changed("offset") {
+				if offset < 0 {
+					return usagef("--offset takes 0 or more")
+				}
+				q.Offset = &offset
+			}
 			if before != "" {
+				if q.Paged() {
+					return usagef("--before pages by creation time and cannot be combined with --sort, --order, --q, a filter or --offset")
+				}
 				t, err := time.Parse(time.RFC3339Nano, before)
 				if err != nil {
 					return usagef("--before takes the nextBefore timestamp of a previous page: %v", err)
 				}
-				cursor = &t
+				q.Before = &t
+			} else if !q.Paged() {
+				// The sorted list, in the same order as the time-paged one, so
+				// every row carries its usage and upgraded copy.
+				q.Sort, q.Order = "created", "desc"
 			}
+			q.Limit = limit
 			cl, err := a.api()
 			if err != nil {
 				return err
 			}
 			var items []api.AvatarSummary
+			var last *api.ListPage
 			for {
-				page, next, err := cl.List(ctx(), limit, cursor)
+				page, err := cl.ListPage(ctx(), q)
 				if err != nil {
 					return err
 				}
-				items = append(items, page...)
-				cursor = next
-				if !all || next == nil || len(page) == 0 {
+				items = append(items, page.Items...)
+				last = page
+				if !all || len(page.Items) == 0 {
 					break
 				}
+				if q.Before != nil {
+					if page.NextBefore == nil {
+						break
+					}
+					q.Before = page.NextBefore
+					continue
+				}
+				if page.NextOffset == nil {
+					break
+				}
+				q.Offset = page.NextOffset
 			}
 			if jsonOut {
-				return a.printJSON(map[string]any{"items": items, "nextBefore": cursor})
+				out := map[string]any{"items": items}
+				if q.Before != nil || last.NextBefore != nil {
+					out["nextBefore"] = last.NextBefore
+				} else {
+					out["total"], out["nextOffset"] = last.Total, last.NextOffset
+				}
+				return a.printJSON(out)
 			}
 			a.printAvatars(items)
-			if cursor != nil {
-				a.note("More avatars: atmee avatars list --before %s (or --all)\n", cursor.Format(time.RFC3339Nano))
+			switch {
+			case last.NextBefore != nil:
+				a.note("More avatars: atmee avatars list --before %s (or --all)\n", last.NextBefore.Format(time.RFC3339Nano))
+			case last.NextOffset != nil:
+				total := ""
+				if last.Total != nil {
+					total = fmt.Sprintf(" of %d", *last.Total)
+				}
+				a.note("Showing %d%s. More: the same command with --offset %d (or --all)\n", len(items), total, *last.NextOffset)
+			case last.Total != nil && !all && *last.Total > len(items):
+				a.note("Showing %d of %d.\n", len(items), *last.Total)
 			}
 			return nil
 		},
 	}
-	c.Flags().IntVar(&limit, "limit", 50, "Avatars per page")
-	c.Flags().StringVar(&before, "before", "", "Start after this point: the nextBefore the previous page printed")
+	c.Flags().IntVar(&limit, "limit", 50, "Avatars per page (1-100)")
+	c.Flags().StringVar(&q.Sort, "sort", "", "Order by created, updated, name, users, avgChat or totalChat (default created)")
+	c.Flags().StringVar(&q.Order, "order", "", "asc or desc (default desc: newest, largest or last in the alphabet first)")
+	c.Flags().StringVar(&q.Q, "q", "", "Only avatars whose name contains this text, ignoring case")
+	c.Flags().StringVar(&q.Visibility, "visibility", "", "Only these visibilities, comma-separated: public, unlisted, private")
+	c.Flags().StringVar(&q.Engine, "engine", "", "Only these models, comma-separated: v1, v2, v2hd (each matches its own model)")
+	c.Flags().StringVar(&q.Frame, "frame", "", "Only these frame shapes, comma-separated: square, landscape, portrait")
+	c.Flags().StringVar(&q.Badge, "badge", "", "Only these badges, comma-separated: verified, monetizing, standard (neither)")
+	c.Flags().StringVar(&sponsored, "sponsored", "", "true: only sponsored avatars; false: only the others")
+	c.Flags().IntVar(&offset, "offset", 0, "Skip this many matching avatars: the nextOffset a previous page printed")
+	c.Flags().StringVar(&before, "before", "", "Page by creation time instead: the nextBefore a previous page printed (no usage)")
 	c.Flags().BoolVar(&all, "all", false, "List every page")
 	c.Flags().BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
+}
+
+// checkOneOf refuses a flag value outside the allowed ones (empty is unset).
+func checkOneOf(flag, value string, allowed ...string) error {
+	if value == "" || slices.Contains(allowed, value) {
+		return nil
+	}
+	return usagef("%s takes %s", flag, joinOr(allowed))
+}
+
+// checkList refuses a comma-separated flag with a value outside the allowed.
+func checkList(flag, value string, allowed ...string) error {
+	if value == "" {
+		return nil
+	}
+	for _, v := range strings.Split(value, ",") {
+		if !slices.Contains(allowed, strings.TrimSpace(v)) {
+			return usagef("%s takes one or more of %s, comma-separated", flag, strings.Join(allowed, ", "))
+		}
+	}
+	return nil
+}
+
+// joinOr lists values as "a, b or c".
+func joinOr(v []string) string {
+	if len(v) < 2 {
+		return strings.Join(v, "")
+	}
+	return strings.Join(v[:len(v)-1], ", ") + " or " + v[len(v)-1]
 }
 
 func (a *app) getCmd() *cobra.Command {
@@ -878,12 +1072,12 @@ func download(link, path string) error {
 
 const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
 
-// noV2Plan is the refusal to build Atmee V2 for an account below Growth that
+// noV2Plan is the refusal to build Atmee V2 for an account below Pro that
 // no invite code unlocked, and getV2Hint how to get it. Talking to any
 // avatar never needs it: one kind of credit pays for every model.
 const (
-	noV2Plan  = "this account can't build Atmee V2 yet (building V2 avatars and video clips needs Growth and up, or an invite code)"
-	getV2Hint = "upgrade to Growth and up, or `atmee redeem CODE` with an invite code"
+	noV2Plan  = "this account can't build Atmee V2 yet (building V2 avatars needs Pro and up, or an invite code)"
+	getV2Hint = "upgrade to Pro and up, or `atmee redeem CODE` with an invite code"
 )
 
 // engineOffer says where `atmee account` shows which engines a server offers.
@@ -924,6 +1118,11 @@ func engineHint(cmd *cobra.Command, err error) string {
 	if !ok {
 		return ""
 	}
+	if cmd != nil && cmd.Name() == "duplicate" && apiErr.Code == "v2_pro_not_in_plan" {
+		// The server already says V2 HD is Enterprise-only; add only what is
+		// particular to a copy: any source may be copied onto v2.
+		return "copy it onto v2 instead (--engine v2)"
+	}
 	if cmd != nil && cmd.Flags().Lookup("engine") != nil {
 		return h.create
 	}
@@ -932,7 +1131,7 @@ func engineHint(cmd *cobra.Command, err error) string {
 
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
 // or that can't be told (the create then says so itself). The account's
-// v2Access decides: invite_required means no Atmee V2 access (below Growth,
+// v2Access decides: invite_required means no Atmee V2 access (below Pro,
 // no invite code). An older server decided by credits instead: while the
 // balance still reports v2SpendableMicrocredits, an account without an
 // invite but with a positive figure may still build v2.

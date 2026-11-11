@@ -75,7 +75,7 @@ Account 11111111-1111-4111-8111-111111111111
 Plan         Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-01
 API access   on
 Limits       session length no plan cap · 7 at once · 50 API avatars
-Per minute   conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.00/min
+Per minute   conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.50/min
 Preview clip 0.00 credits
 Generation   portraits 1.00 · enhance 1.00 · voice 1.00 credits
 Clip sizes   480x480 0.10/0.30/0.50, 640x480 0.10/0.30/0.50, 480x640 0.10/0.30/0.50, 832x468 0.30/0.70/1.00, 468x832 0.30/0.70/1.00, 720x720 0.50/1.00/1.50, 960x720 0.50/1.00/1.50, 720x960 0.50/1.00/1.50, 1280x720 0.80/1.40/2.00, 720x1280 0.80/1.40/2.00 credits a clip up to 5/10/15 s, charged at the next length up (--resolution)
@@ -103,13 +103,13 @@ each size the same for any length, shows one price per size.
 An older server without them shows one clip price per 15 seconds on the **Generation** line
 instead. **v2 sizes** (shown when the deployment offers only some of the sizes the rule
 allows) are the frame sizes an avatar's `--resolution` takes (`limits.v2Resolutions`; on an
-older server, `pricing.generation.clipResolutions`). **Video clips** appears only when the
-account may not make clips (`limits.videoGeneration` false, where billing still decides clips
-by plan). **V2 HD** appears only where the server reports Atmee V2 HD (`limits.v2Pro`, true or false):
+older server, `pricing.generation.clipResolutions`). **Video clips** appears only when video
+generation was turned off for the account (`limits.videoGeneration` false; clips are on every
+plan otherwise), and says to contact us through Creator Studio's help center. **V2 HD** appears only where the server reports Atmee V2 HD (`limits.v2Pro`, true or false):
 it is for Enterprise customers on custom plans, so the line says to contact us through Creator
 Studio's help center, on the website the account's `links` point to (named without an address
-when the server reports no links). **v2 avatars** says whether an invite code
-unlocked Atmee V2; on Growth and up it comes with the plan.
+when the server reports no links). **v2 avatars** says whether the account may build Atmee V2:
+on Pro and up it comes with the plan, below Pro an invite code unlocks it. Clips never need it.
 **V2 HD sizes** are the frame sizes a V2 HD avatar's `--resolution` takes on this server
 (`limits.v2ProResolutions`, 640x640 first); the example above is one server's list.
 
@@ -169,7 +169,9 @@ the new key here with `--out` to get one.
 
 ```bash
 atmee avatars create --name NAME [--image IMG] [--voice SAMPLE] [flags] [--wait] [--json]   # without one: a draft
-atmee avatars list [--limit 50] [--before CURSOR] [--all] [--json]
+atmee avatars duplicate ID [--name NAME] [--engine v1|v2|v2hd] [--wait] [--json]   # a private copy, on its own engine or any other
+atmee avatars list [--sort created|updated|name|users|avgChat|totalChat] [--order asc|desc] [--q TEXT] [--visibility LIST] [--engine LIST] [--frame LIST] [--badge LIST] [--sponsored true|false] [--limit 50] [--offset N] [--all] [--json]   # newest created first; each row with users, average and total chat minutes, and the V2 copy made from it by an upgrade
+atmee avatars list --before CURSOR [--limit 50] [--all] [--json]   # page by creation time instead (no usage)
 atmee avatars get ID [--json]                    # status, and what was set: persona, language, facts and knowledge summary, public page
 atmee avatars get-knowledge ID [--json]          # the --facts text, questionnaire answers, knowledge files with links
 atmee avatars questionnaire ID [--json]          # Studio's knowledge questions, numbered, with the answers
@@ -230,7 +232,7 @@ rebuild the account may not make answers `403 v2_pro_not_in_plan`; a server with
 answers `503 engine_unavailable`; the CLI adds what to do. Video clips are the same whatever
 engine you use.
 
-`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: below Growth and no invite code (`atmee account` shows `v2 avatars` can't build yet), or a v2 create refused with `v2_access_required`; v2hd for Atmee V2 HD, for Enterprise customers, above), `--candidates 1-10`
+`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: below Pro and no invite code (`atmee account` shows `v2 avatars` can't build yet), or a v2 create refused with `v2_access_required`; v2hd for Atmee V2 HD, for Enterprise customers, above), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
 used automatically, once completed), `--preview-message` (v2: at most 300
@@ -292,6 +294,42 @@ Eligible     no
 Last 30 days ✓ 12 of 10 conversations · ✗ 40.50 of 60 minutes · ✗ 3 of 5 people
 Account      1 monetized · plan cap 3
 Earnings     2.50 credits this cycle (1 session) · 1,234.56 credits all time (40 sessions)
+```
+
+### Duplicate
+
+`atmee avatars duplicate ID` makes a new avatar from one of yours, without giving the
+portrait, voice, persona or knowledge again; the source is left as it is. Without
+`--engine` the copy keeps the source's engine. `--engine v2` is how a v1 avatar moves
+to Atmee V2: an avatar's engine can't change in place. `--engine` may also name an older
+model (v2 or v2hd onto v1, v2hd onto v2). Between v2 and v2hd the copy takes the engine's
+size nearest the source's shape; v1 works best with a front-facing, shoulders-up
+portrait. The engine is checked as
+on create (`402 insufficient_v2_credits`, `403 v2_access_required`, `503
+engine_unavailable`, each printed with what to do). Atmee V2 HD (`--engine v2hd`) is for
+Enterprise customers on custom plans. `--name` renames the copy (1-100 characters; default: the
+source's name).
+
+- **Copied:** the name and description, language, persona (`--who-prompt`,
+  `--what-prompt`, alias, spoken name, known aliases, self-introduction, guardrails,
+  habits; the greeting only onto a v1 copy), the preview message and `--previews`,
+  the knowledge (the `--facts` text, the questionnaire answers and every knowledge
+  file), the portrait and the voice sample. The files are copied inside storage.
+- **Not copied:** sharing and money. The copy is private and not monetized, with no
+  sponsor pool, Explore profile or thumbnail, statement or conductor. A v2 copy builds
+  its own candidate (a few minutes) instead of taking the source's; a preview message
+  over v2's 300 characters is left out of a v2 copy, which speaks the default line.
+
+It prints `Created NEW_ID from ID (engine, status)` like create (a v1 source with a
+portrait and no voice gives a ready render-only v1 copy, or a v2 draft that needs
+`replace-voice`); `--wait` follows the build. A v2 copy's capture counts against the
+capture limit like a create. `409 source_file_missing` names a file of the source that
+can no longer be copied: replace it on the source and try again. `409
+avatar_limit_reached` means the account has as many avatars as its plan allows. A
+server from before duplication answers `this server cannot duplicate avatars yet`.
+
+```bash
+atmee avatars duplicate 11111111-2222-4333-8444-555555555555 --engine v2 --name "Ada (V2)" --wait
 ```
 
 ### Config file
@@ -434,9 +472,10 @@ files). A reference works once and lasts 24 hours.
   The CLI checks only that `--resolution` is two even numbers; a size the server doesn't
   serve is `400 invalid_input`, and the message lists the ones it does. Without
   `--resolution` the server's own default size is used. The renderer works at each side rounded up to a multiple of 32 and crops the
-  centre. Local files go up through `POST /v1/uploads` first. It needs Atmee V2 access
-  (Growth and up, or an invite code below Growth; `403 v2_access_required` without it) and
-  clips on the account (`403 video_generation_not_in_plan`). Any credits pay for it. It comes back as an `upload:<uploadId>` with a download
+  centre. Local files go up through `POST /v1/uploads` first. Clips are on every
+  plan, Free included, and need no Atmee V2 access or invite code; `403
+  video_generation_not_in_plan` means video generation was turned off for the account (contact
+  us through Creator Studio's help center). Credits pay for it. It comes back as an `upload:<uploadId>` with a download
   link for 24 hours.
 - **`clip-status`** reads a clip by its request id, the `--idempotency-key` a `clip` call was
   given or printed when it stopped waiting, through `GET /v1/generation/clips/{requestId}`. It

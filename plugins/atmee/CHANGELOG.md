@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.15 (2026-11-11)
+
+
+### Features
+
+* **atmee:** duplicate avatars, and sort and filter the avatar list, from the cli and skills
+* make video clips available on every plan in the cli and skills
+
+
+### Bug Fixes
+
+* **atmee-product:** name the $49 plan Pro and say V2 needs Pro and up
+
 ## 0.10.14 (2026-11-07)
 
 

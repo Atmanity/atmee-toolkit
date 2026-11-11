@@ -182,16 +182,77 @@ func (c *Client) Voice(ctx context.Context, avatarID string) (*VoiceFile, error)
 }
 
 // List returns one page, newest first, and the cursor for the next (or nil).
+// It pages by time; rows carry no usage or upgraded copy (see ListPage).
 func (c *Client) List(ctx context.Context, limit int, before *time.Time) ([]AvatarSummary, *time.Time, error) {
-	r, err := c.gen.ListAvatarsWithResponse(ctx, &avatarapi.ListAvatarsParams{Limit: &limit, Before: before})
-	if r == nil {
-		return nil, nil, err
-	}
-	page, err := decode[avatarapi.AvatarListResponse](r.HTTPResponse, r.Body, err)
+	page, err := c.ListPage(ctx, ListQuery{Limit: limit, Before: before})
 	if err != nil {
 		return nil, nil, err
 	}
 	return page.Items, page.NextBefore, nil
+}
+
+// ListQuery is a list request. Before pages by time, as the list always
+// did; any other field asks the server to sort, search, filter and page by
+// offset, and then every row carries its usage and upgraded copy. The two
+// cannot be combined. Empty strings and nil leave a field out.
+type ListQuery struct {
+	Limit  int
+	Before *time.Time
+	Offset *int
+	// Sort is created, updated, name, users, avgChat or totalChat; Order is
+	// asc or desc.
+	Sort, Order string
+	// Q matches names containing it, ignoring case.
+	Q string
+	// Comma-separated values; any value in a filter matches, every filter
+	// given applies: visibility (public, unlisted, private), engine (v1, v2,
+	// v2hd; each its own model), frame (square, landscape, portrait) and
+	// badge (verified, monetizing, standard).
+	Visibility, Engine, Frame, Badge string
+	// Sponsored true lists only sponsored avatars, false only the others.
+	Sponsored *bool
+}
+
+// Paged reports whether the query asks for the sorted, offset-paged list.
+func (q ListQuery) Paged() bool {
+	return q.Offset != nil || q.Sort != "" || q.Order != "" || q.Q != "" ||
+		q.Visibility != "" || q.Engine != "" || q.Frame != "" || q.Badge != "" || q.Sponsored != nil
+}
+
+// ListPage is one page of the list, as the API answers it: NextBefore when
+// paging by time, Total and NextOffset when sorted, searched or filtered.
+type ListPage = avatarapi.AvatarListResponse
+
+// ListPage returns one page of the list for the query.
+func (c *Client) ListPage(ctx context.Context, q ListQuery) (*ListPage, error) {
+	if q.Before != nil && q.Paged() {
+		return nil, fmt.Errorf("a time cursor (before) cannot be combined with sort, order, search, a filter or offset")
+	}
+	params := &avatarapi.ListAvatarsParams{Before: q.Before, Offset: q.Offset, Sponsored: q.Sponsored}
+	if q.Limit > 0 {
+		params.Limit = &q.Limit
+	}
+	str := func(v string) *string {
+		if v == "" {
+			return nil
+		}
+		return &v
+	}
+	if q.Sort != "" {
+		v := avatarapi.ListAvatarsParamsSort(q.Sort)
+		params.Sort = &v
+	}
+	if q.Order != "" {
+		v := avatarapi.ListAvatarsParamsOrder(q.Order)
+		params.Order = &v
+	}
+	params.Q, params.Visibility, params.Engine, params.Frame, params.Badge =
+		str(q.Q), str(q.Visibility), str(q.Engine), str(q.Frame), str(q.Badge)
+	r, err := c.gen.ListAvatarsWithResponse(ctx, params)
+	if r == nil {
+		return nil, err
+	}
+	return decode[avatarapi.AvatarListResponse](r.HTTPResponse, r.Body, err)
 }
 
 // --- write ---
@@ -234,6 +295,48 @@ func (c *Client) Delete(ctx context.Context, avatarID string) error {
 	}
 	_, err = decode[struct{}](r.HTTPResponse, r.Body, err)
 	return err
+}
+
+// DuplicateInput is a duplicate request: both optional. Name renames the
+// copy; Engine ("v1", "v2" or "v2hd"; "v2pro" is read as v2hd) moves it to
+// another engine. Empty keeps the source's.
+type DuplicateInput struct {
+	Name   string
+	Engine string
+}
+
+// Duplicate makes a new private avatar from one of the account's: its
+// persona, knowledge, portrait and voice, copied inside storage. The copy
+// builds like a create (202), or is ready at once (201, a render-only v1
+// copy) or a draft. Like a create it is never re-sent after a network failure.
+func (c *Client) Duplicate(ctx context.Context, avatarID string, in DuplicateInput) (*CreateResult, *Quota, error) {
+	id, err := ParseID(avatarID)
+	if err != nil {
+		return nil, nil, err
+	}
+	var body avatarapi.AvatarDuplicateRequest
+	if in.Name != "" {
+		body.Name = &in.Name
+	}
+	if in.Engine != "" {
+		e := avatarapi.AvatarDuplicateRequestEngine(WireEngine(in.Engine))
+		body.Engine = &e
+	}
+	r, err := c.gen.DuplicateAvatarWithResponse(ctx, id, body)
+	if r == nil {
+		return nil, nil, sentOnce(err, "check `atmee avatars list` for the copy")
+	}
+	res, err := decode[CreateResult](r.HTTPResponse, r.Body, err)
+	var apiErr *Error
+	if errors.As(err, &apiErr) && apiErr.Status == http.StatusNotFound && apiErr.Code != "avatar_not_found" {
+		// No avatar_not_found code: the route itself is missing, a server
+		// from before duplication.
+		return nil, nil, fmt.Errorf("%w (this server cannot duplicate avatars yet)", err)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return res, quotaOf(r.HTTPResponse.Header), nil
 }
 
 // DeleteVersion deletes an older version of a v2 avatar: every take of it and

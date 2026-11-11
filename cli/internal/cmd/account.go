@@ -192,7 +192,7 @@ func (a *app) printAccount(x *api.Account) {
 	if v := x.V2Access; v != nil {
 		a.printf("v2 avatars   %s\n", map[string]string{
 			api.V2AccessGranted:        "yes",
-			api.V2AccessInviteRequired: "can't build yet: building Atmee V2 and video clips needs Growth and up, or an invite code (`atmee redeem CODE`); creates default to V1 without it. Anyone can talk to any avatar",
+			api.V2AccessInviteRequired: "can't build yet: building Atmee V2 needs Pro and up, or an invite code (`atmee redeem CODE`); creates default to V1 without it. Anyone can talk to any avatar",
 			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
 	}
@@ -275,7 +275,7 @@ func (a *app) printAccount(x *api.Account) {
 		}
 	}
 	if v := l.VideoGeneration; v != nil && !*v {
-		a.printf("Video clips  not in this plan (Growth and up): atmee generate clip answers 403 video_generation_not_in_plan\n")
+		a.printf("Video clips  turned off for this account: contact us through %s (atmee generate clip answers 403 video_generation_not_in_plan)\n", helpCenter(x.Links))
 	}
 	q := x.CaptureQuota
 	a.printf("Captures     %d of %d queued or running\n", q.Pending, q.PendingLimit)
@@ -435,7 +435,7 @@ func (a *app) redeemCmd() *cobra.Command {
 		Use:   "redeem CODE",
 		Short: "Redeem an invite or credit code for the account.",
 		Long: "Redeems a code for your account, as Creator Studio's Billing page does. A code can add credits, " +
-			"unlock Atmee V2, or both (Growth and up include Atmee V2 already). Each account redeems a code once. " +
+			"unlock Atmee V2, or both (Pro and up include Atmee V2 already). Each account redeems a code once. " +
 			"Needs `atmee login`: an API key cannot redeem codes.",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -457,7 +457,7 @@ func (a *app) redeemCmd() *cobra.Command {
 			if res.V2Access != nil {
 				parts = append(parts, map[string]string{
 					api.V2AccessGranted:        "Atmee V2 is unlocked",
-					api.V2AccessInviteRequired: "it did not unlock building Atmee V2 (Growth and up include it; below that, an invite code unlocks it)",
+					api.V2AccessInviteRequired: "it did not unlock building Atmee V2 (Pro and up include it; below that, an invite code unlocks it)",
 					api.V2AccessUnavailable:    "v2 avatars are not offered on this server",
 				}[string(*res.V2Access)])
 			}

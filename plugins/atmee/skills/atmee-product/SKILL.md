@@ -30,8 +30,8 @@ of that person or character moving as the prompt says, speaking a voice line
 when one is given (silent without), with no avatar needed (a teaser, a social
 post, an ad, a product demo). Whenever someone asks what Atmee can do, or
 wants a video rather than a conversation, say that it makes clips too;
-`create-avatar` makes them. Clips need Atmee V2 on the account (see
-Two engines), and a server offers them only when
+`create-avatar` makes them. Clips are on every plan, Free included, with
+no Atmee V2 access or invite code needed; a server offers them only when
 `get_account`'s `pricing.generation` has a clip price.
 
 The company was called Atmanity, and the name stays in infrastructure: the
@@ -90,8 +90,9 @@ always its chat page: never start a session for it (`start_session`,
 - **Two engines.** v1 animates a talking head from one portrait: sharp and
   cheaper. v2 adds emotion,
   expression and motion. Anyone can talk to any avatar (V1, V2 or V2 HD),
-  and one kind of credit pays for every model at its rate. **Building
-  Atmee V2** (and clips) needs Growth and up; below Growth, an invite code
+  and one kind of credit pays for every model at its rate. Video clips are
+  on every plan, Free included (credits pay for them). **Building
+  Atmee V2** needs Pro and up; below Pro, an invite code
   unlocks it (the agent redeems it with `redeem_code`, `atmee redeem CODE`
   in a terminal, or Creator Studio's Billing page), or an email invite does
   (waitlist: `https://www.atmee.ai/v2signup`). Building spends no credits.
@@ -102,14 +103,15 @@ always its chat page: never start a session for it (`start_session`,
   creator picks the one that serves. Studio, the Avatar API and the agent
   tooling (`create-avatar`) build v2 for an account that can, and v1 for
   any account. Agents go to v2 by default: without Atmee V2 on the account
-  they suggest Growth and up or ask for an invite code first, and make v1
+  they suggest Pro and up or ask for an invite code first, and make v1
   only if there is neither and the creator agrees.
 - **Atmee V2 HD** (engine `v2hd`) is a larger v2 model on its own GPUs, at
   larger frames (640×640 by default; `limits.v2ProResolutions` lists the
   others), for Enterprise customers on custom plans. Agents never create a
   new V2 HD avatar for any account, whatever `get_account` reports:
-  `limits.v2Pro` is true and the `pricing.*V2Hd*` fields are present for
-  every account, so neither means the user may have it. Never quote a V2 HD
+  the `pricing.*V2Hd*` fields are present for
+  every account, so they don't mean the user may have it, and `limits.v2Pro`
+  is true only for an account allowed to create V2 HD. Never quote a V2 HD
   price, or name a plan, an upgrade or an invite code as the way to it. When
   someone asks for it, say it is for Enterprise customers on custom plans,
   send them to contact us through the Studio help center (the origin of
@@ -163,7 +165,7 @@ last column.
 | Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
-| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is priced by its size (480×480 up to 1280×720 or 720×1280; 1080p coming soon) and its length, charged at the next length up (up to 5, 10 or 15 s), with or without sound, and needs Atmee V2 (Growth and up, or an invite code) | `create-avatar` |
+| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is priced by its size (480×480 up to 1280×720 or 720×1280; 1080p coming soon) and its length, charged at the next length up (up to 5, 10 or 15 s), with or without sound, on every plan, Free included | `create-avatar` |
 | A voice conversation over a WebSocket, with no video | **Speech session** (`start_speech_session`, `atmee speech start`); the avatar needs a voice | `build-avatar-app` |
 | To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/atmee-toolkit` |
 

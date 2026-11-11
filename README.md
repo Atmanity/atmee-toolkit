@@ -68,9 +68,9 @@ the MCP server; the CLI signs in as you or uses an API key.
 - **Generated inputs**: portraits from a description, an enhanced photo, and
   voices designed from a description.
 
-Anyone can talk to any avatar. Building Atmee V2 avatars, and the features built on them
-(candidate clips, agendas, video clips), needs Growth and up; below Growth, an invite code unlocks
-it. Accounts without Atmee V2 access get Atmee V1 avatars; redeem an invite code
+Anyone can talk to any avatar, and video clips are on every plan, Free included (they spend
+credits). Building Atmee V2 avatars, and the features built on them (candidate clips, agendas),
+needs Pro and up; below Pro, an invite code unlocks it. Accounts without Atmee V2 access get Atmee V1 avatars; redeem an invite code
 with `atmee redeem CODE` or on the Billing page in Creator Studio.
 
 ## Quickstart
@@ -261,7 +261,7 @@ format, is in [docs/cli.md](docs/cli.md).
 | Claude Code lists the plugin but no atmee tools | Run `/reload-plugins --force`, or restart Claude Code. `/mcp` shows each server's status. |
 | Codex shows no atmee tools after a restart | Run `codex mcp list`. If `atmee-avatars` is missing, add it with `codex mcp add atmee-avatars --url https://api.atmanity.us/mcp`, then `codex mcp login atmee-avatars`. |
 | `npx skills` says Node.js is too old | Install Node.js 22.20 or newer, or use the plugin route. |
-| `v2_access_required` (or `insufficient_v2_credits` from an older server) | The account can't build Atmee V2 yet: below Growth, no invite code. Upgrade to Growth and up, redeem an invite code (`atmee redeem CODE`), or make a V1 avatar. Talking to any avatar never needs it. |
+| `v2_access_required` (or `insufficient_v2_credits` from an older server) | The account can't build Atmee V2 yet: below Pro, no invite code. Upgrade to Pro and up, redeem an invite code (`atmee redeem CODE`), or make a V1 avatar. Talking to any avatar never needs it. |
 | `402 insufficient_credits` | Top up in Creator Studio, or raise the API key's spend cap. |
 | `409 avatar_not_ready` | The avatar has no ready clip yet. Check with `atmee avatars get AVATAR_ID` or wait with `atmee avatars wait AVATAR_ID`. |
 | A build fails at `appearance` | Use a front-facing portrait with the whole head in frame, the face at least a third of it, and the lips slightly parted. |

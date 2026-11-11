@@ -237,17 +237,25 @@ func TestGenerateClip(t *testing.T) {
 	}
 }
 
-// A silent clip leaves the length, size and seed to the API's defaults.
-func TestGenerateClipWithoutV2AccessSaysHowToGetIt(t *testing.T) {
+// Clips are on every plan: a clip an older server refuses for Atmee V2
+// access gets no upgrade or invite hint.
+func TestGenerateClipV2AccessRefusalIsNeutral(t *testing.T) {
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = io.WriteString(w, `{"error":"v2_access_required","message":"invite only"}`)
 	})
 	_, errOut, code := run(t, "", "generate", "clip", "--image", "https://x.example/a.png", "--prompt", "waves")
-	if code == 0 || !strings.Contains(errOut, "v2_access_required") || !strings.Contains(errOut, "`atmee redeem CODE`") {
+	if code == 0 || !strings.Contains(errOut, "v2_access_required") || !strings.Contains(errOut, "on every plan") {
 		t.Fatalf("%d %s", code, errOut)
 	}
+	for _, not := range []string{"`atmee redeem CODE`", "Growth", "upgrade"} {
+		if strings.Contains(errOut, not) {
+			t.Errorf("%q in %s", not, errOut)
+		}
+	}
 }
+
+// A silent clip leaves the length, size and seed to the API's defaults.
 
 func TestGenerateClipDefaults(t *testing.T) {
 	var body string
@@ -323,7 +331,8 @@ func TestGenerateClipServerRefusesTheSize(t *testing.T) {
 	}
 }
 
-// A plan without video generation is told which plans have it.
+// An account with video generation turned off is told to contact support,
+// not to change plans.
 func TestGenerateClipNotInPlan(t *testing.T) {
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -331,12 +340,13 @@ func TestGenerateClipNotInPlan(t *testing.T) {
 		_, _ = io.WriteString(w, `{"error":"video_generation_not_in_plan","message":"video generation is not in this plan"}`)
 	})
 	_, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod")
-	if code == 0 || !strings.Contains(errOut, "Growth plan and up") {
+	if code == 0 || !strings.Contains(errOut, "turned off for this account") || strings.Contains(errOut, "Growth") {
 		t.Fatalf("%d %s", code, errOut)
 	}
 }
 
-// A clip refused Atmee V2 says how to get it.
+// A clip an older server refuses for its Atmee V2 credits gets no upgrade
+// or invite hint either.
 func TestGenerateClipInsufficientV2Credits(t *testing.T) {
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -344,8 +354,8 @@ func TestGenerateClipInsufficientV2Credits(t *testing.T) {
 		_, _ = io.WriteString(w, `{"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`)
 	})
 	_, errOut, code := run(t, "", "generate", "clip", "--image", "upload:a", "--prompt", "a slow nod")
-	if code == 0 || !strings.Contains(errOut, "insufficient_v2_credits") || !strings.Contains(errOut, "upgrade to Growth and up") ||
-		!strings.Contains(errOut, "`atmee redeem CODE`") || strings.Contains(errOut, "--engine") {
+	if code == 0 || !strings.Contains(errOut, "insufficient_v2_credits") || !strings.Contains(errOut, "on every plan") ||
+		strings.Contains(errOut, "Growth") || strings.Contains(errOut, "`atmee redeem CODE`") || strings.Contains(errOut, "--engine") {
 		t.Fatalf("%d %s", code, errOut)
 	}
 }

@@ -65,6 +65,7 @@ Don't ask the creator how assets are stored; record them this way:
 - **Front matter:**
   - the environment: mock or real, plus the server URL
   - the avatar id (once created)
+  - for a copy (`duplicate_avatar`), the source avatar's id
   - the assets used
   - the real-person permission answer, if any
 - **Body:** the full spec as it stands, what changed in this step, the inputs

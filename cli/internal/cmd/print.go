@@ -45,11 +45,40 @@ func (a *app) printAvatars(items []api.AvatarSummary) {
 		a.printf("No avatars.\n")
 		return
 	}
-	w := tabwriter.NewWriter(a.out, 0, 2, 2, ' ', 0)
-	fmt.Fprintln(w, "ID\tNAME\tENGINE\tKIND\tSTATUS\tVISIBILITY\tCREATED")
+	// Usage and the upgraded copy come with the sorted list only; show their
+	// columns when the rows have them.
+	withUsage, withCopy := false, false
 	for _, x := range items {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\n", x.Id, x.Name, engine(deref(x.Engine)), x.Kind,
+		withUsage = withUsage || x.Usage != nil
+		withCopy = withCopy || x.UpgradedCopyId != nil
+	}
+	w := tabwriter.NewWriter(a.out, 0, 2, 2, ' ', 0)
+	head := "ID\tNAME\tENGINE\tKIND\tSTATUS\tVISIBILITY\tCREATED"
+	if withUsage {
+		head += "\tUSERS\tAVG MIN\tTOTAL MIN"
+	}
+	if withCopy {
+		head += "\tV2 COPY"
+	}
+	fmt.Fprintln(w, head)
+	for _, x := range items {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s", x.Id, x.Name, engine(deref(x.Engine)), x.Kind,
 			strings.ReplaceAll(string(x.Status), "_", " "), x.Visibility, x.CreatedAt.Format("2006-01-02"))
+		if withUsage {
+			if u := x.Usage; u != nil {
+				fmt.Fprintf(w, "\t%d\t%.1f\t%.1f", u.Users, u.AvgSessionMinutes, u.TotalMinutes)
+			} else {
+				fmt.Fprint(w, "\t-\t-\t-")
+			}
+		}
+		if withCopy {
+			copyID := "-"
+			if x.UpgradedCopyId != nil {
+				copyID = x.UpgradedCopyId.String()
+			}
+			fmt.Fprintf(w, "\t%s", copyID)
+		}
+		fmt.Fprintln(w)
 	}
 	_ = w.Flush()
 }

@@ -4,7 +4,7 @@ description: Build an Atmee talking avatar or digital twin - name, photo, voice,
 license: Proprietary
 metadata:
   owner: Atmanity
-allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__plugin_atmee_atmee-avatars__get_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip, mcp__atmee__get_clip
+allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__duplicate_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__plugin_atmee_atmee-avatars__get_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__duplicate_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip, mcp__atmee__get_clip
 ---
 
 # Create an Atmee avatar
@@ -132,12 +132,13 @@ Read these before anything else, and keep them for the whole conversation.
 
    From the other tools:
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
-   - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Growth and up (every credit counts there) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
-   - `v2_access_required`: the account can't build Atmee V2 yet (building needs Growth and up; below Growth, an invite code unlocks it). Say so, suggest Growth and up (`get_account` `links.billing`), and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
-   - `v2_pro_not_in_plan`: a V2 HD call on an existing V2 HD avatar this account may not rebuild. Say Atmee V2 HD is for Enterprise customers on custom plans, give the Studio help center to contact us (rule 13), and offer a new Atmee V2 avatar instead (an avatar's engine can't change); don't repeat the error's plan wording, and never switch without asking.
+   - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Pro and up (every credit counts there) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
+   - `v2_access_required`: the account can't build Atmee V2 yet (building needs Pro and up; below Pro, an invite code unlocks it). Say so, suggest Pro and up (`get_account` `links.billing`), and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
+   - `v2_pro_not_in_plan`: a V2 HD call on an existing V2 HD avatar this account may not rebuild. Say Atmee V2 HD is for Enterprise customers on custom plans, give the Studio help center to contact us (rule 13), and offer an Atmee V2 copy instead (an avatar's engine can't change in place: Copy an avatar, below); don't repeat the error's plan wording, and never switch without asking.
    - `engine_unavailable` on a V2 HD call: this server doesn't offer V2 HD right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
+   - From `duplicate_avatar`: `source_file_missing` names a file of the source that can no longer be copied: replace that file on the source first (Files and uploads), then copy again. `avatar_limit_reached`: the account has as many avatars as its plan allows; say so and let the creator free one in Studio or upgrade (rule 3: never delete one yourself).
    - `preview_message_too_long`: shorten the preview line to 300 characters (code points) or fewer.
 
    **Two identical failures stop a retry,** on either server, paid or free:
@@ -169,9 +170,10 @@ Read these before anything else, and keep them for the whole conversation.
     call, read `get_balance` again.
 13. **Atmee V2 HD is for Enterprise customers only.** Never make a new V2 HD
     avatar or a portrait for one: never pass `engine: v2hd` (or `v2pro`) on a
-    new avatar, whatever `get_account` reports (`limits.v2Pro` is true and the
-    V2 HD prices are there for every account; neither means the creator can
-    have it). Never offer it, quote a V2 HD price, or name a plan, upgrade or
+    new avatar, whatever `get_account` reports (the V2 HD prices are there for every
+    account and don't mean the creator can have it; `limits.v2Pro` is true only
+    for an account allowed to create V2 HD, which only a copy relies on). The one exception is copying a V2 avatar onto V2 HD (Copy an
+    avatar). Never offer it, quote a V2 HD price, or name a plan, upgrade or
     invite code as the way to it. When the creator asks for V2 HD, the HD
     model or the best model, say it is for Enterprise customers on custom
     plans, give the Studio help center to contact us (the origin of
@@ -190,8 +192,9 @@ every call (setup saves it for a sign-in that belongs to several accounts).
 - **Who and what:** who-am-I (`get_api_key`), the plan, prices and free
   capture slots (`get_account`), the credit balance (`get_balance`, the only
   source of it).
-- **Avatars:** create, get, list and update avatars, replace the portrait,
-  voice or knowledge, upload the creator's own files (`create_upload`,
+- **Avatars:** create, get, list and update avatars, copy one
+  (`duplicate_avatar`, Copy an avatar below), replace the portrait, voice or
+  knowledge, upload the creator's own files (`create_upload`,
   `get_upload`, `wait_for_upload`), list, capture and select v2 candidates.
 - **Generation**, paid per call (`references/credits-and-generation.md`):
 
@@ -235,7 +238,9 @@ so the creator always knows where they are and what is left.
    rest of Start and the five steps: follow Clips there.
 4. If `atmee-avatars/` exists in the project, list the saved avatars, skipping
    `clips`, and offer to continue one or start new
-   (`references/iterations.md`, Resume).
+   (`references/iterations.md`, Resume). When the creator wants an existing
+   avatar on Atmee V2, or a second one like it, copy it (Copy an avatar,
+   below) instead of starting over.
 5. For a new avatar, say in two lines how it goes, then start step 1:
    "Making an avatar takes 5 steps: **1 a name, a photo and a voice**, **2
    see it talk**, **3 give it a character**, **4 test it**, **5 hand it
@@ -351,8 +356,9 @@ open the link yourself or say you'll test it
 ### Step 5: Ready
 
 Hand over the chat link and the Studio link
-(`references/test-and-handover.md`, Hand over). When the account has
-Atmee V2 access (`get_account`'s `v2Access` granted), `get_account`'s `limits.videoGeneration` is not false (absent
+(`references/test-and-handover.md`, Hand over). Clips are on every plan,
+Free included, whatever `v2Access` says (don't check it for clips). When
+`get_account`'s `limits.videoGeneration` is not false (absent
 counts as allowed) and its `pricing.generation` has clip prices (`clipSizes`;
 an older server: `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`),
 add one line that Atmee can also make a short video clip from the same photo,
@@ -364,6 +370,59 @@ asks. Without a clip price, say nothing about clips.
 Never offer to commit or `git init`: the iteration files are saved either
 way. Only when the creator asks, commit as `references/iterations.md`
 (Commits) says.
+
+## Copy an avatar
+
+`duplicate_avatar` makes a new avatar from one of the creator's: nothing has
+to be given again, and the source stays as it is. Copy when the creator
+wants:
+
+- **The same avatar on a newer model.** An avatar's model can't change in
+  place, so an Atmee V1 avatar moves to Atmee V2 by a copy with
+  `engine: v2`. It needs Atmee V2 on the account, checked as on a create
+  (`references/candidates.md`, Create); `insufficient_v2_credits` and
+  `v2_access_required` go as rule 8 says. Move an avatar once: first call
+  `list_avatars` with `sort: updated` (any sort or filter returns the full
+  rows) and read the source's `upgradedCopyId`. When it is set, the avatar
+  already has a live V2 copy; point the creator to that one instead of
+  making another, as Creator Studio does by hiding Upgrade to V2.
+- **A second one like it,** to try another character or preview line while
+  the original keeps serving: leave `engine` out, the copy keeps the model.
+
+- **The same avatar on an older model,** when the creator asks for one
+  (`engine: v1` for a V2 or V2 HD avatar, `engine: v2` for a V2 HD one).
+  Say V1 works best with a front-facing, shoulders-up portrait; a half- or
+  full-body V2 portrait may need replacing on the copy.
+
+A copy keeps its frame shape: between V2 and V2 HD it takes the size
+nearest the source's shape. Offer a V2 avatar's copy on V2 HD (`engine: v2hd`) only
+when `get_account` shows the account can create V2 HD (`limits.v2Pro` is
+true); otherwise keep it on V2. Never offer V2 HD for any other copy
+(rule 13). Make a new avatar, not a copy, when the creator wants another
+face or voice.
+
+Before the call, tell the creator in two lines what the copy gets and
+doesn't, and ask with Yes and No (rule 9). It spends no credits.
+
+- **Copied:** the name (pass `name` to rename it; name it as Creator
+  Studio does, so the two read apart in its list: "Mira (copy)" on the same
+  model, "Mira (V2)" or "Mira (V2 HD)" on another),
+  description, language, character (who and what prompts, alias, spoken
+  name, other names, self-introduction, guardrails, conversational habits;
+  the greeting only onto a V1 copy), preview line, knowledge (facts, answers
+  and files), portrait and voice.
+- **Not copied:** anything about sharing or money. The copy is private and
+  not monetized, with no sponsor pool, Explore profile or thumbnail,
+  statement or conductor; set those again only if the creator asks (rules 3
+  and 5). A V2 copy doesn't take the source's seeds: it makes its own, in a
+  few minutes, and a preview line over 300 characters is left out of it (it
+  speaks the default line).
+
+Then treat the copy as a new avatar: make its folder and save a `create`
+iteration with the source's id (`references/iterations.md`), follow the build
+(`references/candidates.md`, Waiting), and check its seed (step 2) before
+the test (step 4). After a timeout or network error on the copy, list the
+creator's avatars before trying again, as after a create.
 
 ## Files and uploads
 

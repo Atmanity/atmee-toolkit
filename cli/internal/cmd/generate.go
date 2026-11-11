@@ -239,8 +239,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"with its list.\n\n" +
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 24 hours. A clip uses Atmee V2: it needs Growth and up, or an invite code that unlocks Atmee V2 " +
-			"(`atmee redeem CODE`); otherwise it is 403 v2_access_required. Any credits pay for it. " +
+			"The result lasts 24 hours. Clips are on every plan, Free included, and need no Atmee V2 access or invite code: " +
+			"they spend credits at each size's price per clip (atmee account lists them). " +
 			"A signed-in user, or an API key with generation:write (a clip needs no avatar scope; --image and --audio files upload with it too).",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
   atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 480x640
@@ -308,7 +308,13 @@ func (a *app) generateClipCmd() *cobra.Command {
 				}
 				var apiErr *api.Error
 				if errors.As(err, &apiErr) && apiErr.Code == "video_generation_not_in_plan" {
-					return fmt.Errorf("%w; video clips come with the Growth plan and up: change plans in Creator Studio (Billing)", err)
+					return fmt.Errorf("%w; video clips are turned off for this account: contact us through Creator Studio's help center", err)
+				}
+				// Clips are on every plan: a refusal for Atmee V2 access
+				// (an older server) gets no upgrade or invite hint, so the
+				// error is kept as text, out of engineHint's reach.
+				if v2Refused(err) {
+					return fmt.Errorf("%v; video clips are on every plan and need no Atmee V2 access: contact us through Creator Studio's help center", err)
 				}
 				return err
 			}

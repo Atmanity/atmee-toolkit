@@ -697,10 +697,10 @@ func TestV2ProRefusalHints(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	for body, want := range map[string]string{
-		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Growth and up); upgrade the plan, or use engine v2"}`: "for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
-		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`:                                   "a V2 HD line only where V2 HD is offered",
-		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                   "`atmee redeem CODE`",
-		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`:                                                   "upgrade to Growth and up",
+		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Pro and up); upgrade the plan, or use engine v2"}`: "for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
+		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`:                                "a V2 HD line only where V2 HD is offered",
+		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                "`atmee redeem CODE`",
+		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`:                                                "upgrade to Pro and up",
 	} {
 		status, payload, _ := strings.Cut(body, " ")
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -901,7 +901,7 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 	}{
 		{access: "invite_required", want: "", note: "can't build Atmee V2 yet"},             // v1, the API's default, is not sent
 		{access: "invite_required", v2: "500", want: "v2"},                                  // an older server's positive V2 balance still lets it build
-		{access: "invite_required", v2: "0", want: "", note: "upgrade to Growth and up"},    // and none usable does not
+		{access: "invite_required", v2: "0", want: "", note: "upgrade to Pro and up"},       // and none usable does not
 		{access: "invite_required", v2: "fail", want: "", note: "can't build Atmee V2 yet"}, // an unreadable balance: access decides
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
@@ -912,7 +912,7 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		{access: "invite_required", args: []string{"--engine", "v2"}, want: "v2"},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no Atmee V2"}`, want: "", note: "insufficient_v2_credits", posts: 2},
 		{access: "granted", refuse: `403 {"error":"v2_access_required","message":"invite only"}`, want: "", note: "v2_access_required", posts: 2},
-		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--engine", "v2"}, fails: "upgrade to Growth and up", posts: 1},
+		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--engine", "v2"}, fails: "upgrade to Pro and up", posts: 1},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--resolution", "512x512"}, fails: "or use --engine v1", posts: 1},
 	} {
 		var got map[string]any

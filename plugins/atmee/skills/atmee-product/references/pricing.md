@@ -54,9 +54,10 @@ the date you read them.
   api_access_not_in_plan`) and sessions answer `403 api_access_disabled`. Coupon
   credits are not held to the Free plan's daily limit.
 - **Atmee V2.** Anyone can talk to any avatar, V2 and V2 HD included, on
-  any credits at that model's rate. Building Atmee V2 avatars and making
-  video clips needs Growth and up; below Growth, an invite code unlocks it
-  (`403 v2_access_required` without it). Creating Atmee V2 HD avatars is
+  any credits at that model's rate. Building Atmee V2 avatars needs
+  Pro and up; below Pro, an invite code unlocks it (`403
+  v2_access_required` without it). Video clips are on every plan, Free
+  included, and need no Atmee V2 access. Creating Atmee V2 HD avatars is
   for Enterprise customers (`403 v2_pro_not_in_plan`).
 - **Atmee V2 HD** is for Enterprise customers on custom plans: contact us
   through the Studio help center (the origin of `get_account`
@@ -77,7 +78,7 @@ the date you read them.
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
 | Generating portraits, enhancing a portrait, designing a voice through the avatars server | **per call**, charged when at least one output comes back: a portrait call makes up to two portraits (one from Gemini, one from Grok; `count: 1` makes the Gemini one only) for the same price, and so does an enhancement; a voice design is one price too. A paid plan's **free generation allowance** pays first and credits pay the rest; each answer splits it into `microcreditsFree` and `microcreditsCharged` | `get_account` `pricing.generation` (`portraitsMicrocredits` is one portrait call); what is left of the allowance this cycle: `pricing.generation.freeAllowance.remainingMicrocredits` |
 | A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |
-| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | a price per clip by its size (a larger size costs more) and its length: up to 5, 10 or 15 seconds, charged at the next length up (a 7-second clip pays the 10-second price), only when it comes back; the free generation allowance never pays for clips; needs Atmee V2 access (`403 v2_access_required` without it; `limits.videoGeneration` false answers `403 video_generation_not_in_plan`) | `pricing.generation.clipPrices`: each size's `prices` (`upToSeconds`, `microcredits`). A server without `clipPrices` charges each size's `pricing.generation.clipSizes` `microcredits` for any length. An older server without it reports `clipPer15SecondsMicrocredits` (pro rata per 15 seconds) or `clipPerSecondMicrocredits` (times the seconds). None of them: clips aren't offered |
+| A clip (`generate_clip`, `atmee generate clip`, an mp4 of 1 to 15 seconds, with or without sound) | a price per clip by its size (a larger size costs more) and its length: up to 5, 10 or 15 seconds, charged at the next length up (a 7-second clip pays the 10-second price), only when it comes back; the free generation allowance never pays for clips; on every plan, Free included, no Atmee V2 access needed (`limits.videoGeneration` false, `403 video_generation_not_in_plan`, means video generation was turned off for the account: contact support) | `pricing.generation.clipPrices`: each size's `prices` (`upToSeconds`, `microcredits`). A server without `clipPrices` charges each size's `pricing.generation.clipSizes` `microcredits` for any length. An older server without it reports `clipPer15SecondsMicrocredits` (pro rata per 15 seconds) or `clipPerSecondMicrocredits` (times the seconds). None of them: clips aren't offered |
 | Generating in Studio (portraits, enhancement, voice design, thumbnails, covers) | the same prices and free allowance as the avatars server: Studio calls the same API | shown on each button |
 | A minute with a Signature (monetized) avatar on atmee.ai | per minute, paid by a visitor at more than the avatar's standard rate; its owner pays the standard rate, and API sessions are never charged it | `pricing.monetizedPerMinuteMicrocredits` for a v1 avatar, `pricing.monetizedV2PerMinuteMicrocredits` for a v2 one |
 

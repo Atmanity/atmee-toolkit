@@ -262,18 +262,16 @@ Tell the person, in one or two lines, for example:
 Then call `get_account` (free) for the clip line. Clips are offered on this
 server when its `pricing.generation` has `clipSizes` (an older server:
 `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`); without any,
-say nothing about clips. When they are offered, `limits.videoGeneration` is not
-false (absent counts as allowed) and the account has Atmee V2 access
-(`get_account`'s `v2Access` granted), add one line saying atmee can also make videos, for example:
+say nothing about clips. When they are offered and `limits.videoGeneration` is not
+false (absent counts as allowed), add one line saying atmee can also make videos, for example:
 
-> atmee v2 can also make short videos: give a photo and a prompt, and you
+> atmee can also make short videos: give a photo and a prompt, and you
 > get an mp4 of them moving; add a voice line and they speak it. Say "make a
 > video clip" to try it.
 
-When they are offered but the account doesn't have Atmee V2 access (building Atmee V2 and clips needs Growth and up, or an invite code below Growth),
-mention them once as available on Growth and up or with an invite code
-(`redeem_code`), and don't offer to make one. With
-`v2Access` `unavailable`: say nothing about clips.
+Clips are on every plan, Free included, and need no Atmee V2 access or invite
+code: don't check `v2Access` for them. With `limits.videoGeneration` false,
+video generation was turned off for this account: say nothing about clips.
 
 ## If something goes wrong
 

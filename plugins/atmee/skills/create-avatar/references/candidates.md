@@ -18,14 +18,14 @@ avatars server with:
   credits-and-generation reference, The engine a portrait is for), normally
   `v2`, never `v2hd` (Atmee V2 HD is for Enterprise customers: Model, below). Use
   v1 only if the creator asks, or when the account
-  can't build v2. Building Atmee V2 needs Growth and up; below Growth, an invite code unlocks it. The
+  can't build v2. Building Atmee V2 needs Pro and up; below Pro, an invite code unlocks it. The
   account can build v2 when `get_account`'s `v2Access` is `granted`. On an
   older server whose `get_balance` still reports `v2SpendableMicrocredits`,
   also when that figure is above 0 (that server decides by credits; without
   the figure, access alone decides). Otherwise (or when a
   v2 call answers `v2_access_required` or `insufficient_v2_credits`) ask the
   creator for an invite code and redeem it with `redeem_code`,
-  or suggest Growth and up. Make v2 only once that holds; make v1 only if
+  or suggest Pro and up. Make v2 only once that holds; make v1 only if
   they have neither and agree.
 - **`seedSelection`:** `auto`. The first seed that finishes goes live, so
   the avatar is ready without anyone choosing.
@@ -68,9 +68,10 @@ above. There is no model question.
 - **Atmee V2 HD** is a larger V2 model on its own GPUs, at larger frames
   (640×640 by default), for Enterprise customers on custom plans. This skill
   never makes one for any account: no `engine: v2hd` (or `v2pro`) on a new
-  avatar or its portraits, whatever `get_account` reports. `limits.v2Pro` is
-  true and the `pricing.*V2Hd*` fields are present for every account, so
-  neither means the creator may have it; never quote those prices.
+  avatar or its portraits, whatever `get_account` reports. The `pricing.*V2Hd*` fields are
+  present for every account, so they don't mean the creator may have it; never
+  quote those prices. `limits.v2Pro` is true only for an account allowed to
+  create V2 HD.
 
 When the creator asks for V2 HD, the HD model or the best model: say Atmee
 V2 HD is for Enterprise customers on custom plans, and that they can contact

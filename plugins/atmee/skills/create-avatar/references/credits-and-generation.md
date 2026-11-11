@@ -119,7 +119,7 @@ as for v2; never make one for a new avatar.
   v2 when `get_account`'s `v2Access` is `granted` (on an older server whose
   `get_balance` still reports `v2SpendableMicrocredits`, also when that figure
   is above 0). Otherwise ask for an invite code
-  (or suggest Growth and up) as the candidates reference's
+  (or suggest Pro and up) as the candidates reference's
   Create says, and use v1 only when the creator has neither and agrees. Use v1 too when the creator asks for
   it.
 - **Pass it as `engine`** on every `generate_portraits` and
@@ -270,14 +270,15 @@ make the sample longer.
 `generate_clip` renders an mp4 of 1 to 15 seconds (25 fps) of the person in
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
-for a clip (a teaser, a post), not as part of the five steps. Clips need
-Atmee V2 access (Growth and up; below Growth, an invite code unlocks it): without it the call answers
-`v2_access_required`, so suggest Growth and up or ask for an invite
-code (`redeem_code`); there is no v1 clip. Any credits pay for it. Where `get_account`
+for a clip (a teaser, a post), not as part of the five steps. Clips are on
+every plan, Free included, and need no Atmee V2 access or invite code: make
+one on any plan, without checking `v2Access`. Credits pay for it, at
+the price per clip `get_account`'s `pricing.generation` lists. Where `get_account`
 `limits.videoGeneration` is false (absent counts as allowed) the call answers
-`video_generation_not_in_plan`, so say the plan doesn't include video clips
-and point to Studio → Billing (`links.billing`) to change plans; don't call
-it. In a shell, `atmee generate clip` does the same (`--image`, `--prompt`,
+`video_generation_not_in_plan`: video generation was turned off for this
+account, so say so and send the creator to contact us through the Studio help
+center (the origin of `links.billing` plus `/studio/help-center`); don't call
+it, and don't suggest changing plans. In a shell, `atmee generate clip` does the same (`--image`, `--prompt`,
 `--audio`, `--duration`, `--resolution`, `--seed`), and uploads local files
 first; it waits up to 10 minutes, and `atmee generate clip-status
 REQUEST_ID --wait` follows a clip it stopped waiting for. Like the other `atmee generate`

@@ -456,6 +456,30 @@ func (e AvatarDetailVisibility) Valid() bool {
 	}
 }
 
+// Defines values for AvatarDuplicateRequestEngine.
+const (
+	AvatarDuplicateRequestEngineV1    AvatarDuplicateRequestEngine = "v1"
+	AvatarDuplicateRequestEngineV2    AvatarDuplicateRequestEngine = "v2"
+	AvatarDuplicateRequestEngineV2hd  AvatarDuplicateRequestEngine = "v2hd"
+	AvatarDuplicateRequestEngineV2pro AvatarDuplicateRequestEngine = "v2pro"
+)
+
+// Valid indicates whether the value is a known member of the AvatarDuplicateRequestEngine enum.
+func (e AvatarDuplicateRequestEngine) Valid() bool {
+	switch e {
+	case AvatarDuplicateRequestEngineV1:
+		return true
+	case AvatarDuplicateRequestEngineV2:
+		return true
+	case AvatarDuplicateRequestEngineV2hd:
+		return true
+	case AvatarDuplicateRequestEngineV2pro:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AvatarEngine.
 const (
 	AvatarEngineV1   AvatarEngine = "v1"
@@ -1560,6 +1584,54 @@ func (e UploadKind) Valid() bool {
 	}
 }
 
+// Defines values for ListAvatarsParamsSort.
+const (
+	AvgChat   ListAvatarsParamsSort = "avgChat"
+	Created   ListAvatarsParamsSort = "created"
+	Name      ListAvatarsParamsSort = "name"
+	TotalChat ListAvatarsParamsSort = "totalChat"
+	Updated   ListAvatarsParamsSort = "updated"
+	Users     ListAvatarsParamsSort = "users"
+)
+
+// Valid indicates whether the value is a known member of the ListAvatarsParamsSort enum.
+func (e ListAvatarsParamsSort) Valid() bool {
+	switch e {
+	case AvgChat:
+		return true
+	case Created:
+		return true
+	case Name:
+		return true
+	case TotalChat:
+		return true
+	case Updated:
+		return true
+	case Users:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAvatarsParamsOrder.
+const (
+	Asc  ListAvatarsParamsOrder = "asc"
+	Desc ListAvatarsParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListAvatarsParamsOrder enum.
+func (e ListAvatarsParamsOrder) Valid() bool {
+	switch e {
+	case Asc:
+		return true
+	case Desc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateAvatarSessionParamsWaitFor.
 const (
 	CreateAvatarSessionParamsWaitForAvatarJoined CreateAvatarSessionParamsWaitFor = "avatar_joined"
@@ -1615,24 +1687,26 @@ type Account struct {
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
 
-	// V2Access Whether this account may create Atmee V2 work (builds, takes, new
-	// versions, clips): `granted` (Growth and up, or an invite code
+	// V2Access Whether this account may build Atmee V2 (builds, takes, new
+	// versions): `granted` (Pro and up, or an invite code
 	// redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
 	// not offered here). Absent when it could not be determined.
 	// `invite_required` means those calls answer `403 v2_access_required`
-	// until the account upgrades to Growth and up or redeems an invite
-	// code. Talking to any avatar never needs it. Creating V2 HD also
+	// until the account upgrades to Pro and up or redeems an invite
+	// code. Talking to any avatar never needs it, and neither do video
+	// clips, which are on every plan, Free included. Creating V2 HD also
 	// needs V2 HD on the account (`limits.v2Pro`).
 	V2Access *AccountV2Access `json:"v2Access,omitempty"`
 }
 
-// AccountV2Access Whether this account may create Atmee V2 work (builds, takes, new
-// versions, clips): `granted` (Growth and up, or an invite code
+// AccountV2Access Whether this account may build Atmee V2 (builds, takes, new
+// versions): `granted` (Pro and up, or an invite code
 // redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
 // not offered here). Absent when it could not be determined.
 // `invite_required` means those calls answer `403 v2_access_required`
-// until the account upgrades to Growth and up or redeems an invite
-// code. Talking to any avatar never needs it. Creating V2 HD also
+// until the account upgrades to Pro and up or redeems an invite
+// code. Talking to any avatar never needs it, and neither do video
+// clips, which are on every plan, Free included. Creating V2 HD also
 // needs V2 HD on the account (`limits.v2Pro`).
 type AccountV2Access string
 
@@ -1704,7 +1778,7 @@ type AccountLimits struct {
 	// V2Resolutions The frame sizes v2 avatars may use here (`resolution`), 512 x 512 first; another is `400 invalid_input`. Absent where every size the rule allows is offered.
 	V2Resolutions *[]RenderResolution `json:"v2Resolutions,omitempty"`
 
-	// VideoGeneration Whether the plan lets the account make generated clips (`POST /v1/generation/clips`); clips answer `403 video_generation_not_in_plan` when false. True on every plan where billing decides clips by Atmee V2 access. False where the database does not report it yet, since clips are refused until it does.
+	// VideoGeneration Whether the account may make generated clips (`POST /v1/generation/clips`); clips answer `403 video_generation_not_in_plan` when false. True on every plan, Free included (video clips need no Atmee V2 access). False only where video generation is turned off for the account, or where the database does not report it yet, since clips are refused until it does.
 	VideoGeneration *bool `json:"videoGeneration,omitempty"`
 }
 
@@ -1747,7 +1821,7 @@ type AccountPayoutsStatus string
 
 // AccountPlan defines model for AccountPlan.
 type AccountPlan struct {
-	// Code The plan's code (e.g. free, pro).
+	// Code The plan's code (e.g. free, pro_2026, growth).
 	Code *string `json:"code,omitempty"`
 
 	// CycleEnd When the current billing cycle ends.
@@ -2354,10 +2428,20 @@ type AvatarDetail struct {
 	Studio *AvatarStudioChoices `json:"studio,omitempty"`
 
 	// ThumbnailUrl Presigned image (Studio's custom thumbnail, else the portrait), valid about one hour; re-GET to refresh.
-	ThumbnailUrl *string                `json:"thumbnailUrl,omitempty"`
-	UpdatedAt    time.Time              `json:"updatedAt"`
-	Visibility   AvatarDetailVisibility `json:"visibility"`
-	Voice        *AvatarVoiceSettings   `json:"voice,omitempty"`
+	ThumbnailUrl *string   `json:"thumbnailUrl,omitempty"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+
+	// UpgradedCopyId The v2 copy made from this avatar by upgrade (a duplicate onto a
+	// v2 model), if one still exists; the newest when there are
+	// several. Reported on a sorted, searched, filtered or `offset`
+	// listing; null otherwise.
+	UpgradedCopyId *openapi_types.UUID `json:"upgradedCopyId,omitempty"`
+
+	// Usage How much the avatar is used. Present on list rows when the list is
+	// sorted, searched, filtered or paged by `offset`; absent otherwise.
+	Usage      *AvatarUsage           `json:"usage,omitempty"`
+	Visibility AvatarDetailVisibility `json:"visibility"`
+	Voice      *AvatarVoiceSettings   `json:"voice,omitempty"`
 }
 
 // AvatarDetailLatestFailureStage defines model for AvatarDetail.LatestFailure.Stage.
@@ -2392,6 +2476,18 @@ type AvatarDetailStatus string
 
 // AvatarDetailVisibility defines model for AvatarDetail.Visibility.
 type AvatarDetailVisibility string
+
+// AvatarDuplicateRequest defines model for AvatarDuplicateRequest.
+type AvatarDuplicateRequest struct {
+	// Engine The copy's engine; absent keeps the source's. Any engine, an older model included.<!-- v2pro --> `v2pro` is V2 HD's former name, read as `v2hd`.<!-- /v2pro -->
+	Engine *AvatarDuplicateRequestEngine `json:"engine,omitempty"`
+
+	// Name The copy's name; absent keeps the source's.
+	Name *string `json:"name,omitempty"`
+}
+
+// AvatarDuplicateRequestEngine The copy's engine; absent keeps the source's. Any engine, an older model included.<!-- v2pro --> `v2pro` is V2 HD's former name, read as `v2hd`.<!-- /v2pro -->
+type AvatarDuplicateRequestEngine string
 
 // AvatarEngine Render engine: `v1`, the original renderer, or `v2`, which serves a
 // selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
@@ -2509,8 +2605,14 @@ type AvatarLinks struct {
 type AvatarListResponse struct {
 	Items []AvatarSummary `json:"items"`
 
-	// NextBefore Pass as `before` to fetch the next page; null when exhausted.
+	// NextBefore Pass as `before` to fetch the next page; null when exhausted. Only when paging by time.
 	NextBefore *time.Time `json:"nextBefore,omitempty"`
+
+	// NextOffset Pass as `offset` to fetch the next page; absent on the last page. Only when the list is sorted, searched, filtered or paged by `offset`.
+	NextOffset *int `json:"nextOffset,omitempty"`
+
+	// Total How many avatars match, across all pages. Only when the list is sorted, searched, filtered or paged by `offset`.
+	Total *int `json:"total,omitempty"`
 }
 
 // AvatarMonetization An avatar's monetization, as Creator Studio's monetization panel shows it (read only here).
@@ -3026,9 +3128,19 @@ type AvatarSummary struct {
 	Status AvatarSummaryStatus `json:"status"`
 
 	// ThumbnailUrl Presigned image (Studio's custom thumbnail, else the portrait), valid about one hour; re-GET to refresh.
-	ThumbnailUrl *string                 `json:"thumbnailUrl,omitempty"`
-	UpdatedAt    time.Time               `json:"updatedAt"`
-	Visibility   AvatarSummaryVisibility `json:"visibility"`
+	ThumbnailUrl *string   `json:"thumbnailUrl,omitempty"`
+	UpdatedAt    time.Time `json:"updatedAt"`
+
+	// UpgradedCopyId The v2 copy made from this avatar by upgrade (a duplicate onto a
+	// v2 model), if one still exists; the newest when there are
+	// several. Reported on a sorted, searched, filtered or `offset`
+	// listing; null otherwise.
+	UpgradedCopyId *openapi_types.UUID `json:"upgradedCopyId,omitempty"`
+
+	// Usage How much the avatar is used. Present on list rows when the list is
+	// sorted, searched, filtered or paged by `offset`; absent otherwise.
+	Usage      *AvatarUsage            `json:"usage,omitempty"`
+	Visibility AvatarSummaryVisibility `json:"visibility"`
 }
 
 // AvatarSummaryMissingInputs defines model for AvatarSummary.MissingInputs.
@@ -3165,6 +3277,19 @@ type AvatarUpdateRequestLanguage string
 
 // AvatarUpdateRequestVisibility defines model for AvatarUpdateRequest.Visibility.
 type AvatarUpdateRequestVisibility string
+
+// AvatarUsage How much the avatar is used. Present on list rows when the list is
+// sorted, searched, filtered or paged by `offset`; absent otherwise.
+type AvatarUsage struct {
+	// AvgSessionMinutes Average length of the avatar's completed sessions, in minutes, rounded to 0.1. 0 when none has completed.
+	AvgSessionMinutes float32 `json:"avgSessionMinutes"`
+
+	// TotalMinutes Total length of the avatar's completed sessions, in minutes, rounded to 0.1. 0 when none has completed.
+	TotalMinutes float32 `json:"totalMinutes"`
+
+	// Users Distinct signed-in visitor accounts that have had a session with the avatar.
+	Users int `json:"users"`
+}
 
 // AvatarVoice defines model for AvatarVoice.
 type AvatarVoice struct {
@@ -3978,7 +4103,7 @@ type GeneratedPortraitsResponse struct {
 }
 
 // GenerationFreeAllowance The free generation a paid plan includes each billing cycle, in
-// microcredits (Starter 3 credits, Growth 10, Pro 25, Scale 50; 0 on a
+// microcredits (Starter 3 credits, Pro 10, Growth 25, Scale 50; 0 on a
 // plan without one). It pays for `POST /v1/generation/portraits`,
 // `/v1/generation/enhancements` and `/v1/generation/voices` from any
 // caller before credits are spent, and never for clips or avatar
@@ -4031,7 +4156,7 @@ type GenerationPricing struct {
 	EnhancementsMicrocredits int `json:"enhancementsMicrocredits"`
 
 	// FreeAllowance The free generation a paid plan includes each billing cycle, in
-	// microcredits (Starter 3 credits, Growth 10, Pro 25, Scale 50; 0 on a
+	// microcredits (Starter 3 credits, Pro 10, Growth 25, Scale 50; 0 on a
 	// plan without one). It pays for `POST /v1/generation/portraits`,
 	// `/v1/generation/enhancements` and `/v1/generation/voices` from any
 	// caller before credits are spent, and never for clips or avatar
@@ -4506,9 +4631,57 @@ type V2CreditsPaymentRequired = ApiErrorResponse
 type ListAvatarsParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Before Cursor; returns avatars created before this time.
+	// Before Cursor; returns avatars created before this time. Not with `sort`, `order`, `q`, a filter or `offset`.
 	Before *time.Time `form:"before,omitempty" json:"before,omitempty"`
+
+	// Sort What to order the avatars by: `created` (creation time, the
+	// default), `updated` (last change), `name`, `users` (distinct
+	// signed-in visitors, `usage.users`), `avgChat` (average session
+	// length, `usage.avgSessionMinutes`) or `totalChat` (total session
+	// length, `usage.totalMinutes`).
+	Sort *ListAvatarsParamsSort `form:"sort,omitempty" json:"sort,omitempty"`
+
+	// Order Sort direction. `desc` (the default) puts the newest, largest or last-in-the-alphabet first.
+	Order *ListAvatarsParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Q Only avatars whose name contains this text, ignoring case.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Visibility Only avatars with one of these visibilities, comma-separated:
+	// `public`, `unlisted`, `private` (e.g. `public,unlisted`).
+	Visibility *string `form:"visibility,omitempty" json:"visibility,omitempty"`
+
+	// Engine Only avatars on one of these models, comma-separated: `v1` or
+	// `v2`<!-- v2pro --> or `v2hd`. Each value matches its own model
+	// only: `v2` does not match a V2 HD avatar<!-- /v2pro -->.
+	Engine *string `form:"engine,omitempty" json:"engine,omitempty"`
+
+	// Frame Only avatars whose video frame has one of these shapes,
+	// comma-separated: `square`, `landscape` (wider than tall) or
+	// `portrait` (taller than wide). A v1 avatar is always square
+	// (512x512); a v2 avatar has the size it was built at, or its
+	// model's default (512x512<!-- v2pro -->, 640x640 on V2 HD<!-- /v2pro -->),
+	// which is square.
+	Frame *string `form:"frame,omitempty" json:"frame,omitempty"`
+
+	// Badge Only avatars with one of these badges, comma-separated:
+	// `verified`, `monetizing` (it earns from its sessions) or
+	// `standard` (neither).
+	Badge *string `form:"badge,omitempty" json:"badge,omitempty"`
+
+	// Sponsored `true`: only avatars the account sponsors (a sponsor balance above
+	// zero, or auto top-up on). `false`: only the others.
+	Sponsored *bool `form:"sponsored,omitempty" json:"sponsored,omitempty"`
+
+	// Offset How many matching avatars to skip (0 when absent); pass the previous page's `nextOffset`.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
+
+// ListAvatarsParamsSort defines parameters for ListAvatars.
+type ListAvatarsParamsSort string
+
+// ListAvatarsParamsOrder defines parameters for ListAvatars.
+type ListAvatarsParamsOrder string
 
 // CreateAvatarMultipartBody defines parameters for CreateAvatar.
 type CreateAvatarMultipartBody struct {
@@ -4644,6 +4817,9 @@ type CreateAvatarCandidatesJSONRequestBody = CandidateCreateRequest
 
 // SetAvatarConductorJSONRequestBody defines body for SetAvatarConductor for application/json ContentType.
 type SetAvatarConductorJSONRequestBody = ConductorRequest
+
+// DuplicateAvatarJSONRequestBody defines body for DuplicateAvatar for application/json ContentType.
+type DuplicateAvatarJSONRequestBody = AvatarDuplicateRequest
 
 // ReplaceAvatarKnowledgeJSONRequestBody defines body for ReplaceAvatarKnowledge for application/json ContentType.
 type ReplaceAvatarKnowledgeJSONRequestBody = AvatarKnowledgeJsonRequest
@@ -4847,8 +5023,9 @@ type ClientInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build Atmee V2 and
-	//   make clips (Growth and up, or an invite code).
+	// - **v2**: `v2Access` says whether the account may build Atmee V2
+	//   (Pro and up, or an invite code below Pro). Video clips are on
+	//   every plan, Free included, and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -4895,7 +5072,7 @@ type ClientInterface interface {
 	//
 	// Redeems an invite or credit code for the account. A code can add
 	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Growth, an invite code
+	// both, and the answer says what it gave. Below Pro, an invite code
 	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
@@ -4912,7 +5089,7 @@ type ClientInterface interface {
 	//
 	// Redeems an invite or credit code for the account. A code can add
 	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Growth, an invite code
+	// both, and the answer says what it gave. Below Pro, an invite code
 	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
@@ -5100,7 +5277,24 @@ type ClientInterface interface {
 
 	// ListAvatars List avatars
 	//
-	// Lists the account's avatars, newest first. Page with `before`.
+	// Lists the account's avatars, newest first.
+	//
+	// Two ways to page:
+	//
+	// - **By time** (the default): pass the previous page's `nextBefore` as
+	//   `before`. Rows come newest first.
+	// - **Sorted, searched and filtered**: pass any of `sort`, `order`, `q`,
+	//   a filter (`visibility`, `engine`, `frame`, `badge`, `sponsored`) or
+	//   `offset`, and page with `offset` (the previous page's
+	//   `nextOffset`). The answer then also carries `total` (the avatars
+	//   matching every filter), each row's `usage` and `upgradedCopyId`.
+	//
+	// A filter that lists several values, separated by commas, keeps an
+	// avatar matching any of them; several filters keep only the avatars
+	// matching all of them. An unknown value is `400 invalid_query`.
+	//
+	// `before` cannot be combined with `sort`, `order`, `q`, a filter or
+	// `offset` (`400 invalid_query`).
 	//
 	// Corresponds with GET /v1/avatars (the `ListAvatars` operationId).
 	ListAvatars(ctx context.Context, params *ListAvatarsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5122,7 +5316,7 @@ type ClientInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
 	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
@@ -5186,7 +5380,7 @@ type ClientInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
 	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
@@ -5638,6 +5832,132 @@ type ClientInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DuplicateAvatarWithBody Duplicate an avatar
+	//
+	// Creates a new avatar from this one, optionally on another engine: the
+	// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+	// without giving its persona, knowledge, portrait and voice again. The
+	// source is left as it is.
+	//
+	// - **Copied**: the name and description (`name` renames the copy), the
+	//   language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+	//   `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+	//   message and `previews`, the knowledge (`knowledge.facts`, the
+	//   questionnaire answers and every knowledge file with its
+	//   description), the portrait and the voice sample. A voice picked
+	//   from Creator Studio's premade voices is kept as that pick: its
+	//   recording is the voice sample. A portrait cropped in Creator
+	//   Studio keeps its crop record, with the uncropped original, so the
+	//   copy can be re-cropped. The files are copied
+	//   inside storage; nothing is uploaded again. A v2 source's
+	//   `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+	//   Its shape is kept too: a copy on the same engine keeps its
+	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+	//   672x384); any other copy takes the target engine's size nearest
+	//   its portrait's shape (the creator's crop, else the image).
+	// - **Not copied**: anything about sharing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, share card
+	//   (title, subtitle, tags, social links), Explore thumbnail,
+	//   statement, integrations or graph conductor; v2 takes and versions
+	//   are not copied either, the copy captures its own.
+	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+	//   absent keeps the source's. Any engine may be asked for, an older
+	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+	//   When the portrait's shape isn't exactly the copy's frame (square on
+	//   v1), the portrait is cut again from the uncropped original: the
+	//   largest rectangle of the frame's ratio inside the creator's crop.
+	//   For a v1 copy it sits around the face: the largest one detected in
+	//   the crop, else where the source's last build framed it, else the
+	//   centre; any other copy is centred. Its crop record names that
+	//   rectangle, so it can be moved. An image too large to cut is copied
+	//   as it is.
+	//   It is checked as on `POST /v1/avatars`:
+	//   the same `402`, `403` and `503` answers for an engine the account or
+	//   this server cannot use. A preview message longer than a v2 take
+	//   speaks (300 characters) is left out of a v2 copy, which then speaks
+	//   the default line.
+	// - **Build**: the copy builds as a create with those inputs would
+	//   (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+	//   knowledge base included. A v1 source with a portrait and no voice
+	//   copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+	//   missing its voice. A v2 copy's captures count against the limit
+	//   of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+	// - **Files**: only the source's own files are copied. A file whose
+	//   stored link points elsewhere, or that is no longer in storage, is
+	//   `409 source_file_missing` (the message names it): replace it on the
+	//   source and try again. A refused duplicate leaves no avatar behind.
+	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+	//   cannot duplicate.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+	DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DuplicateAvatar Duplicate an avatar
+	//
+	// Creates a new avatar from this one, optionally on another engine: the
+	// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+	// without giving its persona, knowledge, portrait and voice again. The
+	// source is left as it is.
+	//
+	// - **Copied**: the name and description (`name` renames the copy), the
+	//   language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+	//   `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+	//   message and `previews`, the knowledge (`knowledge.facts`, the
+	//   questionnaire answers and every knowledge file with its
+	//   description), the portrait and the voice sample. A voice picked
+	//   from Creator Studio's premade voices is kept as that pick: its
+	//   recording is the voice sample. A portrait cropped in Creator
+	//   Studio keeps its crop record, with the uncropped original, so the
+	//   copy can be re-cropped. The files are copied
+	//   inside storage; nothing is uploaded again. A v2 source's
+	//   `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+	//   Its shape is kept too: a copy on the same engine keeps its
+	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+	//   672x384); any other copy takes the target engine's size nearest
+	//   its portrait's shape (the creator's crop, else the image).
+	// - **Not copied**: anything about sharing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, share card
+	//   (title, subtitle, tags, social links), Explore thumbnail,
+	//   statement, integrations or graph conductor; v2 takes and versions
+	//   are not copied either, the copy captures its own.
+	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+	//   absent keeps the source's. Any engine may be asked for, an older
+	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+	//   When the portrait's shape isn't exactly the copy's frame (square on
+	//   v1), the portrait is cut again from the uncropped original: the
+	//   largest rectangle of the frame's ratio inside the creator's crop.
+	//   For a v1 copy it sits around the face: the largest one detected in
+	//   the crop, else where the source's last build framed it, else the
+	//   centre; any other copy is centred. Its crop record names that
+	//   rectangle, so it can be moved. An image too large to cut is copied
+	//   as it is.
+	//   It is checked as on `POST /v1/avatars`:
+	//   the same `402`, `403` and `503` answers for an engine the account or
+	//   this server cannot use. A preview message longer than a v2 take
+	//   speaks (300 characters) is left out of a v2 copy, which then speaks
+	//   the default line.
+	// - **Build**: the copy builds as a create with those inputs would
+	//   (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+	//   knowledge base included. A v1 source with a portrait and no voice
+	//   copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+	//   missing its voice. A v2 copy's captures count against the limit
+	//   of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+	// - **Files**: only the source's own files are copied. A file whose
+	//   stored link points elsewhere, or that is no longer in storage, is
+	//   `409 source_file_missing` (the message names it): replace it on the
+	//   source and try again. A refused duplicate leaves no avatar behind.
+	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+	//   cannot duplicate.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+	DuplicateAvatar(ctx context.Context, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAvatarKnowledge Get the knowledge
 	//
 	// Returns the facts text, the knowledge questionnaire's questions and
@@ -5974,11 +6294,13 @@ type ClientInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-	//   and up, or an invite code below Growth (`403 v2_access_required`
-	//   without it), and video generation on the account (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-	//   /v1/account`). Any credits pay for them.
+	// - **Access**: video clips are on every plan, Free included, and need
+	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
+	//   Pro and up, or an invite code below Pro). They spend credits
+	//   by length and size; any credits pay for them. An account whose video
+	//   generation is turned off answers `403 video_generation_not_in_plan`
+	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
+	//   setup may still answer `403 v2_access_required`.
 	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
 	//   needs no avatar scope: with `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -6026,11 +6348,13 @@ type ClientInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-	//   and up, or an invite code below Growth (`403 v2_access_required`
-	//   without it), and video generation on the account (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-	//   /v1/account`). Any credits pay for them.
+	// - **Access**: video clips are on every plan, Free included, and need
+	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
+	//   Pro and up, or an invite code below Pro). They spend credits
+	//   by length and size; any credits pay for them. An account whose video
+	//   generation is turned off answers `403 video_generation_not_in_plan`
+	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
+	//   setup may still answer `403 v2_access_required`.
 	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
 	//   needs no avatar scope: with `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -6544,8 +6868,9 @@ type ClientInterface interface {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build Atmee V2 and
-//     make clips (Growth and up, or an invite code).
+//   - **v2**: `v2Access` says whether the account may build Atmee V2
+//     (Pro and up, or an invite code below Pro). Video clips are on
+//     every plan, Free included, and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -6622,7 +6947,7 @@ func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEd
 //
 // Redeems an invite or credit code for the account. A code can add
 // credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Growth, an invite code
+// both, and the answer says what it gave. Below Pro, an invite code
 // is what unlocks V2. Each account
 // redeems a code at most once.
 //
@@ -6649,7 +6974,7 @@ func (c *Client) RedeemAccountCodeWithBody(ctx context.Context, contentType stri
 //
 // Redeems an invite or credit code for the account. A code can add
 // credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Growth, an invite code
+// both, and the answer says what it gave. Below Pro, an invite code
 // is what unlocks V2. Each account
 // redeems a code at most once.
 //
@@ -6947,7 +7272,24 @@ func (c *Client) EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, r
 
 // ListAvatars List avatars
 //
-// Lists the account's avatars, newest first. Page with `before`.
+// Lists the account's avatars, newest first.
+//
+// Two ways to page:
+//
+//   - **By time** (the default): pass the previous page's `nextBefore` as
+//     `before`. Rows come newest first.
+//   - **Sorted, searched and filtered**: pass any of `sort`, `order`, `q`,
+//     a filter (`visibility`, `engine`, `frame`, `badge`, `sponsored`) or
+//     `offset`, and page with `offset` (the previous page's
+//     `nextOffset`). The answer then also carries `total` (the avatars
+//     matching every filter), each row's `usage` and `upgradedCopyId`.
+//
+// A filter that lists several values, separated by commas, keeps an
+// avatar matching any of them; several filters keep only the avatars
+// matching all of them. An unknown value is `400 invalid_query`.
+//
+// `before` cannot be combined with `sort`, `order`, `q`, a filter or
+// `offset` (`400 invalid_query`).
 //
 // Corresponds with GET /v1/avatars (the `ListAvatars` operationId).
 func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6979,7 +7321,7 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
 //     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
@@ -7053,7 +7395,7 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
 //     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
@@ -7673,6 +8015,152 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
+// DuplicateAvatarWithBody Duplicate an avatar
+//
+// Creates a new avatar from this one, optionally on another engine: the
+// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+// without giving its persona, knowledge, portrait and voice again. The
+// source is left as it is.
+//
+//   - **Copied**: the name and description (`name` renames the copy), the
+//     language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+//     `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+//     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+//     message and `previews`, the knowledge (`knowledge.facts`, the
+//     questionnaire answers and every knowledge file with its
+//     description), the portrait and the voice sample. A voice picked
+//     from Creator Studio's premade voices is kept as that pick: its
+//     recording is the voice sample. A portrait cropped in Creator
+//     Studio keeps its crop record, with the uncropped original, so the
+//     copy can be re-cropped. The files are copied
+//     inside storage; nothing is uploaded again. A v2 source's
+//     `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+//     Its shape is kept too: a copy on the same engine keeps its
+//     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+//     672x384); any other copy takes the target engine's size nearest
+//     its portrait's shape (the creator's crop, else the image).
+//   - **Not copied**: anything about sharing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, share card
+//     (title, subtitle, tags, social links), Explore thumbnail,
+//     statement, integrations or graph conductor; v2 takes and versions
+//     are not copied either, the copy captures its own.
+//   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+//     absent keeps the source's. Any engine may be asked for, an older
+//     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+//     When the portrait's shape isn't exactly the copy's frame (square on
+//     v1), the portrait is cut again from the uncropped original: the
+//     largest rectangle of the frame's ratio inside the creator's crop.
+//     For a v1 copy it sits around the face: the largest one detected in
+//     the crop, else where the source's last build framed it, else the
+//     centre; any other copy is centred. Its crop record names that
+//     rectangle, so it can be moved. An image too large to cut is copied
+//     as it is.
+//     It is checked as on `POST /v1/avatars`:
+//     the same `402`, `403` and `503` answers for an engine the account or
+//     this server cannot use. A preview message longer than a v2 take
+//     speaks (300 characters) is left out of a v2 copy, which then speaks
+//     the default line.
+//   - **Build**: the copy builds as a create with those inputs would
+//     (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+//     knowledge base included. A v1 source with a portrait and no voice
+//     copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+//     missing its voice. A v2 copy's captures count against the limit
+//     of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+//   - **Files**: only the source's own files are copied. A file whose
+//     stored link points elsewhere, or that is no longer in storage, is
+//     `409 source_file_missing` (the message names it): replace it on the
+//     source and try again. A refused duplicate leaves no avatar behind.
+//   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+//     cannot duplicate.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDuplicateAvatarRequestWithBody(c.Server, avatarId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DuplicateAvatar Duplicate an avatar
+//
+// Creates a new avatar from this one, optionally on another engine: the
+// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+// without giving its persona, knowledge, portrait and voice again. The
+// source is left as it is.
+//
+//   - **Copied**: the name and description (`name` renames the copy), the
+//     language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+//     `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+//     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+//     message and `previews`, the knowledge (`knowledge.facts`, the
+//     questionnaire answers and every knowledge file with its
+//     description), the portrait and the voice sample. A voice picked
+//     from Creator Studio's premade voices is kept as that pick: its
+//     recording is the voice sample. A portrait cropped in Creator
+//     Studio keeps its crop record, with the uncropped original, so the
+//     copy can be re-cropped. The files are copied
+//     inside storage; nothing is uploaded again. A v2 source's
+//     `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+//     Its shape is kept too: a copy on the same engine keeps its
+//     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+//     672x384); any other copy takes the target engine's size nearest
+//     its portrait's shape (the creator's crop, else the image).
+//   - **Not copied**: anything about sharing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, share card
+//     (title, subtitle, tags, social links), Explore thumbnail,
+//     statement, integrations or graph conductor; v2 takes and versions
+//     are not copied either, the copy captures its own.
+//   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+//     absent keeps the source's. Any engine may be asked for, an older
+//     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+//     When the portrait's shape isn't exactly the copy's frame (square on
+//     v1), the portrait is cut again from the uncropped original: the
+//     largest rectangle of the frame's ratio inside the creator's crop.
+//     For a v1 copy it sits around the face: the largest one detected in
+//     the crop, else where the source's last build framed it, else the
+//     centre; any other copy is centred. Its crop record names that
+//     rectangle, so it can be moved. An image too large to cut is copied
+//     as it is.
+//     It is checked as on `POST /v1/avatars`:
+//     the same `402`, `403` and `503` answers for an engine the account or
+//     this server cannot use. A preview message longer than a v2 take
+//     speaks (300 characters) is left out of a v2 copy, which then speaks
+//     the default line.
+//   - **Build**: the copy builds as a create with those inputs would
+//     (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+//     knowledge base included. A v1 source with a portrait and no voice
+//     copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+//     missing its voice. A v2 copy's captures count against the limit
+//     of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+//   - **Files**: only the source's own files are copied. A file whose
+//     stored link points elsewhere, or that is no longer in storage, is
+//     `409 source_file_missing` (the message names it): replace it on the
+//     source and try again. A refused duplicate leaves no avatar behind.
+//   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+//     cannot duplicate.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+func (c *Client) DuplicateAvatar(ctx context.Context, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDuplicateAvatarRequest(c.Server, avatarId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetAvatarKnowledge Get the knowledge
 //
 // Returns the facts text, the knowledge questionnaire's questions and
@@ -8209,11 +8697,13 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-//     and up, or an invite code below Growth (`403 v2_access_required`
-//     without it), and video generation on the account (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-//     /v1/account`). Any credits pay for them.
+//   - **Access**: video clips are on every plan, Free included, and need
+//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
+//     Pro and up, or an invite code below Pro). They spend credits
+//     by length and size; any credits pay for them. An account whose video
+//     generation is turned off answers `403 video_generation_not_in_plan`
+//     (`limits.videoGeneration` on `GET /v1/account`); an older billing
+//     setup may still answer `403 v2_access_required`.
 //   - **Scope**: `generation:write`. A clip is not avatar editing, so it
 //     needs no avatar scope: with `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -8271,11 +8761,13 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-//     and up, or an invite code below Growth (`403 v2_access_required`
-//     without it), and video generation on the account (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-//     /v1/account`). Any credits pay for them.
+//   - **Access**: video clips are on every plan, Free included, and need
+//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
+//     Pro and up, or an invite code below Pro). They spend credits
+//     by length and size; any credits pay for them. An account whose video
+//     generation is turned off answers `403 video_generation_not_in_plan`
+//     (`limits.videoGeneration` on `GET /v1/account`); an older billing
+//     setup may still answer `403 v2_access_required`.
 //   - **Scope**: `generation:write`. A clip is not avatar editing, so it
 //     needs no avatar scope: with `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -9393,6 +9885,114 @@ func NewListAvatarsRequest(server string, params *ListAvatarsParams) (*http.Requ
 
 		}
 
+		if params.Sort != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sort", *params.Sort, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Visibility != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "visibility", *params.Visibility, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Engine != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "engine", *params.Engine, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Frame != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "frame", *params.Frame, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Badge != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "badge", *params.Badge, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Sponsored != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "sponsored", *params.Sponsored, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -9931,6 +10531,53 @@ func NewSetAvatarConductorRequestWithBody(server string, avatarId AvatarIdPath, 
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDuplicateAvatarRequest calls the generic DuplicateAvatar builder with application/json body
+func NewDuplicateAvatarRequest(server string, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDuplicateAvatarRequestWithBody(server, avatarId, "application/json", bodyReader)
+}
+
+// NewDuplicateAvatarRequestWithBody constructs an http.Request for the DuplicateAvatar method, with any body, and a specified content type
+func NewDuplicateAvatarRequestWithBody(server string, avatarId AvatarIdPath, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "avatarId", avatarId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/avatars/%s/duplicate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -11020,8 +11667,9 @@ type ClientWithResponsesInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build Atmee V2 and
-	//   make clips (Growth and up, or an invite code).
+	// - **v2**: `v2Access` says whether the account may build Atmee V2
+	//   (Pro and up, or an invite code below Pro). Video clips are on
+	//   every plan, Free included, and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -11074,7 +11722,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Redeems an invite or credit code for the account. A code can add
 	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Growth, an invite code
+	// both, and the answer says what it gave. Below Pro, an invite code
 	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
@@ -11091,7 +11739,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Redeems an invite or credit code for the account. A code can add
 	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Growth, an invite code
+	// both, and the answer says what it gave. Below Pro, an invite code
 	// is what unlocks V2. Each account
 	// redeems a code at most once.
 	//
@@ -11291,7 +11939,24 @@ type ClientWithResponsesInterface interface {
 
 	// ListAvatarsWithResponse List avatars
 	//
-	// Lists the account's avatars, newest first. Page with `before`.
+	// Lists the account's avatars, newest first.
+	//
+	// Two ways to page:
+	//
+	// - **By time** (the default): pass the previous page's `nextBefore` as
+	//   `before`. Rows come newest first.
+	// - **Sorted, searched and filtered**: pass any of `sort`, `order`, `q`,
+	//   a filter (`visibility`, `engine`, `frame`, `badge`, `sponsored`) or
+	//   `offset`, and page with `offset` (the previous page's
+	//   `nextOffset`). The answer then also carries `total` (the avatars
+	//   matching every filter), each row's `usage` and `upgradedCopyId`.
+	//
+	// A filter that lists several values, separated by commas, keeps an
+	// avatar matching any of them; several filters keep only the avatars
+	// matching all of them. An unknown value is `400 invalid_query`.
+	//
+	// `before` cannot be combined with `sort`, `order`, `q`, a filter or
+	// `offset` (`400 invalid_query`).
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -11315,7 +11980,7 @@ type ClientWithResponsesInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
 	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
@@ -11379,7 +12044,7 @@ type ClientWithResponsesInterface interface {
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
 	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Growth and up, or an invite code below Growth (`403
+	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
 	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
@@ -11843,6 +12508,132 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductorWithResponse(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAvatarConductorResponse, error)
 
+	// DuplicateAvatarWithBodyWithResponse Duplicate an avatar
+	//
+	// Creates a new avatar from this one, optionally on another engine: the
+	// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+	// without giving its persona, knowledge, portrait and voice again. The
+	// source is left as it is.
+	//
+	// - **Copied**: the name and description (`name` renames the copy), the
+	//   language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+	//   `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+	//   message and `previews`, the knowledge (`knowledge.facts`, the
+	//   questionnaire answers and every knowledge file with its
+	//   description), the portrait and the voice sample. A voice picked
+	//   from Creator Studio's premade voices is kept as that pick: its
+	//   recording is the voice sample. A portrait cropped in Creator
+	//   Studio keeps its crop record, with the uncropped original, so the
+	//   copy can be re-cropped. The files are copied
+	//   inside storage; nothing is uploaded again. A v2 source's
+	//   `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+	//   Its shape is kept too: a copy on the same engine keeps its
+	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+	//   672x384); any other copy takes the target engine's size nearest
+	//   its portrait's shape (the creator's crop, else the image).
+	// - **Not copied**: anything about sharing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, share card
+	//   (title, subtitle, tags, social links), Explore thumbnail,
+	//   statement, integrations or graph conductor; v2 takes and versions
+	//   are not copied either, the copy captures its own.
+	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+	//   absent keeps the source's. Any engine may be asked for, an older
+	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+	//   When the portrait's shape isn't exactly the copy's frame (square on
+	//   v1), the portrait is cut again from the uncropped original: the
+	//   largest rectangle of the frame's ratio inside the creator's crop.
+	//   For a v1 copy it sits around the face: the largest one detected in
+	//   the crop, else where the source's last build framed it, else the
+	//   centre; any other copy is centred. Its crop record names that
+	//   rectangle, so it can be moved. An image too large to cut is copied
+	//   as it is.
+	//   It is checked as on `POST /v1/avatars`:
+	//   the same `402`, `403` and `503` answers for an engine the account or
+	//   this server cannot use. A preview message longer than a v2 take
+	//   speaks (300 characters) is left out of a v2 copy, which then speaks
+	//   the default line.
+	// - **Build**: the copy builds as a create with those inputs would
+	//   (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+	//   knowledge base included. A v1 source with a portrait and no voice
+	//   copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+	//   missing its voice. A v2 copy's captures count against the limit
+	//   of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+	// - **Files**: only the source's own files are copied. A file whose
+	//   stored link points elsewhere, or that is no longer in storage, is
+	//   `409 source_file_missing` (the message names it): replace it on the
+	//   source and try again. A refused duplicate leaves no avatar behind.
+	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+	//   cannot duplicate.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+	DuplicateAvatarWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DuplicateAvatarResponse, error)
+
+	// DuplicateAvatarWithResponse Duplicate an avatar
+	//
+	// Creates a new avatar from this one, optionally on another engine: the
+	// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+	// without giving its persona, knowledge, portrait and voice again. The
+	// source is left as it is.
+	//
+	// - **Copied**: the name and description (`name` renames the copy), the
+	//   language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+	//   `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+	//   message and `previews`, the knowledge (`knowledge.facts`, the
+	//   questionnaire answers and every knowledge file with its
+	//   description), the portrait and the voice sample. A voice picked
+	//   from Creator Studio's premade voices is kept as that pick: its
+	//   recording is the voice sample. A portrait cropped in Creator
+	//   Studio keeps its crop record, with the uncropped original, so the
+	//   copy can be re-cropped. The files are copied
+	//   inside storage; nothing is uploaded again. A v2 source's
+	//   `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+	//   Its shape is kept too: a copy on the same engine keeps its
+	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+	//   672x384); any other copy takes the target engine's size nearest
+	//   its portrait's shape (the creator's crop, else the image).
+	// - **Not copied**: anything about sharing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, share card
+	//   (title, subtitle, tags, social links), Explore thumbnail,
+	//   statement, integrations or graph conductor; v2 takes and versions
+	//   are not copied either, the copy captures its own.
+	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+	//   absent keeps the source's. Any engine may be asked for, an older
+	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+	//   When the portrait's shape isn't exactly the copy's frame (square on
+	//   v1), the portrait is cut again from the uncropped original: the
+	//   largest rectangle of the frame's ratio inside the creator's crop.
+	//   For a v1 copy it sits around the face: the largest one detected in
+	//   the crop, else where the source's last build framed it, else the
+	//   centre; any other copy is centred. Its crop record names that
+	//   rectangle, so it can be moved. An image too large to cut is copied
+	//   as it is.
+	//   It is checked as on `POST /v1/avatars`:
+	//   the same `402`, `403` and `503` answers for an engine the account or
+	//   this server cannot use. A preview message longer than a v2 take
+	//   speaks (300 characters) is left out of a v2 copy, which then speaks
+	//   the default line.
+	// - **Build**: the copy builds as a create with those inputs would
+	//   (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+	//   knowledge base included. A v1 source with a portrait and no voice
+	//   copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+	//   missing its voice. A v2 copy's captures count against the limit
+	//   of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+	// - **Files**: only the source's own files are copied. A file whose
+	//   stored link points elsewhere, or that is no longer in storage, is
+	//   `409 source_file_missing` (the message names it): replace it on the
+	//   source and try again. A refused duplicate leaves no avatar behind.
+	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+	//   cannot duplicate.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+	DuplicateAvatarWithResponse(ctx context.Context, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*DuplicateAvatarResponse, error)
+
 	// GetAvatarKnowledgeWithResponse Get the knowledge
 	//
 	// Returns the facts text, the knowledge questionnaire's questions and
@@ -12191,11 +12982,13 @@ type ClientWithResponsesInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-	//   and up, or an invite code below Growth (`403 v2_access_required`
-	//   without it), and video generation on the account (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-	//   /v1/account`). Any credits pay for them.
+	// - **Access**: video clips are on every plan, Free included, and need
+	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
+	//   Pro and up, or an invite code below Pro). They spend credits
+	//   by length and size; any credits pay for them. An account whose video
+	//   generation is turned off answers `403 video_generation_not_in_plan`
+	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
+	//   setup may still answer `403 v2_access_required`.
 	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
 	//   needs no avatar scope: with `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -12243,11 +13036,13 @@ type ClientWithResponsesInterface interface {
 	//   `Idempotency-Key` is the request id, and the `409` names that path
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
-	// - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-	//   and up, or an invite code below Growth (`403 v2_access_required`
-	//   without it), and video generation on the account (`403
-	//   video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-	//   /v1/account`). Any credits pay for them.
+	// - **Access**: video clips are on every plan, Free included, and need
+	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
+	//   Pro and up, or an invite code below Pro). They spend credits
+	//   by length and size; any credits pay for them. An account whose video
+	//   generation is turned off answers `403 video_generation_not_in_plan`
+	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
+	//   setup may still answer `403 v2_access_required`.
 	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
 	//   needs no avatar scope: with `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -13526,6 +14321,8 @@ type ListAvatarsResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *AvatarListResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
 	// JSON403 the response for an HTTP 403 `application/json` response
 	JSON403 *ApiErrorResponse
 	// JSON409 the response for an HTTP 409 `application/json` response
@@ -13535,6 +14332,11 @@ type ListAvatarsResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ListAvatarsResponse) GetJSON200() *AvatarListResponse {
 	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListAvatarsResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
@@ -14251,6 +15053,127 @@ func (r SetAvatarConductorResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetAvatarConductorResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DuplicateAvatarResponse202Headers the declared response headers of an HTTP 202 response for DuplicateAvatar
+type DuplicateAvatarResponse202Headers struct {
+	XRateLimitLimit     *int
+	XRateLimitRemaining *int
+}
+
+// DuplicateAvatarResponse429Headers the declared response headers of an HTTP 429 response for DuplicateAvatar
+type DuplicateAvatarResponse429Headers struct {
+	RetryAfter          *int
+	XRateLimitLimit     *int
+	XRateLimitRemaining *int
+}
+
+type DuplicateAvatarResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *AvatarCreateResponse
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *AvatarCreateResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *V2CreditsPaymentRequired
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ApiErrorResponse
+	// JSON422 the response for an HTTP 422 `application/json` response
+	JSON422 *ApiErrorResponse
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *RateLimited
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *ApiErrorResponse
+	// Headers202 the parsed response headers for an HTTP 202 response
+	Headers202 *DuplicateAvatarResponse202Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DuplicateAvatarResponse429Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON201() *AvatarCreateResponse {
+	return r.JSON201
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON202() *AvatarCreateResponse {
+	return r.JSON202
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON402() *V2CreditsPaymentRequired {
+	return r.JSON402
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON409() *ApiErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON422 returns the response for an HTTP 422 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON422() *ApiErrorResponse {
+	return r.JSON422
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON429() *RateLimited {
+	return r.JSON429
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DuplicateAvatarResponse) GetJSON503() *ApiErrorResponse {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DuplicateAvatarResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DuplicateAvatarResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DuplicateAvatarResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DuplicateAvatarResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -15825,8 +16748,9 @@ func (r GetUploadResponse) ContentType() string {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build Atmee V2 and
-//     make clips (Growth and up, or an invite code).
+//   - **v2**: `v2Access` says whether the account may build Atmee V2
+//     (Pro and up, or an invite code below Pro). Video clips are on
+//     every plan, Free included, and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -15897,7 +16821,7 @@ func (c *ClientWithResponses) GetAccountEarningsWithResponse(ctx context.Context
 //
 // Redeems an invite or credit code for the account. A code can add
 // credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Growth, an invite code
+// both, and the answer says what it gave. Below Pro, an invite code
 // is what unlocks V2. Each account
 // redeems a code at most once.
 //
@@ -15920,7 +16844,7 @@ func (c *ClientWithResponses) RedeemAccountCodeWithBodyWithResponse(ctx context.
 //
 // Redeems an invite or credit code for the account. A code can add
 // credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Growth, an invite code
+// both, and the answer says what it gave. Below Pro, an invite code
 // is what unlocks V2. Each account
 // redeems a code at most once.
 //
@@ -16186,7 +17110,24 @@ func (c *ClientWithResponses) EndAvatarSessionWithResponse(ctx context.Context, 
 
 // ListAvatarsWithResponse List avatars
 //
-// Lists the account's avatars, newest first. Page with `before`.
+// Lists the account's avatars, newest first.
+//
+// Two ways to page:
+//
+//   - **By time** (the default): pass the previous page's `nextBefore` as
+//     `before`. Rows come newest first.
+//   - **Sorted, searched and filtered**: pass any of `sort`, `order`, `q`,
+//     a filter (`visibility`, `engine`, `frame`, `badge`, `sponsored`) or
+//     `offset`, and page with `offset` (the previous page's
+//     `nextOffset`). The answer then also carries `total` (the avatars
+//     matching every filter), each row's `usage` and `upgradedCopyId`.
+//
+// A filter that lists several values, separated by commas, keeps an
+// avatar matching any of them; several filters keep only the avatars
+// matching all of them. An unknown value is `400 invalid_query`.
+//
+// `before` cannot be combined with `sort`, `order`, `q`, a filter or
+// `offset` (`400 invalid_query`).
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -16216,7 +17157,7 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
 //     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
@@ -16286,7 +17227,7 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
 //     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Growth and up, or an invite code below Growth (`403
+//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
 //     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
@@ -16851,6 +17792,144 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 	return ParseSetAvatarConductorResponse(rsp)
 }
 
+// DuplicateAvatarWithBodyWithResponse Duplicate an avatar
+//
+// Creates a new avatar from this one, optionally on another engine: the
+// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+// without giving its persona, knowledge, portrait and voice again. The
+// source is left as it is.
+//
+//   - **Copied**: the name and description (`name` renames the copy), the
+//     language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+//     `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+//     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+//     message and `previews`, the knowledge (`knowledge.facts`, the
+//     questionnaire answers and every knowledge file with its
+//     description), the portrait and the voice sample. A voice picked
+//     from Creator Studio's premade voices is kept as that pick: its
+//     recording is the voice sample. A portrait cropped in Creator
+//     Studio keeps its crop record, with the uncropped original, so the
+//     copy can be re-cropped. The files are copied
+//     inside storage; nothing is uploaded again. A v2 source's
+//     `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+//     Its shape is kept too: a copy on the same engine keeps its
+//     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+//     672x384); any other copy takes the target engine's size nearest
+//     its portrait's shape (the creator's crop, else the image).
+//   - **Not copied**: anything about sharing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, share card
+//     (title, subtitle, tags, social links), Explore thumbnail,
+//     statement, integrations or graph conductor; v2 takes and versions
+//     are not copied either, the copy captures its own.
+//   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+//     absent keeps the source's. Any engine may be asked for, an older
+//     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+//     When the portrait's shape isn't exactly the copy's frame (square on
+//     v1), the portrait is cut again from the uncropped original: the
+//     largest rectangle of the frame's ratio inside the creator's crop.
+//     For a v1 copy it sits around the face: the largest one detected in
+//     the crop, else where the source's last build framed it, else the
+//     centre; any other copy is centred. Its crop record names that
+//     rectangle, so it can be moved. An image too large to cut is copied
+//     as it is.
+//     It is checked as on `POST /v1/avatars`:
+//     the same `402`, `403` and `503` answers for an engine the account or
+//     this server cannot use. A preview message longer than a v2 take
+//     speaks (300 characters) is left out of a v2 copy, which then speaks
+//     the default line.
+//   - **Build**: the copy builds as a create with those inputs would
+//     (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+//     knowledge base included. A v1 source with a portrait and no voice
+//     copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+//     missing its voice. A v2 copy's captures count against the limit
+//     of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+//   - **Files**: only the source's own files are copied. A file whose
+//     stored link points elsewhere, or that is no longer in storage, is
+//     `409 source_file_missing` (the message names it): replace it on the
+//     source and try again. A refused duplicate leaves no avatar behind.
+//   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+//     cannot duplicate.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Context, avatarId AvatarIdPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DuplicateAvatarResponse, error) {
+	rsp, err := c.DuplicateAvatarWithBody(ctx, avatarId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDuplicateAvatarResponse(rsp)
+}
+
+// DuplicateAvatarWithResponse Duplicate an avatar
+//
+// Creates a new avatar from this one, optionally on another engine: the
+// way to move an avatar to Atmee V2<!-- v2pro --> or V2 HD<!-- /v2pro -->
+// without giving its persona, knowledge, portrait and voice again. The
+// source is left as it is.
+//
+//   - **Copied**: the name and description (`name` renames the copy), the
+//     language, the persona (`whoPrompt`, `whatPrompt`, `preferredAlias`,
+//     `spokenName`, `knownAliases`, `selfIntroduction`, `guardrails`,
+//     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
+//     message and `previews`, the knowledge (`knowledge.facts`, the
+//     questionnaire answers and every knowledge file with its
+//     description), the portrait and the voice sample. A voice picked
+//     from Creator Studio's premade voices is kept as that pick: its
+//     recording is the voice sample. A portrait cropped in Creator
+//     Studio keeps its crop record, with the uncropped original, so the
+//     copy can be re-cropped. The files are copied
+//     inside storage; nothing is uploaded again. A v2 source's
+//     `blackoutRecovery` and `runtimeSeed` are kept on a v2-family copy.
+//     Its shape is kept too: a copy on the same engine keeps its
+//     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
+//     672x384); any other copy takes the target engine's size nearest
+//     its portrait's shape (the creator's crop, else the image).
+//   - **Not copied**: anything about sharing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, share card
+//     (title, subtitle, tags, social links), Explore thumbnail,
+//     statement, integrations or graph conductor; v2 takes and versions
+//     are not copied either, the copy captures its own.
+//   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
+//     absent keeps the source's. Any engine may be asked for, an older
+//     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
+//     When the portrait's shape isn't exactly the copy's frame (square on
+//     v1), the portrait is cut again from the uncropped original: the
+//     largest rectangle of the frame's ratio inside the creator's crop.
+//     For a v1 copy it sits around the face: the largest one detected in
+//     the crop, else where the source's last build framed it, else the
+//     centre; any other copy is centred. Its crop record names that
+//     rectangle, so it can be moved. An image too large to cut is copied
+//     as it is.
+//     It is checked as on `POST /v1/avatars`:
+//     the same `402`, `403` and `503` answers for an engine the account or
+//     this server cannot use. A preview message longer than a v2 take
+//     speaks (300 characters) is left out of a v2 copy, which then speaks
+//     the default line.
+//   - **Build**: the copy builds as a create with those inputs would
+//     (`202 building`; follow it with `GET /v1/avatars/{avatarId}`),
+//     knowledge base included. A v1 source with a portrait and no voice
+//     copies to a ready render-only v1 avatar (`201`) or a v2 `draft`
+//     missing its voice. A v2 copy's captures count against the limit
+//     of 10 queued or running, as on a create (`X-RateLimit-*`, `429`).
+//   - **Files**: only the source's own files are copied. A file whose
+//     stored link points elsewhere, or that is no longer in storage, is
+//     `409 source_file_missing` (the message names it): replace it on the
+//     source and try again. A refused duplicate leaves no avatar behind.
+//   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
+//     cannot duplicate.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/avatars/{avatarId}/duplicate (the `DuplicateAvatar` operationId).
+func (c *ClientWithResponses) DuplicateAvatarWithResponse(ctx context.Context, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody, reqEditors ...RequestEditorFn) (*DuplicateAvatarResponse, error) {
+	rsp, err := c.DuplicateAvatar(ctx, avatarId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDuplicateAvatarResponse(rsp)
+}
+
 // GetAvatarKnowledgeWithResponse Get the knowledge
 //
 // Returns the facts text, the knowledge questionnaire's questions and
@@ -17319,11 +18398,13 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-//     and up, or an invite code below Growth (`403 v2_access_required`
-//     without it), and video generation on the account (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-//     /v1/account`). Any credits pay for them.
+//   - **Access**: video clips are on every plan, Free included, and need
+//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
+//     Pro and up, or an invite code below Pro). They spend credits
+//     by length and size; any credits pay for them. An account whose video
+//     generation is turned off answers `403 video_generation_not_in_plan`
+//     (`limits.videoGeneration` on `GET /v1/account`); an older billing
+//     setup may still answer `403 v2_access_required`.
 //   - **Scope**: `generation:write`. A clip is not avatar editing, so it
 //     needs no avatar scope: with `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -17377,11 +18458,13 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     `Idempotency-Key` is the request id, and the `409` names that path
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
-//   - **Access**: clips run on Atmee V2 and need Atmee V2 access: Growth
-//     and up, or an invite code below Growth (`403 v2_access_required`
-//     without it), and video generation on the account (`403
-//     video_generation_not_in_plan`; `limits.videoGeneration` on `GET
-//     /v1/account`). Any credits pay for them.
+//   - **Access**: video clips are on every plan, Free included, and need
+//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
+//     Pro and up, or an invite code below Pro). They spend credits
+//     by length and size; any credits pay for them. An account whose video
+//     generation is turned off answers `403 video_generation_not_in_plan`
+//     (`limits.videoGeneration` on `GET /v1/account`); an older billing
+//     setup may still answer `403 v2_access_required`.
 //   - **Scope**: `generation:write`. A clip is not avatar editing, so it
 //     needs no avatar scope: with `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
@@ -18638,6 +19721,13 @@ func ParseListAvatarsResponse(rsp *http.Response) (*ListAvatarsResponse, error) 
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case rsp.StatusCode == 401:
 		break // No content-type
 
@@ -19357,6 +20447,142 @@ func ParseSetAvatarConductorResponse(rsp *http.Response) (*SetAvatarConductorRes
 	case rsp.StatusCode == 422:
 		break // No content-type
 
+	}
+
+	return response, nil
+}
+
+// ParseDuplicateAvatarResponse parses an HTTP response from a DuplicateAvatarWithResponse call
+func ParseDuplicateAvatarResponse(rsp *http.Response) (*DuplicateAvatarResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DuplicateAvatarResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AvatarCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest AvatarCreateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest V2CreditsPaymentRequired
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 202:
+		var headers DuplicateAvatarResponse202Headers
+		if values := rsp.Header.Values("X-RateLimit-Limit"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-RateLimit-Limit", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRateLimitLimit = &value
+		}
+		if values := rsp.Header.Values("X-RateLimit-Remaining"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-RateLimit-Remaining", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRateLimitRemaining = &value
+		}
+		response.Headers202 = &headers
+	case rsp.StatusCode == 429:
+		var headers DuplicateAvatarResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		if values := rsp.Header.Values("X-RateLimit-Limit"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-RateLimit-Limit", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRateLimitLimit = &value
+		}
+		if values := rsp.Header.Values("X-RateLimit-Remaining"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-RateLimit-Remaining", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRateLimitRemaining = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil

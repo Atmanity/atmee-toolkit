@@ -90,7 +90,10 @@ instead. The API is at `https://api.atmanity.us`.
 - **Avatars:** create from a portrait, a voice sample, a persona and
   knowledge files (local files through uploads, or https links); list, read,
   update the persona and settings, replace the portrait, voice or knowledge,
-  delete. v2 seeds: list, capture more, select, remove an older version. An
+  delete. Duplicate one (`duplicate_avatar`, `atmee avatars duplicate`): a
+  private copy with its persona, knowledge, portrait and voice, on any model
+  (an Atmee V1 avatar onto Atmee V2, or a V2 one back onto V1), without its
+  sharing, earnings, sponsor pool, agenda or seeds. v2 seeds: list, capture more, select, remove an older version. An
   agenda (conductor) per v2 avatar. A v2 avatar's video is square (512×512)
   by default, or another size the server offers (`get_account`
   `limits.v2Resolutions`): 672×384 (16:9), 384×672 (9:16), 576×448 (4:3)
@@ -110,8 +113,9 @@ instead. The API is at `https://api.atmanity.us`.
   default), 640×480, 480×640, 832×468, 468×832, 720×720, 960×720, 720×960,
   1280×720 or 720×1280. 1080p (1080×1080, 1920×1080, 1080×1920, 1440×1080,
   1080×1440) is coming soon. No avatar is made; it
-  needs Atmee V2 access (Growth and up; below Growth, an invite code unlocks
-  it) and `get_account` `limits.videoGeneration`, and each size has a price per
+  is on every plan, Free included, with no Atmee V2 access or invite code
+  needed (`get_account` `limits.videoGeneration` false means video generation
+  was turned off for the account: contact support), and each size has a price per
   clip for up to 5, 10 and 15 seconds, charged at the next length up
   (`pricing.generation.clipPrices`). A clip is not avatar editing: a key
   needs only `generation:write`, which also covers the clip's uploads and

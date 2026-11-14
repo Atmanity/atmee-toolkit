@@ -27,9 +27,9 @@ const generationNote = "Costs the operation's price (`atmee account`), charged o
 	"call costs nothing. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
 
 const (
-	enhanceEngineHelp = "The engine the avatar will be created with, v1, v2 or v2hd (Atmee V2 HD, where the server offers it): " +
+	enhanceEngineHelp = "The engine the avatar will be created with, v2hd (Atmee V2 HD, where the server offers it), v2 or v1: " +
 		"v1 turns the face to the camera, shoulders up, v2 and v2hd keep the pose, framing and background (the API's default is v1)"
-	portraitsEngineHelp = "The engine the avatar will be created with, v1, v2 or v2hd (Atmee V2 HD, where the server offers it): " +
+	portraitsEngineHelp = "The engine the avatar will be created with, v2hd (Atmee V2 HD, where the server offers it), v2 or v1: " +
 		"v1 frames the character from the shoulders up, v2 and v2hd half-body unless the description sets another framing " +
 		"(the API's default is v1)"
 )
@@ -38,7 +38,7 @@ const (
 // request; both generation requests take the same engines.
 func checkPortraitEngine(engine string) error {
 	if engine != "" && !avatarapi.EnhancePortraitRequestEngine(engine).Valid() {
-		return usagef("--engine takes v1, v2 or v2hd (%s)", engine)
+		return usagef("--engine takes v2hd, v2 or v1 (%s)", engine)
 	}
 	return nil
 }
@@ -239,7 +239,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"with its list.\n\n" +
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 24 hours. Clips are on every plan, Free included, and need no Atmee V2 access or invite code: " +
+			"The result lasts 24 hours. Clips are on every plan, Free included, and need no Atmee V2 access: " +
 			"they spend credits at each size's price per clip (atmee account lists them). " +
 			"A signed-in user, or an API key with generation:write (a clip needs no avatar scope; --image and --audio files upload with it too).",
 		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
@@ -311,10 +311,18 @@ func (a *app) generateClipCmd() *cobra.Command {
 					return fmt.Errorf("%w; video clips are turned off for this account: contact us through Creator Studio's help center", err)
 				}
 				// Clips are on every plan: a refusal for Atmee V2 access
-				// (an older server) gets no upgrade or invite hint, so the
+				// (an older server) gets no upgrade hint, so the
 				// error is kept as text, out of engineHint's reach.
 				if v2Refused(err) {
-					return fmt.Errorf("%v; video clips are on every plan and need no Atmee V2 access: contact us through Creator Studio's help center", err)
+					// An older server may word it around invite codes: keep
+					// only its status and code.
+					msg := err.Error()
+					if strings.Contains(strings.ToLower(msg), "invite") {
+						if i := strings.Index(msg, ": "); i >= 0 {
+							msg = msg[:i]
+						}
+					}
+					return fmt.Errorf("%s; video clips are on every plan and need no Atmee V2 access: contact us through Creator Studio's help center", msg)
 				}
 				return err
 			}

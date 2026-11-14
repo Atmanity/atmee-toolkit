@@ -1687,27 +1687,31 @@ type Account struct {
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
 
-	// V2Access Whether this account may build Atmee V2 (builds, takes, new
-	// versions): `granted` (Pro and up, or an invite code
-	// redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
-	// not offered here). Absent when it could not be determined.
-	// `invite_required` means those calls answer `403 v2_access_required`
-	// until the account upgrades to Pro and up or redeems an invite
-	// code. Talking to any avatar never needs it, and neither do video
-	// clips, which are on every plan, Free included. Creating V2 HD also
-	// needs V2 HD on the account (`limits.v2Pro`).
+	// V2Access Whether this account may create Atmee V2 avatars (a create or a
+	// copy onto `v2`): `granted` (Pro and up, or V2 unlocked on the
+	// account); `invite_required` (not on this account's plan: Atmee V2
+	// needs Pro and up); or `unavailable` (V2 is not offered here).
+	// Absent when it could not be determined. `invite_required` means a
+	// V2 create answers `403 v2_access_required` until the account
+	// upgrades to Pro. Avatars the account already owns stay editable
+	// (new takes, rebuilds, versions) whatever this says. Talking to any
+	// avatar never needs it, and neither do video clips, which are on
+	// every plan, Free included. Creating V2 HD needs Growth and up
+	// (`limits.v2Pro`).
 	V2Access *AccountV2Access `json:"v2Access,omitempty"`
 }
 
-// AccountV2Access Whether this account may build Atmee V2 (builds, takes, new
-// versions): `granted` (Pro and up, or an invite code
-// redeemed); `invite_required` (not unlocked); or `unavailable` (V2 is
-// not offered here). Absent when it could not be determined.
-// `invite_required` means those calls answer `403 v2_access_required`
-// until the account upgrades to Pro and up or redeems an invite
-// code. Talking to any avatar never needs it, and neither do video
-// clips, which are on every plan, Free included. Creating V2 HD also
-// needs V2 HD on the account (`limits.v2Pro`).
+// AccountV2Access Whether this account may create Atmee V2 avatars (a create or a
+// copy onto `v2`): `granted` (Pro and up, or V2 unlocked on the
+// account); `invite_required` (not on this account's plan: Atmee V2
+// needs Pro and up); or `unavailable` (V2 is not offered here).
+// Absent when it could not be determined. `invite_required` means a
+// V2 create answers `403 v2_access_required` until the account
+// upgrades to Pro. Avatars the account already owns stay editable
+// (new takes, rebuilds, versions) whatever this says. Talking to any
+// avatar never needs it, and neither do video clips, which are on
+// every plan, Free included. Creating V2 HD needs Growth and up
+// (`limits.v2Pro`).
 type AccountV2Access string
 
 // AccountBalance defines model for AccountBalance.
@@ -1736,7 +1740,7 @@ type AccountBalance struct {
 	// Unlimited Sessions are not charged (an unlimited plan, or billing switched off).
 	Unlimited bool `json:"unlimited"`
 
-	// V2SpendableMicrocredits No longer reported (one kind of credit; Atmee V2 access decides who may build V2, `GET /v1/account` `v2Access`). Kept for older clients.
+	// V2SpendableMicrocredits No longer reported (one kind of credit; the plan decides who may create Atmee V2 avatars, `GET /v1/account` `v2Access`). Kept for older clients.
 	V2SpendableMicrocredits *int64 `json:"v2SpendableMicrocredits,omitempty"`
 
 	// Wallet The wallet API usage spends; always `direct`.
@@ -1769,7 +1773,7 @@ type AccountLimits struct {
 	// MaxSessionSeconds Longest session the plan allows; absent = not capped by the plan.
 	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 
-	// V2Pro Whether the account may create Atmee V2 HD avatars (engine `v2hd`), which are for Enterprise customers on custom plans only; a V2 HD create answers `403 v2_pro_not_in_plan` when false. Existing V2 HD avatars keep working (sessions, new takes, rebuilds) either way. V2 HD also needs what Atmee V2 needs. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
+	// V2Pro Whether the account may create Atmee V2 HD avatars (engine `v2hd`), which need Growth and up (or V2 HD unlocked on the account); a V2 HD create answers `403 v2hd_access_required` when false. Existing V2 HD avatars keep working and stay editable (sessions, new takes, rebuilds) either way. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
 	V2Pro *bool `json:"v2Pro,omitempty"`
 
 	// V2ProResolutions The frame sizes V2 HD avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 HD is not offered, or every size the V2 HD rule allows is.
@@ -2176,11 +2180,10 @@ type AvatarCreateResponse struct {
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
-	// avatar is for Enterprise customers on custom plans only
-	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
-	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
-	// `v2hd` avatar, and an existing one keeps working for its account: new
-	// takes and rebuilds need only what `v2` needs. Offered only where
+	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
+	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
+	// existing one keeps working and stays editable for its account on any
+	// plan: new takes and rebuilds are not plan-gated. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
 
@@ -2231,11 +2234,10 @@ type AvatarDetail struct {
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
-	// avatar is for Enterprise customers on custom plans only
-	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
-	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
-	// `v2hd` avatar, and an existing one keeps working for its account: new
-	// takes and rebuilds need only what `v2` needs. Offered only where
+	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
+	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
+	// existing one keeps working and stays editable for its account on any
+	// plan: new takes and rebuilds are not plan-gated. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
@@ -2293,7 +2295,11 @@ type AvatarDetail struct {
 	PreviewUrls *struct {
 		ExpiresAt time.Time `json:"expiresAt"`
 
-		// Idle The idle (silent, breathing) preview clip.
+		// Idle The idle (silent) preview clip of an avatar built before
+		// idle clips were retired; omitted for every other avatar.
+		// Avatars no longer get one: show the avatar's image until
+		// the talking preview is ready.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		Idle *string `json:"idle,omitempty"`
 
 		// Talking The talking preview clip (the preview message spoken).
@@ -2497,11 +2503,10 @@ type AvatarDuplicateRequestEngine string
 // default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 // per-minute rates (`GET /v1/account` `pricing`,
 // `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
-// avatar is for Enterprise customers on custom plans only
-// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
-// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
-// `v2hd` avatar, and an existing one keeps working for its account: new
-// takes and rebuilds need only what `v2` needs. Offered only where
+// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
+// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
+// existing one keeps working and stays editable for its account on any
+// plan: new takes and rebuilds are not plan-gated. Offered only where
 // `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
 
@@ -3068,11 +3073,10 @@ type AvatarSummary struct {
 	// default; `GET /v1/account` `limits.v2ProResolutions`), at its own
 	// per-minute rates (`GET /v1/account` `pricing`,
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
-	// avatar is for Enterprise customers on custom plans only
-	// (`limits.v2Pro`; otherwise `403 v2_pro_not_in_plan`), and also needs
-	// Atmee V2 access (`403 v2_access_required`). Anyone can talk to a
-	// `v2hd` avatar, and an existing one keeps working for its account: new
-	// takes and rebuilds need only what `v2` needs. Offered only where
+	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
+	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
+	// existing one keeps working and stays editable for its account on any
+	// plan: new takes and rebuilds are not plan-gated. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
@@ -3576,14 +3580,17 @@ type ClipStatusResponseStatus string
 
 // CodeRedemption defines model for CodeRedemption.
 type CodeRedemption struct {
-	// MicrocreditsGranted Credits the code added, in microcredits (100 = 1 credit); 0 for a code that only gives v2 access.
+	// MicrocreditsGranted Credits the code added, in microcredits (100 = 1 credit); 0 for a code that only unlocks Atmee V2 or V2 HD.
 	MicrocreditsGranted int64 `json:"microcreditsGranted"`
 
-	// V2Access The account's v2 access after redeeming, as `GET /v1/account` reports it. Absent when it could not be read.
+	// V2Access Whether the account may create Atmee V2 avatars after redeeming, as `GET /v1/account` reports `v2Access`. Absent when it could not be read.
 	V2Access *CodeRedemptionV2Access `json:"v2Access,omitempty"`
+
+	// V2Pro Whether the account may create Atmee V2 HD avatars after redeeming, as `GET /v1/account` reports `limits.v2Pro`. Absent where V2 HD is not offered on this server, or when it could not be read.
+	V2Pro *bool `json:"v2Pro,omitempty"`
 }
 
-// CodeRedemptionV2Access The account's v2 access after redeeming, as `GET /v1/account` reports it. Absent when it could not be read.
+// CodeRedemptionV2Access Whether the account may create Atmee V2 avatars after redeeming, as `GET /v1/account` reports `v2Access`. Absent when it could not be read.
 type CodeRedemptionV2Access string
 
 // Conductor defines model for Conductor.
@@ -4704,7 +4711,8 @@ type ReplaceAvatarAppearanceMultipartBody struct {
 type CreateAvatarSessionParams struct {
 	// WaitFor `initializing` (default) returns once the worker acknowledged the
 	// start; `avatar_joined` returns once the avatar participant is in
-	// your room.
+	// your room (refused with an Atmee-hosted room:
+	// `400 wait_for_unsupported`).
 	WaitFor *CreateAvatarSessionParamsWaitFor `form:"waitFor,omitempty" json:"waitFor,omitempty"`
 }
 
@@ -5023,9 +5031,11 @@ type ClientInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build Atmee V2
-	//   (Pro and up, or an invite code below Pro). Video clips are on
-	//   every plan, Free included, and need no `v2Access`.
+	// - **v2**: `v2Access` says whether the account may create Atmee V2
+	//   avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
+	//   create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
+	//   the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -5070,15 +5080,14 @@ type ClientInterface interface {
 
 	// RedeemAccountCodeWithBody Redeem a code
 	//
-	// Redeems an invite or credit code for the account. A code can add
-	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Pro, an invite code
-	// is what unlocks V2. Each account
-	// redeems a code at most once.
+	// Redeems a code for the account. A code can add credits, unlock
+	// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+	// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+	// the account has after it. Each account redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
-	// so a leaked key cannot spend the account's codes. v2 access applies from
-	// the next request.
+	// so a leaked key cannot spend the account's codes. What a code unlocks
+	// applies from the next request.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5087,15 +5096,14 @@ type ClientInterface interface {
 
 	// RedeemAccountCode Redeem a code
 	//
-	// Redeems an invite or credit code for the account. A code can add
-	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Pro, an invite code
-	// is what unlocks V2. Each account
-	// redeems a code at most once.
+	// Redeems a code for the account. A code can add credits, unlock
+	// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+	// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+	// the account has after it. Each account redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
-	// so a leaked key cannot spend the account's codes. v2 access applies from
-	// the next request.
+	// so a leaked key cannot spend the account's codes. What a code unlocks
+	// applies from the next request.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5315,15 +5323,13 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
-	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Creating an Atmee V2
+	//   avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+	//   v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
-	//   other account; contact us through Creator Studio's help center);
-	//   beyond that it needs V2 access, like v2.
+	//   `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+	//   up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -5379,15 +5385,13 @@ type ClientInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
-	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Creating an Atmee V2
+	//   avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+	//   v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
-	//   other account; contact us through Creator Studio's help center);
-	//   beyond that it needs V2 access, like v2.
+	//   `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+	//   up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -5604,7 +5608,10 @@ type ClientInterface interface {
 	// Responds `202` as soon as the worker acknowledged the start (`status:
 	// initializing`), typically within a second; the avatar's tracks appear in
 	// your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-	// until the worker is in the room instead. Billing runs by the minute while
+	// until the worker is in the room instead (your own room only: in an
+	// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+	// worker waits for your agent, which joins with the returned
+	// `agentToken`). Billing runs by the minute while
 	// the render lasts and stops when the worker reports the end (your agent
 	// left, the room closed, you removed the avatar participant), when you call
 	// `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -5640,9 +5647,9 @@ type ClientInterface interface {
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
-	// pool to start the render and up to 6 for the avatar to join. Use
-	// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-	// retry on `avatar_warming`.
+	// pool to start the render and up to 6 for the avatar to join. In your
+	// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+	// 7 minutes, or retry on `avatar_warming`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5667,7 +5674,10 @@ type ClientInterface interface {
 	// Responds `202` as soon as the worker acknowledged the start (`status:
 	// initializing`), typically within a second; the avatar's tracks appear in
 	// your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-	// until the worker is in the room instead. Billing runs by the minute while
+	// until the worker is in the room instead (your own room only: in an
+	// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+	// worker waits for your agent, which joins with the returned
+	// `agentToken`). Billing runs by the minute while
 	// the render lasts and stops when the worker reports the end (your agent
 	// left, the room closed, you removed the avatar participant), when you call
 	// `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -5703,9 +5713,9 @@ type ClientInterface interface {
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
-	// pool to start the render and up to 6 for the avatar to join. Use
-	// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-	// retry on `avatar_warming`.
+	// pool to start the render and up to 6 for the avatar to join. In your
+	// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+	// 7 minutes, or retry on `avatar_warming`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5856,11 +5866,16 @@ type ClientInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Not copied**: anything about sharing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, share card
-	//   (title, subtitle, tags, social links), Explore thumbnail,
-	//   statement, integrations or graph conductor; v2 takes and versions
-	//   are not copied either, the copy captures its own.
+	// - **Card**: the share card (title, subtitle, tags, social links) and a
+	//   custom Explore thumbnail are copied too, the thumbnail inside
+	//   storage, once the copy is made; an automatic thumbnail is not (the
+	//   copy gets its own). A part that can no longer be copied, such as a
+	//   thumbnail gone from storage, is left out without failing the
+	//   duplicate.
+	// - **Not copied**: anything about publishing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, statement,
+	//   integrations or graph conductor; v2 takes and versions are not
+	//   copied either, the copy captures its own.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -5919,11 +5934,16 @@ type ClientInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Not copied**: anything about sharing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, share card
-	//   (title, subtitle, tags, social links), Explore thumbnail,
-	//   statement, integrations or graph conductor; v2 takes and versions
-	//   are not copied either, the copy captures its own.
+	// - **Card**: the share card (title, subtitle, tags, social links) and a
+	//   custom Explore thumbnail are copied too, the thumbnail inside
+	//   storage, once the copy is made; an automatic thumbnail is not (the
+	//   copy gets its own). A part that can no longer be copied, such as a
+	//   thumbnail gone from storage, is left out without failing the
+	//   duplicate.
+	// - **Not copied**: anything about publishing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, statement,
+	//   integrations or graph conductor; v2 takes and versions are not
+	//   copied either, the copy captures its own.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -6295,8 +6315,8 @@ type ClientInterface interface {
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
 	// - **Access**: video clips are on every plan, Free included, and need
-	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
-	//   Pro and up, or an invite code below Pro). They spend credits
+	//   no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+	//   They spend credits
 	//   by length and size; any credits pay for them. An account whose video
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -6349,8 +6369,8 @@ type ClientInterface interface {
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
 	// - **Access**: video clips are on every plan, Free included, and need
-	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
-	//   Pro and up, or an invite code below Pro). They spend credits
+	//   no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+	//   They spend credits
 	//   by length and size; any credits pay for them. An account whose video
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -6868,9 +6888,11 @@ type ClientInterface interface {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build Atmee V2
-//     (Pro and up, or an invite code below Pro). Video clips are on
-//     every plan, Free included, and need no `v2Access`.
+//   - **v2**: `v2Access` says whether the account may create Atmee V2
+//     avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
+//     create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
+//     the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+//     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -6945,15 +6967,14 @@ func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEd
 
 // RedeemAccountCodeWithBody Redeem a code
 //
-// Redeems an invite or credit code for the account. A code can add
-// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Pro, an invite code
-// is what unlocks V2. Each account
-// redeems a code at most once.
+// Redeems a code for the account. A code can add credits, unlock
+// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+// the account has after it. Each account redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
-// so a leaked key cannot spend the account's codes. v2 access applies from
-// the next request.
+// so a leaked key cannot spend the account's codes. What a code unlocks
+// applies from the next request.
 //
 // Takes any type of body and a specified content type.
 //
@@ -6972,15 +6993,14 @@ func (c *Client) RedeemAccountCodeWithBody(ctx context.Context, contentType stri
 
 // RedeemAccountCode Redeem a code
 //
-// Redeems an invite or credit code for the account. A code can add
-// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Pro, an invite code
-// is what unlocks V2. Each account
-// redeems a code at most once.
+// Redeems a code for the account. A code can add credits, unlock
+// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+// the account has after it. Each account redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
-// so a leaked key cannot spend the account's codes. v2 access applies from
-// the next request.
+// so a leaked key cannot spend the account's codes. What a code unlocks
+// applies from the next request.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7320,15 +7340,13 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
-//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Creating an Atmee V2
+//     avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+//     v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
-//     other account; contact us through Creator Studio's help center);
-//     beyond that it needs V2 access, like v2.
+//     `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+//     up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -7394,15 +7412,13 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
-//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Creating an Atmee V2
+//     avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+//     v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
-//     other account; contact us through Creator Studio's help center);
-//     beyond that it needs V2 access, like v2.
+//     `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+//     up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -7699,7 +7715,10 @@ func (c *Client) ReplaceAvatarAppearance(ctx context.Context, avatarId AvatarIdP
 // Responds `202` as soon as the worker acknowledged the start (`status:
 // initializing`), typically within a second; the avatar's tracks appear in
 // your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-// until the worker is in the room instead. Billing runs by the minute while
+// until the worker is in the room instead (your own room only: in an
+// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+// worker waits for your agent, which joins with the returned
+// `agentToken`). Billing runs by the minute while
 // the render lasts and stops when the worker reports the end (your agent
 // left, the room closed, you removed the avatar participant), when you call
 // `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -7735,9 +7754,9 @@ func (c *Client) ReplaceAvatarAppearance(ctx context.Context, avatarId AvatarIdP
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
-// pool to start the render and up to 6 for the avatar to join. Use
-// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-// retry on `avatar_warming`.
+// pool to start the render and up to 6 for the avatar to join. In your
+// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+// 7 minutes, or retry on `avatar_warming`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7771,7 +7790,10 @@ func (c *Client) CreateAvatarSessionWithBody(ctx context.Context, avatarId Avata
 // Responds `202` as soon as the worker acknowledged the start (`status:
 // initializing`), typically within a second; the avatar's tracks appear in
 // your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-// until the worker is in the room instead. Billing runs by the minute while
+// until the worker is in the room instead (your own room only: in an
+// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+// worker waits for your agent, which joins with the returned
+// `agentToken`). Billing runs by the minute while
 // the render lasts and stops when the worker reports the end (your agent
 // left, the room closed, you removed the avatar participant), when you call
 // `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -7807,9 +7829,9 @@ func (c *Client) CreateAvatarSessionWithBody(ctx context.Context, avatarId Avata
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
-// pool to start the render and up to 6 for the avatar to join. Use
-// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-// retry on `avatar_warming`.
+// pool to start the render and up to 6 for the avatar to join. In your
+// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+// 7 minutes, or retry on `avatar_warming`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8039,11 +8061,16 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Not copied**: anything about sharing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, share card
-//     (title, subtitle, tags, social links), Explore thumbnail,
-//     statement, integrations or graph conductor; v2 takes and versions
-//     are not copied either, the copy captures its own.
+//   - **Card**: the share card (title, subtitle, tags, social links) and a
+//     custom Explore thumbnail are copied too, the thumbnail inside
+//     storage, once the copy is made; an automatic thumbnail is not (the
+//     copy gets its own). A part that can no longer be copied, such as a
+//     thumbnail gone from storage, is left out without failing the
+//     duplicate.
+//   - **Not copied**: anything about publishing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, statement,
+//     integrations or graph conductor; v2 takes and versions are not
+//     copied either, the copy captures its own.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -8112,11 +8139,16 @@ func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdP
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Not copied**: anything about sharing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, share card
-//     (title, subtitle, tags, social links), Explore thumbnail,
-//     statement, integrations or graph conductor; v2 takes and versions
-//     are not copied either, the copy captures its own.
+//   - **Card**: the share card (title, subtitle, tags, social links) and a
+//     custom Explore thumbnail are copied too, the thumbnail inside
+//     storage, once the copy is made; an automatic thumbnail is not (the
+//     copy gets its own). A part that can no longer be copied, such as a
+//     thumbnail gone from storage, is left out without failing the
+//     duplicate.
+//   - **Not copied**: anything about publishing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, statement,
+//     integrations or graph conductor; v2 takes and versions are not
+//     copied either, the copy captures its own.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -8698,8 +8730,8 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
 //   - **Access**: video clips are on every plan, Free included, and need
-//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
-//     Pro and up, or an invite code below Pro). They spend credits
+//     no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+//     They spend credits
 //     by length and size; any credits pay for them. An account whose video
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -8762,8 +8794,8 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
 //   - **Access**: video clips are on every plan, Free included, and need
-//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
-//     Pro and up, or an invite code below Pro). They spend credits
+//     no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+//     They spend credits
 //     by length and size; any credits pay for them. An account whose video
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -11667,9 +11699,11 @@ type ClientWithResponsesInterface interface {
 	//   (`pricing.generation`).
 	// - **Limits**: an absent limit or plan field is not set (an absent limit
 	//   is not capped by the plan).
-	// - **v2**: `v2Access` says whether the account may build Atmee V2
-	//   (Pro and up, or an invite code below Pro). Video clips are on
-	//   every plan, Free included, and need no `v2Access`.
+	// - **v2**: `v2Access` says whether the account may create Atmee V2
+	//   avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
+	//   create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
+	//   the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
 	//   monetizing an avatar needs.
@@ -11720,15 +11754,14 @@ type ClientWithResponsesInterface interface {
 
 	// RedeemAccountCodeWithBodyWithResponse Redeem a code
 	//
-	// Redeems an invite or credit code for the account. A code can add
-	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Pro, an invite code
-	// is what unlocks V2. Each account
-	// redeems a code at most once.
+	// Redeems a code for the account. A code can add credits, unlock
+	// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+	// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+	// the account has after it. Each account redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
-	// so a leaked key cannot spend the account's codes. v2 access applies from
-	// the next request.
+	// so a leaked key cannot spend the account's codes. What a code unlocks
+	// applies from the next request.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11737,15 +11770,14 @@ type ClientWithResponsesInterface interface {
 
 	// RedeemAccountCodeWithResponse Redeem a code
 	//
-	// Redeems an invite or credit code for the account. A code can add
-	// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-	// both, and the answer says what it gave. Below Pro, an invite code
-	// is what unlocks V2. Each account
-	// redeems a code at most once.
+	// Redeems a code for the account. A code can add credits, unlock
+	// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+	// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+	// the account has after it. Each account redeems a code at most once.
 	//
 	// Only a signed-in user may redeem: an API key gets `403 login_required`,
-	// so a leaked key cannot spend the account's codes. v2 access applies from
-	// the next request.
+	// so a leaked key cannot spend the account's codes. What a code unlocks
+	// applies from the next request.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -11979,15 +12011,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
-	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Creating an Atmee V2
+	//   avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+	//   v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
-	//   other account; contact us through Creator Studio's help center);
-	//   beyond that it needs V2 access, like v2.
+	//   `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+	//   up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -12043,15 +12073,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 	//   `seedPreviews.count` candidates and, with `seedSelection: auto`
-	//   (default), serves the first that completes. Building Atmee V2 needs
-	//   Atmee V2 access: Pro and up, or an invite code below Pro (`403
-	//   v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+	//   (default), serves the first that completes. Creating an Atmee V2
+	//   avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+	//   v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 	//   /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 	//   model, at 640 x 640 unless `resolution` names another of
-	//   `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-	//   customers on custom plans only (`403 v2_pro_not_in_plan` for any
-	//   other account; contact us through Creator Studio's help center);
-	//   beyond that it needs V2 access, like v2.
+	//   `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+	//   up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 	//   Where it is not offered, `engine: v2hd` is `503
 	//   engine_unavailable`. `v2pro`, V2 HD's former name, is still
 	//   accepted and read as `v2hd`.<!-- /v2pro -->
@@ -12274,7 +12302,10 @@ type ClientWithResponsesInterface interface {
 	// Responds `202` as soon as the worker acknowledged the start (`status:
 	// initializing`), typically within a second; the avatar's tracks appear in
 	// your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-	// until the worker is in the room instead. Billing runs by the minute while
+	// until the worker is in the room instead (your own room only: in an
+	// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+	// worker waits for your agent, which joins with the returned
+	// `agentToken`). Billing runs by the minute while
 	// the render lasts and stops when the worker reports the end (your agent
 	// left, the room closed, you removed the avatar participant), when you call
 	// `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -12310,9 +12341,9 @@ type ClientWithResponsesInterface interface {
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
-	// pool to start the render and up to 6 for the avatar to join. Use
-	// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-	// retry on `avatar_warming`.
+	// pool to start the render and up to 6 for the avatar to join. In your
+	// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+	// 7 minutes, or retry on `avatar_warming`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12337,7 +12368,10 @@ type ClientWithResponsesInterface interface {
 	// Responds `202` as soon as the worker acknowledged the start (`status:
 	// initializing`), typically within a second; the avatar's tracks appear in
 	// your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-	// until the worker is in the room instead. Billing runs by the minute while
+	// until the worker is in the room instead (your own room only: in an
+	// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+	// worker waits for your agent, which joins with the returned
+	// `agentToken`). Billing runs by the minute while
 	// the render lasts and stops when the worker reports the end (your agent
 	// left, the room closed, you removed the avatar participant), when you call
 	// `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -12373,9 +12407,9 @@ type ClientWithResponsesInterface interface {
 	// own configuration decides, there is nothing to set on the request. That
 	// pool scales to zero, so the first v2 session after a quiet period can
 	// take a few minutes to start: the service waits up to 4 minutes for the
-	// pool to start the render and up to 6 for the avatar to join. Use
-	// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-	// retry on `avatar_warming`.
+	// pool to start the render and up to 6 for the avatar to join. In your
+	// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+	// 7 minutes, or retry on `avatar_warming`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12532,11 +12566,16 @@ type ClientWithResponsesInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Not copied**: anything about sharing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, share card
-	//   (title, subtitle, tags, social links), Explore thumbnail,
-	//   statement, integrations or graph conductor; v2 takes and versions
-	//   are not copied either, the copy captures its own.
+	// - **Card**: the share card (title, subtitle, tags, social links) and a
+	//   custom Explore thumbnail are copied too, the thumbnail inside
+	//   storage, once the copy is made; an automatic thumbnail is not (the
+	//   copy gets its own). A part that can no longer be copied, such as a
+	//   thumbnail gone from storage, is left out without failing the
+	//   duplicate.
+	// - **Not copied**: anything about publishing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, statement,
+	//   integrations or graph conductor; v2 takes and versions are not
+	//   copied either, the copy captures its own.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -12595,11 +12634,16 @@ type ClientWithResponsesInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Not copied**: anything about sharing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, share card
-	//   (title, subtitle, tags, social links), Explore thumbnail,
-	//   statement, integrations or graph conductor; v2 takes and versions
-	//   are not copied either, the copy captures its own.
+	// - **Card**: the share card (title, subtitle, tags, social links) and a
+	//   custom Explore thumbnail are copied too, the thumbnail inside
+	//   storage, once the copy is made; an automatic thumbnail is not (the
+	//   copy gets its own). A part that can no longer be copied, such as a
+	//   thumbnail gone from storage, is left out without failing the
+	//   duplicate.
+	// - **Not copied**: anything about publishing or money. The copy is
+	//   `private`, not monetized, with no sponsor pool, statement,
+	//   integrations or graph conductor; v2 takes and versions are not
+	//   copied either, the copy captures its own.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -12983,8 +13027,8 @@ type ClientWithResponsesInterface interface {
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
 	// - **Access**: video clips are on every plan, Free included, and need
-	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
-	//   Pro and up, or an invite code below Pro). They spend credits
+	//   no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+	//   They spend credits
 	//   by length and size; any credits pay for them. An account whose video
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -13037,8 +13081,8 @@ type ClientWithResponsesInterface interface {
 	//   in `Location`), or retry this call with the same key after
 	//   `Retry-After` to get the clip, charged once.
 	// - **Access**: video clips are on every plan, Free included, and need
-	//   no Atmee V2 access or invite code (building Atmee V2 avatars needs
-	//   Pro and up, or an invite code below Pro). They spend credits
+	//   no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+	//   They spend credits
 	//   by length and size; any credits pay for them. An account whose video
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -14749,6 +14793,8 @@ type CreateAvatarSessionResponse struct {
 	JSON502 *ApiErrorResponse
 	// JSON503 the response for an HTTP 503 `application/json` response
 	JSON503 *ApiErrorResponse
+	// JSON504 the response for an HTTP 504 `application/json` response
+	JSON504 *ApiErrorResponse
 	// Headers503 the parsed response headers for an HTTP 503 response
 	Headers503 *CreateAvatarSessionResponse503Headers
 }
@@ -14791,6 +14837,11 @@ func (r CreateAvatarSessionResponse) GetJSON502() *ApiErrorResponse {
 // GetJSON503 returns the response for an HTTP 503 `application/json` response
 func (r CreateAvatarSessionResponse) GetJSON503() *ApiErrorResponse {
 	return r.JSON503
+}
+
+// GetJSON504 returns the response for an HTTP 504 `application/json` response
+func (r CreateAvatarSessionResponse) GetJSON504() *ApiErrorResponse {
+	return r.JSON504
 }
 
 // GetBody returns the raw response body bytes
@@ -16748,9 +16799,11 @@ func (r GetUploadResponse) ContentType() string {
 //     (`pricing.generation`).
 //   - **Limits**: an absent limit or plan field is not set (an absent limit
 //     is not capped by the plan).
-//   - **v2**: `v2Access` says whether the account may build Atmee V2
-//     (Pro and up, or an invite code below Pro). Video clips are on
-//     every plan, Free included, and need no `v2Access`.
+//   - **v2**: `v2Access` says whether the account may create Atmee V2
+//     avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
+//     create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
+//     the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+//     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
 //     monetizing an avatar needs.
@@ -16819,15 +16872,14 @@ func (c *ClientWithResponses) GetAccountEarningsWithResponse(ctx context.Context
 
 // RedeemAccountCodeWithBodyWithResponse Redeem a code
 //
-// Redeems an invite or credit code for the account. A code can add
-// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Pro, an invite code
-// is what unlocks V2. Each account
-// redeems a code at most once.
+// Redeems a code for the account. A code can add credits, unlock
+// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+// the account has after it. Each account redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
-// so a leaked key cannot spend the account's codes. v2 access applies from
-// the next request.
+// so a leaked key cannot spend the account's codes. What a code unlocks
+// applies from the next request.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -16842,15 +16894,14 @@ func (c *ClientWithResponses) RedeemAccountCodeWithBodyWithResponse(ctx context.
 
 // RedeemAccountCodeWithResponse Redeem a code
 //
-// Redeems an invite or credit code for the account. A code can add
-// credits, unlock Atmee V2 (see `v2Access` on `GET /v1/account`), or
-// both, and the answer says what it gave. Below Pro, an invite code
-// is what unlocks V2. Each account
-// redeems a code at most once.
+// Redeems a code for the account. A code can add credits, unlock
+// Atmee V2 (`v2Access` on `GET /v1/account`)<!-- v2pro --> or V2 HD
+// (`limits.v2Pro`)<!-- /v2pro -->, or both, and the answer says what
+// the account has after it. Each account redeems a code at most once.
 //
 // Only a signed-in user may redeem: an API key gets `403 login_required`,
-// so a leaked key cannot spend the account's codes. v2 access applies from
-// the next request.
+// so a leaked key cannot spend the account's codes. What a code unlocks
+// applies from the next request.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17156,15 +17207,13 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
-//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Creating an Atmee V2
+//     avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+//     v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
-//     other account; contact us through Creator Studio's help center);
-//     beyond that it needs V2 access, like v2.
+//     `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+//     up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -17226,15 +17275,13 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //
 //   - **Engine**: `engine` is `v1` (default) or `v2`. A v2 create captures
 //     `seedPreviews.count` candidates and, with `seedSelection: auto`
-//     (default), serves the first that completes. Building Atmee V2 needs
-//     Atmee V2 access: Pro and up, or an invite code below Pro (`403
-//     v2_access_required` without it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
+//     (default), serves the first that completes. Creating an Atmee V2
+//     avatar needs Pro and up (`v2Access` on `GET /v1/account`; `403
+//     v2_access_required` below it). Building spends no credits.<!-- v2pro --> `v2hd` (Atmee V2 HD, where `GET
 //     /v1/account` reports `limits.v2Pro`) builds the same way on a larger
 //     model, at 640 x 640 unless `resolution` names another of
-//     `limits.v2ProResolutions`. New V2 HD avatars are for Enterprise
-//     customers on custom plans only (`403 v2_pro_not_in_plan` for any
-//     other account; contact us through Creator Studio's help center);
-//     beyond that it needs V2 access, like v2.
+//     `limits.v2ProResolutions`. Creating a V2 HD avatar needs Growth and
+//     up (`limits.v2Pro`; `403 v2hd_access_required` below it).
 //     Where it is not offered, `engine: v2hd` is `503
 //     engine_unavailable`. `v2pro`, V2 HD's former name, is still
 //     accepted and read as `v2hd`.<!-- /v2pro -->
@@ -17505,7 +17552,10 @@ func (c *ClientWithResponses) ReplaceAvatarAppearanceWithResponse(ctx context.Co
 // Responds `202` as soon as the worker acknowledged the start (`status:
 // initializing`), typically within a second; the avatar's tracks appear in
 // your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-// until the worker is in the room instead. Billing runs by the minute while
+// until the worker is in the room instead (your own room only: in an
+// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+// worker waits for your agent, which joins with the returned
+// `agentToken`). Billing runs by the minute while
 // the render lasts and stops when the worker reports the end (your agent
 // left, the room closed, you removed the avatar participant), when you call
 // `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -17541,9 +17591,9 @@ func (c *ClientWithResponses) ReplaceAvatarAppearanceWithResponse(ctx context.Co
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
-// pool to start the render and up to 6 for the avatar to join. Use
-// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-// retry on `avatar_warming`.
+// pool to start the render and up to 6 for the avatar to join. In your
+// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+// 7 minutes, or retry on `avatar_warming`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17574,7 +17624,10 @@ func (c *ClientWithResponses) CreateAvatarSessionWithBodyWithResponse(ctx contex
 // Responds `202` as soon as the worker acknowledged the start (`status:
 // initializing`), typically within a second; the avatar's tracks appear in
 // your room a few seconds later. Pass `?waitFor=avatar_joined` to block
-// until the worker is in the room instead. Billing runs by the minute while
+// until the worker is in the room instead (your own room only: in an
+// Atmee-hosted room it is refused with `400 wait_for_unsupported`, as the
+// worker waits for your agent, which joins with the returned
+// `agentToken`). Billing runs by the minute while
 // the render lasts and stops when the worker reports the end (your agent
 // left, the room closed, you removed the avatar participant), when you call
 // `POST /v1/avatar_sessions/{id}/end`, or at `maxDurationSeconds`.
@@ -17610,9 +17663,9 @@ func (c *ClientWithResponses) CreateAvatarSessionWithBodyWithResponse(ctx contex
 // own configuration decides, there is nothing to set on the request. That
 // pool scales to zero, so the first v2 session after a quiet period can
 // take a few minutes to start: the service waits up to 4 minutes for the
-// pool to start the render and up to 6 for the avatar to join. Use
-// `?waitFor=avatar_joined` with a client timeout of at least 7 minutes, or
-// retry on `avatar_warming`.
+// pool to start the render and up to 6 for the avatar to join. In your
+// own room, use `?waitFor=avatar_joined` with a client timeout of at least
+// 7 minutes, or retry on `avatar_warming`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17816,11 +17869,16 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Not copied**: anything about sharing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, share card
-//     (title, subtitle, tags, social links), Explore thumbnail,
-//     statement, integrations or graph conductor; v2 takes and versions
-//     are not copied either, the copy captures its own.
+//   - **Card**: the share card (title, subtitle, tags, social links) and a
+//     custom Explore thumbnail are copied too, the thumbnail inside
+//     storage, once the copy is made; an automatic thumbnail is not (the
+//     copy gets its own). A part that can no longer be copied, such as a
+//     thumbnail gone from storage, is left out without failing the
+//     duplicate.
+//   - **Not copied**: anything about publishing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, statement,
+//     integrations or graph conductor; v2 takes and versions are not
+//     copied either, the copy captures its own.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -17885,11 +17943,16 @@ func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Co
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Not copied**: anything about sharing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, share card
-//     (title, subtitle, tags, social links), Explore thumbnail,
-//     statement, integrations or graph conductor; v2 takes and versions
-//     are not copied either, the copy captures its own.
+//   - **Card**: the share card (title, subtitle, tags, social links) and a
+//     custom Explore thumbnail are copied too, the thumbnail inside
+//     storage, once the copy is made; an automatic thumbnail is not (the
+//     copy gets its own). A part that can no longer be copied, such as a
+//     thumbnail gone from storage, is left out without failing the
+//     duplicate.
+//   - **Not copied**: anything about publishing or money. The copy is
+//     `private`, not monetized, with no sponsor pool, statement,
+//     integrations or graph conductor; v2 takes and versions are not
+//     copied either, the copy captures its own.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -18399,8 +18462,8 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
 //   - **Access**: video clips are on every plan, Free included, and need
-//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
-//     Pro and up, or an invite code below Pro). They spend credits
+//     no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+//     They spend credits
 //     by length and size; any credits pay for them. An account whose video
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -18459,8 +18522,8 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     in `Location`), or retry this call with the same key after
 //     `Retry-After` to get the clip, charged once.
 //   - **Access**: video clips are on every plan, Free included, and need
-//     no Atmee V2 access or invite code (building Atmee V2 avatars needs
-//     Pro and up, or an invite code below Pro). They spend credits
+//     no Atmee V2 access (creating Atmee V2 avatars needs Pro and up).
+//     They spend credits
 //     by length and size; any credits pay for them. An account whose video
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
@@ -20175,6 +20238,13 @@ func ParseCreateAvatarSessionResponse(rsp *http.Response) (*CreateAvatarSessionR
 			return nil, err
 		}
 		response.JSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 504:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON504 = &dest
 
 	}
 

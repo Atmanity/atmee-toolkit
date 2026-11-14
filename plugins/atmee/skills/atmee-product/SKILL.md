@@ -31,7 +31,7 @@ when one is given (silent without), with no avatar needed (a teaser, a social
 post, an ad, a product demo). Whenever someone asks what Atmee can do, or
 wants a video rather than a conversation, say that it makes clips too;
 `create-avatar` makes them. Clips are on every plan, Free included, with
-no Atmee V2 access or invite code needed; a server offers them only when
+no Atmee V2 access needed; a server offers them only when
 `get_account`'s `pricing.generation` has a clip price.
 
 The company was called Atmanity, and the name stays in infrastructure: the
@@ -43,7 +43,7 @@ and some ids. In anything a person reads, say Atmee.
 | Surface | For | What happens there | Where |
 |---|---|---|---|
 | **atmee.ai** | people who talk to avatars | explore avatars, visit creators' profiles, talk to an avatar from its share link | `https://www.atmee.ai` |
-| **Atmee Studio** | creators, no code | make and edit v1 avatars, set visibility, share, analytics, API keys (Studio → API & Embeds), plans, top-ups, sponsoring and earnings (Studio → Billing) | `https://www.atmee.ai/studio`, signed in |
+| **Atmee Studio** | creators, no code | make and edit avatars (Atmee V1 on any plan, V2 on Pro and up, V2 HD on Growth and up), set visibility, share, analytics, API keys (Studio → API & Embeds), plans, top-ups, sponsoring and earnings (Studio → Billing) | `https://www.atmee.ai/studio`, signed in |
 | **Avatar API** | developers | put an avatar in their own product: start conversations from their backend, create and manage avatars and keys | docs `https://www.atmee.ai/docs/api` |
 | **Agent tooling** | anyone working through an agent | the skills `create-avatar`, `plan-avatar-app`, `build-avatar-app`, `atmee-setup` and this one, the avatars server (with generation), the `atmee` CLI | the atmee plugin |
 
@@ -89,41 +89,36 @@ always its chat page: never start a session for it (`start_session`,
   files. It speaks one language; a session can ask for another.
 - **Two engines.** v1 animates a talking head from one portrait: sharp and
   cheaper. v2 adds emotion,
-  expression and motion. Anyone can talk to any avatar (V1, V2 or V2 HD),
+  expression and motion. Anyone can talk to any avatar (V2 HD, V2 or V1),
   and one kind of credit pays for every model at its rate. Video clips are
   on every plan, Free included (credits pay for them). **Building
-  Atmee V2** needs Pro and up; below Pro, an invite code
-  unlocks it (the agent redeems it with `redeem_code`, `atmee redeem CODE`
-  in a terminal, or Creator Studio's Billing page), or an email invite does
-  (waitlist: `https://www.atmee.ai/v2signup`). Building spends no credits.
+  Atmee V2** needs Pro and up (Free, Starter and older plans make V1).
+  Building spends no credits.
   `get_account`'s `v2Access` says whether the account may build V2.
-  Creating **Atmee V2 HD** is for Enterprise customers. A v2 avatar is captured several times;
+  Creating **Atmee V2 HD** needs Growth and up. Existing V2 and V2 HD
+  avatars keep working, and stay editable, on any plan. A v2 avatar is captured several times;
   each capture is a **seed** (the server says candidate or take, and the
   API's `seed` field is an informational number, not the clip) and the
   creator picks the one that serves. Studio, the Avatar API and the agent
   tooling (`create-avatar`) build v2 for an account that can, and v1 for
   any account. Agents go to v2 by default: without Atmee V2 on the account
-  they suggest Pro and up or ask for an invite code first, and make v1
-  only if there is neither and the creator agrees.
+  they say it needs Pro and up and offer the upgrade to Pro or v1, and make
+  v1 only if the creator agrees.
 - **Atmee V2 HD** (engine `v2hd`) is a larger v2 model on its own GPUs, at
   larger frames (640×640 by default; `limits.v2ProResolutions` lists the
-  others), for Enterprise customers on custom plans. Agents never create a
-  new V2 HD avatar for any account, whatever `get_account` reports:
-  the `pricing.*V2Hd*` fields are present for
-  every account, so they don't mean the user may have it, and `limits.v2Pro`
-  is true only for an account allowed to create V2 HD. Never quote a V2 HD
-  price, or name a plan, an upgrade or an invite code as the way to it. When
-  someone asks for it, say it is for Enterprise customers on custom plans,
-  send them to contact us through the Studio help center (the origin of
-  `get_account` `links.billing` plus `/studio/help-center`; with no `links`,
-  name the Studio help center without a link, never a made-up address), and
-  offer Atmee V2. Existing V2 HD avatars keep working: they build, pick seeds
-  and serve exactly like v2, through the same tools and sessions.
+  others), at its own per-minute rates (`pricing.*V2Hd*`). Creating one is
+  for Growth and up (Growth, Scale and custom plans; Pro makes Atmee V2,
+  not V2 HD): `get_account` `limits.v2Pro` says
+  whether this account may. When someone asks for it, `limits.v2Pro` is
+  true and `v2Access` is `granted`, it can be made (`create-avatar`); below Growth, say V2 HD
+  needs Growth and up, and offer the upgrade to Growth (`get_account`
+  `links.billing`) or Atmee V2. Existing V2 HD avatars keep working: they build, pick seeds and
+  serve exactly like v2, through the same tools and sessions.
 - **`/v1` in a path is the API version, not the engine.** Every endpoint
   starts with `/v1` (`POST /v1/sessions`, `/v1/avatars`), and v1 and v2
   avatars use the same ones. Never infer an avatar's engine from a path or
   call a `/v1` endpoint "the v1 API"; read `engine` on the avatar. To a
-  person, name the engines Atmee V1, Atmee V2 and Atmee V2 HD.
+  person, name the engines Atmee V2 HD, Atmee V2 and Atmee V1.
 - **Visibility:** private, unlisted (anyone with the link) or public (listed
   on atmee.ai). Through the API an avatar starts private or unlisted and
   goes public by an update once it is ready.
@@ -157,7 +152,7 @@ last column.
 
 | They want | Path | Then |
 |---|---|---|
-| An avatar people can talk to: themselves, a brand, a character | Studio for a v1 avatar on atmee.ai; for v2 (early access), the avatars server | Studio needs no agent; `create-avatar` for v2 |
+| An avatar people can talk to: themselves, a brand, a character | Studio on atmee.ai, or the avatars server; Atmee V1 on any plan, Atmee V2 on Pro and up, Atmee V2 HD on Growth and up | Studio needs no agent; `create-avatar` with an agent |
 | A talking avatar in their website or app, with Atmee running the conversation | **Session API**: their backend starts the session, their page joins the LiveKit room (there is no embeddable widget) | `build-avatar-app` |
 | The avatar to act on their app: turn a slide, look up an order, keep score | Session API with **app tools** | `build-avatar-app` |
 | A conversation with steps: an interview, a lesson, an onboarding | Session API with an **agenda** | `build-avatar-app` |

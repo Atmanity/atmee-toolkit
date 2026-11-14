@@ -238,11 +238,11 @@ func TestGenerateClip(t *testing.T) {
 }
 
 // Clips are on every plan: a clip an older server refuses for Atmee V2
-// access gets no upgrade or invite hint.
+// access gets no upgrade hint.
 func TestGenerateClipV2AccessRefusalIsNeutral(t *testing.T) {
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		_, _ = io.WriteString(w, `{"error":"v2_access_required","message":"invite only"}`)
+		_, _ = io.WriteString(w, `{"error":"v2_access_required","message":"no V2"}`)
 	})
 	_, errOut, code := run(t, "", "generate", "clip", "--image", "https://x.example/a.png", "--prompt", "waves")
 	if code == 0 || !strings.Contains(errOut, "v2_access_required") || !strings.Contains(errOut, "on every plan") {
@@ -346,7 +346,7 @@ func TestGenerateClipNotInPlan(t *testing.T) {
 }
 
 // A clip an older server refuses for its Atmee V2 credits gets no upgrade
-// or invite hint either.
+// hint either.
 func TestGenerateClipInsufficientV2Credits(t *testing.T) {
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

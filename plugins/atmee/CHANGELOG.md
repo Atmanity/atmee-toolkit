@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.10.16 (2026-11-14)
+
+
+### Features
+
+* **atmee:** Atmee V2 on Pro and up, V2 HD on Growth and up, no invite-code steps
+* **atmee:** open Atmee V2 HD to Pro and up, or an invite code
+
+
+### Documentation
+
+* **skills:** Studio builds V2 and V2 HD by plan, not early access
+
 ## 0.10.15 (2026-11-11)
 
 

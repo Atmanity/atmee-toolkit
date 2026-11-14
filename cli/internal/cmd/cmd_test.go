@@ -611,11 +611,12 @@ func TestV2ProSizeOnV2IsCommandAware(t *testing.T) {
 	t.Setenv("ATMEE_BASE_URL", srv.URL)
 	_, errOut, code := run(t, "", "avatars", "update", id, "--resolution", "640x640")
 	if code != 2 || sent != 0 || !strings.Contains(errOut, "engine can't change") || !strings.Contains(errOut, "pick a v2 size") ||
-		strings.Contains(errOut, "V2 HD is Enterprise-only") {
+		!strings.Contains(errOut, "duplicate --engine v2hd") || strings.Contains(errOut, "Enterprise") {
 		t.Fatalf("update: %d %s", code, errOut)
 	}
 	_, errOut, code = run(t, "", "avatars", "create", "--name", "M", "--resolution", "640x640")
-	if code != 2 || sent != 0 || !strings.Contains(errOut, "V2 HD is Enterprise-only") || strings.Contains(errOut, "can't change") {
+	if code != 2 || sent != 0 || !strings.Contains(errOut, "make one with --engine v2hd (Growth and up") || strings.Contains(errOut, "can't change") ||
+		strings.Contains(errOut, "Enterprise") {
 		t.Fatalf("create: %d %s", code, errOut)
 	}
 }
@@ -684,7 +685,7 @@ func TestV2ProEngine(t *testing.T) {
 		{[]string{"avatars", "update", id, "--resolution", "512x512"}, "not a V2 HD size on this server; offered: 640x640, 864x480"},
 		{[]string{"avatars", "update", id, "--resolution", "896x480"}, "V2 HD frames are at most"},
 		{[]string{"avatars", "create", "--name", "M", "--engine", "v2pro", "--resolution", "512x512"}, "not a V2 HD size"},
-		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "V2 HD is Enterprise-only"},
+		{[]string{"avatars", "create", "--name", "M", "--engine", "v2", "--resolution", "640x640"}, "make one with --engine v2hd"},
 	} {
 		if _, errOut, code := run(t, "", c.args...); code == 0 || len(got) != 2 || !strings.Contains(errOut, c.want) {
 			t.Errorf("%v: %d %q, sent %v", c.args, code, errOut, got)
@@ -692,15 +693,23 @@ func TestV2ProEngine(t *testing.T) {
 	}
 }
 
-// The V2 HD refusals say what to do.
+// The V2 and V2 HD refusals say what to do: V2 needs Pro and up, V2 HD
+// Growth and up; never an invite code.
 func TestV2ProRefusalHints(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
 	for body, want := range map[string]string{
-		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Pro and up); upgrade the plan, or use engine v2"}`: "for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
-		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`:                                "a V2 HD line only where V2 HD is offered",
-		`403 {"error":"v2_access_required","message":"invite only"}`:                                                                                "`atmee redeem CODE`",
-		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`:                                                "upgrade to Pro and up",
+		// v2hd_access_required, and v2_pro_not_in_plan from an older server.
+		`403 {"error":"v2hd_access_required","message":"no V2 HD"}`:                                                                                 "this account can't build Atmee V2 HD (Atmee V2 HD needs Growth and up): upgrade to Growth and up, or use --engine v2",
+		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Pro and up); upgrade the plan, or use engine v2"}`: "this account can't build Atmee V2 HD (Atmee V2 HD needs Growth and up): upgrade to Growth and up, or use --engine v2",
+		// A current server's message already says it all: nothing is added.
+		`403 {"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`:                                     "Error: 403 v2hd_access_required: " + v2HDAccessMsg + "\n",
+		`403 {"error":"v2_access_required","message":"` + v2AccessMsg + `"}`:                                         "Error: 403 v2_access_required: " + v2AccessMsg + "\n",
+		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`: "a V2 HD line only where V2 HD is offered",
+		// An older server's message points to invite codes: the CLI's hint is added.
+		`403 {"error":"v2_access_required","message":"Atmee V2 isn't unlocked on this account yet: upgrade to Pro and up, or redeem an invite code in Studio (Billing), or use engine v1 (Atmee V1)"}`: "this account can't build Atmee V2 (Atmee V2 needs Pro and up): upgrade to Pro and up",
+		`403 {"error":"v2_access_required","message":"no V2"}`:                                       "this account can't build Atmee V2 (Atmee V2 needs Pro and up): upgrade to Pro and up",
+		`402 {"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`: "upgrade to Pro and up",
 	} {
 		status, payload, _ := strings.Cut(body, " ")
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -715,7 +724,8 @@ func TestV2ProRefusalHints(t *testing.T) {
 		t.Setenv("ATMEE_BASE_URL", srv.URL)
 		_, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", "v2pro", "--image", "https://x.example/a.png",
 			"--voice", "https://x.example/a.m4a")
-		if code == 0 || !strings.Contains(errOut, want) {
+		// No output mentions a code, even when an older server's message did.
+		if code == 0 || !strings.Contains(errOut, want) || strings.Contains(errOut, "invite") || strings.Contains(errOut, "redeem") {
 			t.Errorf("%s: %d %s", status, code, errOut)
 		}
 		// A command without --engine (an update, a capture) never
@@ -726,6 +736,42 @@ func TestV2ProRefusalHints(t *testing.T) {
 			strings.Contains(errOut, "--engine") {
 			t.Errorf("update, %s: %d %s", status, code, errOut)
 		}
+	}
+}
+
+// The current server's V2 and V2 HD refusals already say what to do: the
+// CLI adds nothing.
+// v2HDAccessMsg is the V2 HD refusal's message, v2AccessMsg the V2 one's.
+const v2HDAccessMsg = "Atmee V2 HD needs Growth and up: upgrade to Growth, or use engine v2 (Atmee V2). Existing V2 HD avatars keep working."
+
+const v2AccessMsg = "Atmee V2 needs Pro and up: upgrade to Pro, or use engine v1 (Atmee V1). Existing V2 avatars keep working."
+
+func TestV2ProRefusalNoRepeat(t *testing.T) {
+	for refusal, c := range map[string]struct{ msg, engine, plan string }{
+		"v2hd_access_required": {v2HDAccessMsg, "v2hd", "Growth and up"},
+		"v2_access_required":   {v2AccessMsg, "v2", "Pro and up"},
+	} {
+		t.Run(refusal, func(t *testing.T) { testV2ProRefusalNoRepeat(t, refusal, c.msg, c.engine, c.plan) })
+	}
+}
+
+func testV2ProRefusalNoRepeat(t *testing.T, refusal, msg, engine, plan string) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = io.WriteString(w, `{"error":"`+refusal+`","message":"`+msg+`"}`)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	_, errOut, code := run(t, "", "avatars", "create", "--name", "M", "--engine", engine, "--image", "https://x.example/a.png",
+		"--voice", "https://x.example/a.m4a")
+	if code == 0 || strings.Count(errOut, plan) != 1 || strings.Contains(errOut, "redeem") {
+		t.Errorf("%d %s", code, errOut)
 	}
 }
 
@@ -884,7 +930,7 @@ func TestHabitFlag(t *testing.T) {
 // v2 (no Atmee V2 access, or a v2 create refused for the account), and says
 // so; an account with access gets v2. Against an older server that still
 // reports v2SpendableMicrocredits, a positive figure lets an account without
-// an invite build v2; a chosen engine is sent as is.
+// V2 access build v2; a chosen engine is sent as is.
 func TestCreateEngineFollowsV2Access(t *testing.T) {
 	isolate(t)
 	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
@@ -899,10 +945,10 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		fails  string // the error, "" when the create succeeds
 		posts  int    // creates sent, 0 for 1
 	}{
-		{access: "invite_required", want: "", note: "can't build Atmee V2 yet"},             // v1, the API's default, is not sent
-		{access: "invite_required", v2: "500", want: "v2"},                                  // an older server's positive V2 balance still lets it build
-		{access: "invite_required", v2: "0", want: "", note: "upgrade to Pro and up"},       // and none usable does not
-		{access: "invite_required", v2: "fail", want: "", note: "can't build Atmee V2 yet"}, // an unreadable balance: access decides
+		{access: "invite_required", want: "", note: "Atmee V2 needs Pro and up"},             // v1, the API's default, is not sent
+		{access: "invite_required", v2: "500", want: "v2"},                                   // an older server's positive V2 balance still lets it build
+		{access: "invite_required", v2: "0", want: "", note: "upgrade to Pro and up"},        // and none usable does not
+		{access: "invite_required", v2: "fail", want: "", note: "Atmee V2 needs Pro and up"}, // an unreadable balance: access decides
 		{access: "unavailable", want: "", note: "not offered on this server"},
 		{access: "invite_required", args: []string{"--seed-selection", "manual"}, fails: "drop them to make a v1 avatar"},
 		{access: "unavailable", args: []string{"--resolution", "384x640"}, fails: "drop them to make a v1 avatar"},
@@ -911,7 +957,7 @@ func TestCreateEngineFollowsV2Access(t *testing.T) {
 		{access: "granted", v2: "0", want: "v2"},
 		{access: "invite_required", args: []string{"--engine", "v2"}, want: "v2"},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no Atmee V2"}`, want: "", note: "insufficient_v2_credits", posts: 2},
-		{access: "granted", refuse: `403 {"error":"v2_access_required","message":"invite only"}`, want: "", note: "v2_access_required", posts: 2},
+		{access: "granted", refuse: `403 {"error":"v2_access_required","message":"no V2"}`, want: "", note: "v2_access_required", posts: 2},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--engine", "v2"}, fails: "upgrade to Pro and up", posts: 1},
 		{access: "granted", refuse: `402 {"error":"insufficient_v2_credits","message":"no"}`, args: []string{"--resolution", "512x512"}, fails: "or use --engine v1", posts: 1},
 	} {
@@ -996,4 +1042,26 @@ func ok(t *testing.T, args ...string) string {
 		t.Fatalf("atmee %s: exit %d\n%s%s", strings.Join(args, " "), code, out, errOut)
 	}
 	return out
+}
+
+// An older server refusing a clip for Atmee V2 access with invite-code
+// wording: the CLI keeps the status and code and never shows the invite step.
+func TestClipRefusalFromOlderServerDropsInviteText(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{}`))
+			return
+		}
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"v2_access_required","message":"Atmee V2 isn't unlocked on this account yet: upgrade to Pro and up, or redeem an invite code in Studio (Billing)"}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	_, errOut, code := run(t, "", "generate", "clip", "--image", "https://x.example/a.png", "--prompt", "waves")
+	if code == 0 || !strings.Contains(errOut, "v2_access_required") || !strings.Contains(errOut, "video clips are on every plan") ||
+		strings.Contains(errOut, "invite") || strings.Contains(errOut, "redeem") {
+		t.Errorf("%d %s", code, errOut)
+	}
 }

@@ -181,10 +181,28 @@ shows the fields. `livekit-plugins-atmee` wraps this for LiveKit Agents:
 from 0.2.0 it renders v1 and v2 avatars (`avatar_version="v2"` for a v2
 one). It does not take V2 HD: for a V2 HD avatar, call the route directly.
 A render-only
-session with an existing Atmee V2 HD avatar (engine `v2hd`) is the same
-call and the same fields, at its own V2 HD rate (Enterprise: quote no figure);
+session with an Atmee V2 HD avatar (engine `v2hd`) is the same
+call and the same fields, at its own V2 HD rate
+(`pricing.renderV2HdPerMinuteMicrocredits`);
 its video comes at the avatar's own size (640×640 unless it was given
 another).
+
+### Avatar-only tips
+
+Pass these on to the developer when they pick Avatar-only:
+
+- **Use the avatar's own voice.** An Atmee V2 or V2 HD avatar learns its
+  mouth movement from the voice it was built with, so lip sync is best when
+  their agent speaks with that voice (for example a clone of the uploaded
+  voice sample), and worse the further the voice is from it: a different
+  gender, pitch, speaking pace or language shows most. To switch voices,
+  replace the avatar's voice so it is rebuilt with the new one, rather than
+  feeding a different voice into the same avatar.
+- **Response time is their stack's.** The avatar starts speaking as soon as
+  their agent's audio arrives, so how fast it answers is up to their speech,
+  model and voice. Use streaming text-to-speech and a fast, non-reasoning
+  model: a reasoning model, or text-to-speech that returns whole clips, adds
+  seconds before the avatar talks.
 
 ## Speech sessions
 

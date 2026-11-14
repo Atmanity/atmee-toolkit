@@ -119,7 +119,7 @@ func TestListUsageErrors(t *testing.T) {
 	}{
 		{[]string{"--sort", "popular"}, "--sort takes created, updated, name, users, avgChat or totalChat"},
 		{[]string{"--order", "up"}, "--order takes asc or desc"},
-		{[]string{"--engine", "v3"}, "--engine takes one or more of v1, v2, v2hd"},
+		{[]string{"--engine", "v3"}, "--engine takes one or more of v2hd, v2, v1"},
 		{[]string{"--visibility", "public,secret"}, "--visibility takes one or more of public, unlisted, private"},
 		{[]string{"--sponsored", "yes"}, "--sponsored takes true or false"},
 		{[]string{"--offset", "-1"}, "--offset takes 0 or more"},

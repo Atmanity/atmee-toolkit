@@ -16,17 +16,18 @@ avatars server with:
 
 - **`engine`:** the one any paid portrait was made for (the
   credits-and-generation reference, The engine a portrait is for), normally
-  `v2`, never `v2hd` (Atmee V2 HD is for Enterprise customers: Model, below). Use
+  `v2`, or `v2hd` when the creator asked for V2 HD and the account may
+  create it (Model, below). Use
   v1 only if the creator asks, or when the account
-  can't build v2. Building Atmee V2 needs Pro and up; below Pro, an invite code unlocks it. The
+  can't build v2. Building Atmee V2 needs Pro and up. The
   account can build v2 when `get_account`'s `v2Access` is `granted`. On an
   older server whose `get_balance` still reports `v2SpendableMicrocredits`,
   also when that figure is above 0 (that server decides by credits; without
   the figure, access alone decides). Otherwise (or when a
-  v2 call answers `v2_access_required` or `insufficient_v2_credits`) ask the
-  creator for an invite code and redeem it with `redeem_code`,
-  or suggest Pro and up. Make v2 only once that holds; make v1 only if
-  they have neither and agree.
+  v2 call answers `v2_access_required` or `insufficient_v2_credits`) say
+  Atmee V2 needs Pro and up, and offer the upgrade to Pro (`get_account`
+  `links.billing`) or Atmee V1. Make v2 only once that holds; make v1 only
+  if they agree.
 - **`seedSelection`:** `auto`. The first seed that finishes goes live, so
   the avatar is ready without anyone choosing.
 - **`seedPreviews`:** `{"count": 1}`.
@@ -50,8 +51,7 @@ avatars server with:
   it does. The portrait is cropped to that shape at its centre, so
   check the face against it. A later change on `update_avatar` makes new
   seeds, like a new portrait. v1 refuses it: leave it out of a v1 create,
-  and tell the creator the video stays square. An existing V2 HD avatar
-  (one this skill continues, never a new one) has its own sizes: leave it out for 640×640 (square), or pick one of
+  and tell the creator the video stays square. A V2 HD avatar has its own sizes: leave it out for 640×640 (square), or pick one of
   `limits.v2ProResolutions`, the only list to trust (for example a tall
   `{width: 480, height: 864}` or a wide `{width: 864, height: 480}`, if it
   lists them); the v2 sizes (512×512, 672×384,
@@ -59,28 +59,36 @@ avatars server with:
 
 ### Model
 
-Name the models Atmee V1, Atmee V2 and Atmee V2 HD to the creator; the API's
-`engine` is `v1`, `v2` and `v2hd`. This skill makes Atmee V2, and V1 only as
-above. There is no model question.
+Name the models Atmee V2 HD, Atmee V2 and Atmee V1 to the creator; the API's
+`engine` is `v2hd`, `v2` and `v1`. This skill makes Atmee V2, V2 HD when
+the creator asks for it, and V1 only as above. There is no
+model question.
 
 - **Atmee V2** is the default, and what this skill makes.
 - **Atmee V1** is the older model, for an account without Atmee V2.
 - **Atmee V2 HD** is a larger V2 model on its own GPUs, at larger frames
-  (640×640 by default), for Enterprise customers on custom plans. This skill
-  never makes one for any account: no `engine: v2hd` (or `v2pro`) on a new
-  avatar or its portraits, whatever `get_account` reports. The `pricing.*V2Hd*` fields are
-  present for every account, so they don't mean the creator may have it; never
-  quote those prices. `limits.v2Pro` is true only for an account allowed to
-  create V2 HD.
+  (640×640 by default), for Growth and up (Growth, Scale and custom
+  plans).
+  `get_account` `limits.v2Pro` says whether this account may create one. Its sessions bill at its own
+  rates, the `pricing.*V2Hd*` fields (for example
+  `sessionV2HdPerMinuteMicrocredits`, in hundredths of a credit).
 
-When the creator asks for V2 HD, the HD model or the best model: say Atmee
-V2 HD is for Enterprise customers on custom plans, and that they can contact
-us through the Studio help center. Its link is the origin of
-`get_account` `links.billing` plus `/studio/help-center` (for
-`https://www.atmee.ai/studio/billing`, `https://www.atmee.ai/studio/help-center`);
-when `get_account` has no `links`, name the Studio help center without a link
-and never make one up. Then offer Atmee V2 instead. Never name a plan, an
-upgrade or an invite code as the way to V2 HD.
+When the creator asks for V2 HD, the HD model or the best model:
+
+- **`limits.v2Pro` true and `v2Access` `granted`:** make it V2 HD
+  (`engine: v2hd` on the create and
+  on any paid portrait call for it). Say once that its sessions cost its
+  own rate, from `pricing.*V2Hd*`, beside Atmee V2's.
+- **`limits.v2Pro` true but `v2Access` not `granted`:** V2 HD needs
+  Atmee V2 access too; handle that as Create (below) says first, then make
+  it V2 HD.
+- **`limits.v2Pro` false:** say Atmee V2 HD
+  needs Growth and up. Offer the upgrade to Growth (`get_account`
+  `links.billing`, Creator Studio's Billing page) or Atmee V2; once
+  `limits.v2Pro` is true, make it V2 HD. Until then don't pass `engine: v2hd` (it answers
+  `403 v2hd_access_required`).
+- **`limits.v2Pro` absent:** this server doesn't offer V2 HD. Say so and
+  offer Atmee V2.
 
 An existing V2 HD avatar (`get_avatar` reads `engine: v2hd`) keeps working:
 seeds, picking another, the character, the preview line and its links all

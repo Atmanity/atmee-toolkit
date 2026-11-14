@@ -29,8 +29,9 @@ coming, never promise it.
 ## Atmee Studio: making avatars without code
 
 The editor has five steps: Appearance, Voice, Persona, Knowledge, Finalize.
-Studio builds **v1** avatars; v2 avatars come from the Avatar API and the
-agent tooling.
+Studio builds all three models: **Atmee V1** on any plan, **Atmee V2** on Pro
+and up, **Atmee V2 HD** on Growth and up (the same rules as the Avatar API and
+the agent tooling). Avatars an account already has stay editable on any plan.
 
 - **Appearance:** upload or take a photo, or generate a portrait from a
   prompt (generation costs credits).
@@ -98,8 +99,7 @@ instead. The API is at `https://api.atmanity.us`.
   by default, or another size the server offers (`get_account`
   `limits.v2Resolutions`): 672×384 (16:9), 384×672 (9:16), 576×448 (4:3)
   or 448×576 (3:4), set with `resolution`; a new size makes new seeds. An Atmee V2 HD avatar
-  (engine `v2hd`, for Enterprise customers on custom plans; agents never
-  create one) is a v2 avatar on a larger model: the same seeds, agenda and sessions, at
+  (engine `v2hd`, for Growth and up: `get_account` `limits.v2Pro`) is a v2 avatar on a larger model: the same seeds, agenda and sessions, at
   640×640 by default or another of `limits.v2ProResolutions` (for example
   864×480).
 - **Account:** the balance, the plan with its limits, per-minute prices and
@@ -113,7 +113,7 @@ instead. The API is at `https://api.atmanity.us`.
   default), 640×480, 480×640, 832×468, 468×832, 720×720, 960×720, 720×960,
   1280×720 or 720×1280. 1080p (1080×1080, 1920×1080, 1080×1920, 1440×1080,
   1080×1440) is coming soon. No avatar is made; it
-  is on every plan, Free included, with no Atmee V2 access or invite code
+  is on every plan, Free included, with no Atmee V2 access
   needed (`get_account` `limits.videoGeneration` false means video generation
   was turned off for the account: contact support), and each size has a price per
   clip for up to 5, 10 and 15 seconds, charged at the next length up

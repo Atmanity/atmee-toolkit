@@ -92,7 +92,7 @@ func TestDuplicateUsageErrors(t *testing.T) {
 	}{
 		{[]string{"avatars", "duplicate"}, "missing AVATAR_ID"},
 		{[]string{"avatars", "duplicate", "not-a-uuid"}, "not an avatar or session id"},
-		{[]string{"avatars", "duplicate", dupSource, "--engine", "v3"}, "--engine takes v1, v2 or v2hd"},
+		{[]string{"avatars", "duplicate", dupSource, "--engine", "v3"}, "--engine takes v2hd, v2 or v1"},
 		{[]string{"avatars", "duplicate", dupSource, "--name", " "}, "--name takes 1-100 characters"},
 		{[]string{"avatars", "duplicate", dupSource, "--name", strings.Repeat("a", 101)}, "--name takes 1-100 characters"},
 	} {
@@ -116,7 +116,10 @@ func TestDuplicateErrors(t *testing.T) {
 		{409, `{"error":"source_file_missing","message":"the portrait is no longer in storage; replace it on the source avatar and try again"}`,
 			[]string{"409 source_file_missing", "replace it on the source"}},
 		{402, `{"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`, []string{"upgrade to Pro and up", "--engine v1"}},
-		{403, `{"error":"v2_pro_not_in_plan","message":"no V2 HD"}`, []string{"no V2 HD", "--engine v2"}},
+		{403, `{"error":"v2hd_access_required","message":"no V2 HD"}`, []string{"no V2 HD", "Atmee V2 HD needs Growth and up", "upgrade to Growth and up", "copy it onto v2 instead (--engine v2)"}},
+		{403, `{"error":"v2_pro_not_in_plan","message":"no V2 HD"}`, []string{"no V2 HD", "Atmee V2 HD needs Growth and up", "upgrade to Growth and up", "copy it onto v2 instead (--engine v2)"}},
+		// The current server's message says it all: nothing is added.
+		{403, `{"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`, []string{v2HDAccessMsg + "\n"}},
 	} {
 		var paths, bodies []string
 		duplicateAPI(t, c.status, c.payload, &paths, &bodies)
@@ -128,6 +131,9 @@ func TestDuplicateErrors(t *testing.T) {
 			if !strings.Contains(errOut, w) {
 				t.Errorf("%d: %q lacks %q", c.status, errOut, w)
 			}
+		}
+		if strings.Contains(errOut, "invite") || strings.Contains(errOut, "redeem") {
+			t.Errorf("%d: %q suggests a code", c.status, errOut)
 		}
 		if c.payload[0] == '{' && strings.Contains(errOut, "cannot duplicate avatars yet") {
 			t.Errorf("%d: %q blames the server version", c.status, errOut)

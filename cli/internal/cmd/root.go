@@ -191,7 +191,17 @@ func ExecuteAs(v Variant, args []string, out, errOut io.Writer, in io.Reader) in
 	// came from (a create, an update, a capture).
 	msg := err.Error()
 	if h := engineHint(cmd, err); h != "" {
-		msg += "; " + h
+		// An older server's refusal points to invite codes, which are no
+		// longer offered: keep its status and code, and give only the hint.
+		if strings.Contains(strings.ToLower(msg), "invite") {
+			if i := strings.Index(msg, ": "); i >= 0 {
+				msg = msg[:i] + ": " + h
+				h = ""
+			}
+		}
+		if h != "" {
+			msg += "; " + h
+		}
 	}
 	fmt.Fprintf(errOut, "Error: %s\n", a.rename(msg))
 	var u usageError

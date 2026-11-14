@@ -27,7 +27,7 @@ the date you read them.
   the soonest); a downgrade doesn't cancel them.
 - `spendableMicrocredits` is what a new session can start on. It is the only
   balance to report; ignore any balance another tool returns. There is
-  one kind of credit: it pays for every model (V1, V2, V2 HD) at that
+  one kind of credit: it pays for every model (V2 HD, V2, V1) at that
   model's rate.
 - A session **reserves** credits when it starts and gives back the unused
   part when it ends (`billingMode: reserve`). Enterprise **metered** keys are
@@ -55,17 +55,23 @@ the date you read them.
   credits are not held to the Free plan's daily limit.
 - **Atmee V2.** Anyone can talk to any avatar, V2 and V2 HD included, on
   any credits at that model's rate. Building Atmee V2 avatars needs
-  Pro and up; below Pro, an invite code unlocks it (`403
-  v2_access_required` without it). Video clips are on every plan, Free
-  included, and need no Atmee V2 access. Creating Atmee V2 HD avatars is
-  for Enterprise customers (`403 v2_pro_not_in_plan`).
-- **Atmee V2 HD** is for Enterprise customers on custom plans: contact us
-  through the Studio help center (the origin of `get_account`
-  `links.billing` plus `/studio/help-center`; with no `links`, name it
-  without a link). It has no self-serve plan and no price to quote:
-  `limits.v2Pro` and the `pricing.*V2Hd*` fields are reported for every
-  account and say nothing about either. Existing V2 HD avatars keep working;
-  a V2 HD call the account may not make answers `403 v2_pro_not_in_plan`.
+  Pro and up (`403 v2_access_required` below Pro: upgrade to Pro, or make
+  Atmee V1). Video clips are on every plan, Free
+  included, and need no Atmee V2 access. Building Atmee V2 HD avatars
+  needs Growth and up (`403 v2hd_access_required` below Growth: upgrade to
+  Growth, or make Atmee V2). Existing V2 and V2 HD avatars keep working,
+  and stay editable, on any plan.
+- **Atmee V2 HD** comes with Growth and up (Growth, Scale and custom
+  plans; Pro includes Atmee V2, not V2 HD);
+  `get_account` `limits.v2Pro` says whether this account may create it.
+  Below Growth, upgrade to Growth (`get_account`
+  `links.billing`) or make Atmee V2. It bills at its own rates, the
+  `pricing.*V2Hd*` fields (`sessionV2HdPerMinuteMicrocredits` for a
+  conversation, `renderV2HdPerMinuteMicrocredits` for an avatar session;
+  quote the live figures; when a server does not report them, say so and
+  point to `links.billing` rather than quoting a number).
+  Existing V2 HD avatars keep working; a V2 HD call the account may not
+  make answers `403 v2hd_access_required`.
 - **Signature avatars** on atmee.ai (the monetized ones) take a paid plan's
   credits, pack credits or coupon credits, never the Free plan's.
 
@@ -73,8 +79,8 @@ the date you read them.
 
 | What | Charged | Live price |
 |---|---|---|
-| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room; a v2 avatar can cost more than a v1 one; an existing Atmee V2 HD avatar has its own rate (Enterprise: quote no figure) | `get_account` `pricing.sessionPerMinuteMicrocredits` for a v1 avatar, `pricing.sessionV2PerMinuteMicrocredits` for a v2 one (an older server without it charges the first for both) |
-| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts, less than a conversation on the same engine | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits` |
+| A conversation through the Session API | per minute, counted from the moment both the visitor and the avatar are in the room; a v2 avatar can cost more than a v1 one; an Atmee V2 HD avatar has its own rate | `get_account` `pricing.sessionPerMinuteMicrocredits` for a v1 avatar, `pricing.sessionV2PerMinuteMicrocredits` for a v2 one (an older server without it charges the first for both), `pricing.sessionV2HdPerMinuteMicrocredits` for a V2 HD one |
+| Rendering an avatar for the developer's own agent (the render path) | per minute while the render lasts, less than a conversation on the same engine | `pricing.renderV1PerMinuteMicrocredits`, `pricing.renderV2PerMinuteMicrocredits`, `pricing.renderV2HdPerMinuteMicrocredits` |
 | A seed (a v2 avatar's captured talking clip) | per seed (can be zero) | `pricing.previewClipMicrocredits` |
 | Generating portraits, enhancing a portrait, designing a voice through the avatars server | **per call**, charged when at least one output comes back: a portrait call makes up to two portraits (one from Gemini, one from Grok; `count: 1` makes the Gemini one only) for the same price, and so does an enhancement; a voice design is one price too. A paid plan's **free generation allowance** pays first and credits pay the rest; each answer splits it into `microcreditsFree` and `microcreditsCharged` | `get_account` `pricing.generation` (`portraitsMicrocredits` is one portrait call); what is left of the allowance this cycle: `pricing.generation.freeAllowance.remainingMicrocredits` |
 | A speech session (speech-to-speech, no video) | per minute from the first usage report | `pricing.speechPerMinuteMicrocredits` |

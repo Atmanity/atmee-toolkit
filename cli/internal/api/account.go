@@ -105,9 +105,8 @@ func (c *Client) CurrentKey(ctx context.Context) (*CurrentUser, error) {
 	return decode[CurrentUser](r.HTTPResponse, r.Body, err)
 }
 
-// Redeem redeems an invite or credit code for the account: credits, v2
-// access, or both. Only a signed-in user may; an API key gets 403
-// login_required.
+// Redeem redeems a code for the account: credits, or access to Atmee V2 or
+// V2 HD. Only a signed-in user may; an API key gets 403 login_required.
 func (c *Client) Redeem(ctx context.Context, code string) (*Redemption, error) {
 	r, err := c.gen.RedeemAccountCodeWithResponse(ctx, avatarapi.RedeemCodeRequest{Code: code})
 	if r == nil {

@@ -70,8 +70,8 @@ the MCP server; the CLI signs in as you or uses an API key.
 
 Anyone can talk to any avatar, and video clips are on every plan, Free included (they spend
 credits). Building Atmee V2 avatars, and the features built on them (candidate clips, agendas),
-needs Pro and up; below Pro, an invite code unlocks it. Accounts without Atmee V2 access get Atmee V1 avatars; redeem an invite code
-with `atmee redeem CODE` or on the Billing page in Creator Studio.
+needs Pro and up, and Atmee V2 HD needs Growth and up. Accounts below Pro get Atmee V1 avatars. Existing V2 and V2 HD
+avatars keep working, and stay editable, on any plan.
 
 ## Quickstart
 
@@ -220,7 +220,6 @@ start, or the session ends.
 |---|---|
 | `atmee login` / `whoami` / `logout` | Sign in, show who the commands act as, sign out |
 | `atmee balance` / `account` / `earnings` | Credits, plan and prices, creator earnings |
-| `atmee redeem CODE` | Redeem an invite or credit code |
 | `atmee keys` | Create, update, rotate and revoke API keys |
 | `atmee avatars create` / `list` / `get` / `wait` / `update` / `delete` | Manage avatars |
 | `atmee avatars replace-appearance` / `replace-voice` / `replace-knowledge` | Replace an avatar's inputs |
@@ -261,7 +260,8 @@ format, is in [docs/cli.md](docs/cli.md).
 | Claude Code lists the plugin but no atmee tools | Run `/reload-plugins --force`, or restart Claude Code. `/mcp` shows each server's status. |
 | Codex shows no atmee tools after a restart | Run `codex mcp list`. If `atmee-avatars` is missing, add it with `codex mcp add atmee-avatars --url https://api.atmanity.us/mcp`, then `codex mcp login atmee-avatars`. |
 | `npx skills` says Node.js is too old | Install Node.js 22.20 or newer, or use the plugin route. |
-| `v2_access_required` (or `insufficient_v2_credits` from an older server) | The account can't build Atmee V2 yet: below Pro, no invite code. Upgrade to Pro and up, redeem an invite code (`atmee redeem CODE`), or make a V1 avatar. Talking to any avatar never needs it. |
+| `v2_access_required` (or `insufficient_v2_credits` from an older server) | The account can't build new Atmee V2 avatars: Atmee V2 needs Pro and up. Upgrade to Pro, or make a V1 avatar. Existing V2 avatars keep working; talking to any avatar never needs it. |
+| `v2hd_access_required` | The account can't build new Atmee V2 HD avatars: Atmee V2 HD needs Growth and up. Upgrade to Growth, or make a V2 avatar. |
 | `402 insufficient_credits` | Top up in Creator Studio, or raise the API key's spend cap. |
 | `409 avatar_not_ready` | The avatar has no ready clip yet. Check with `atmee avatars get AVATAR_ID` or wait with `atmee avatars wait AVATAR_ID`. |
 | A build fails at `appearance` | Use a front-facing portrait with the whole head in frame, the face at least a third of it, and the lips slightly parted. |

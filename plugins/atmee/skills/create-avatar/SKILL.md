@@ -132,9 +132,9 @@ Read these before anything else, and keep them for the whole conversation.
 
    From the other tools:
    - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
-   - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Pro and up (every credit counts there) or ask whether they have an invite code: with one, redeem it as for `v2_access_required` below, and retry only once `v2SpendableMicrocredits` is above 0. Without either: offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
-   - `v2_access_required`: the account can't build Atmee V2 yet (building needs Pro and up; below Pro, an invite code unlocks it). Say so, suggest Pro and up (`get_account` `links.billing`), and ask whether they have an invite code. With one: call `redeem_code` with exactly what they typed, then read its `v2Access` (when the answer has none, call `get_account` and read its `v2Access` instead): retry the same call only when it is `granted`. `invite_required` means the code gave no v2 access (a credits-only code): tell them the credits it added (`microcreditsGranted` is in hundredths of a credit), that it is not a v2 invite, and ask for an invite code or offer v1; do not retry v2. Without one: offer engine v1. Never switch to v1, and never invent or reuse a code, without asking. `redeem_code`'s own refusals: `invalid_code` (check the spelling with them), `code_expired` or `code_fully_redeemed` (that code is spent: ask for another or offer v1), `already_redeemed` (this account used it before), `login_required` (an API key is connected: redeem in Creator Studio's Billing page instead).
-   - `v2_pro_not_in_plan`: a V2 HD call on an existing V2 HD avatar this account may not rebuild. Say Atmee V2 HD is for Enterprise customers on custom plans, give the Studio help center to contact us (rule 13), and offer an Atmee V2 copy instead (an avatar's engine can't change in place: Copy an avatar, below); don't repeat the error's plan wording, and never switch without asking.
+   - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Pro and up (`get_account` `links.billing`); retry only once `v2SpendableMicrocredits` is above 0. Otherwise offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
+   - `v2_access_required`: the account can't create Atmee V2 avatars: Atmee V2 needs Pro and up. Say so, and offer the upgrade to Pro (`get_account` `links.billing`) or Atmee V1 (engine v1). Retry V2 only once `get_account`'s `v2Access` is `granted`. Never switch to v1 without asking. Existing V2 avatars keep working and stay editable on any plan.
+   - `v2hd_access_required` (formerly `v2_pro_not_in_plan`, which older servers still send; treat both the same): a V2 HD create or copy this account may not make. Say Atmee V2 HD needs Growth and up (rule 13), and offer the upgrade to Growth (`get_account` `links.billing`; retry V2 HD once `limits.v2Pro` is true) or Atmee V2 (engine v2; for an existing V2 HD avatar, a copy on an engine it can build: Copy an avatar, below). Never switch without asking. Existing V2 HD avatars keep working and stay editable on any plan.
    - `engine_unavailable` on a V2 HD call: this server doesn't offer V2 HD right now. Say so and offer Atmee V2.
    - `rate_limited`: too many seeds are being made; wait the `Retry-After` it gives.
    - `avatar_busy`: a session is already live for this avatar; wait for it to end.
@@ -168,20 +168,21 @@ Read these before anything else, and keep them for the whole conversation.
     `spendableMicrocredits` divided by 100 is the credits left; one kind of
     credit pays for every model. After a paid
     call, read `get_balance` again.
-13. **Atmee V2 HD is for Enterprise customers only.** Never make a new V2 HD
-    avatar or a portrait for one: never pass `engine: v2hd` (or `v2pro`) on a
-    new avatar, whatever `get_account` reports (the V2 HD prices are there for every
-    account and don't mean the creator can have it; `limits.v2Pro` is true only
-    for an account allowed to create V2 HD, which only a copy relies on). The one exception is copying a V2 avatar onto V2 HD (Copy an
-    avatar). Never offer it, quote a V2 HD price, or name a plan, upgrade or
-    invite code as the way to it. When the creator asks for V2 HD, the HD
-    model or the best model, say it is for Enterprise customers on custom
-    plans, give the Studio help center to contact us (the origin of
-    `get_account` `links.billing` plus `/studio/help-center`, for example
-    `https://www.atmee.ai/studio/help-center`; with no `links`, name the
-    Studio help center without a link, never a made-up address), and offer
-    Atmee V2 instead. An existing V2 HD avatar keeps working: continue or fix
-    it as this skill says.
+13. **Atmee V2 HD is for Growth and up** (Growth, Scale and custom
+    plans; Atmee V2 is for Pro and up). `get_account` `limits.v2Pro` says
+    whether the account may create it (an admin can switch an account
+    on or off). Make Atmee V2 unless the
+    creator asks for V2 HD, the HD model or the best model. Then, when
+    `limits.v2Pro` is true and `v2Access` is `granted` (V2 HD needs Atmee
+    V2 access too; handle that first as rule 8 says), make it V2
+    HD: pass `engine: v2hd` on the create
+    and on its portrait calls, and give its own rate (`pricing.*V2Hd*`,
+    `references/candidates.md`, Model). When `limits.v2Pro` is false, handle
+    it as rule 8's `v2hd_access_required` says, then make it V2 HD once
+    `limits.v2Pro` is true. Until then never pass `engine: v2hd` (or
+    `v2pro`). When `limits.v2Pro` is absent, this
+    server doesn't offer V2 HD: say so and offer Atmee V2. An existing V2 HD
+    avatar keeps working: continue or fix it as this skill says.
 
 ## The server
 
@@ -302,8 +303,10 @@ portrait call, generated or enhanced, settle the engine from `get_account`'s
 `v2Access` and pass it on the call (the same reference, The engine a
 portrait is for).
 
-With a usable portrait and voice, create the avatar as v2 (never V2 HD,
-rule 13; `references/candidates.md`, Model) with one seed that
+With a usable portrait and voice, create the avatar as v2 (V2 HD only
+when the creator asked for it, `limits.v2Pro` is true and `v2Access` is
+`granted`, rule 13;
+`references/candidates.md`, Model) with one seed that
 goes live by itself, private, with no persona yet (`references/candidates.md`,
 Create). Save the `create` iteration (`references/iterations.md`). Building
 takes minutes: keep the creator posted in plain words
@@ -395,10 +398,10 @@ wants:
   full-body V2 portrait may need replacing on the copy.
 
 A copy keeps its frame shape: between V2 and V2 HD it takes the size
-nearest the source's shape. Offer a V2 avatar's copy on V2 HD (`engine: v2hd`) only
+nearest the source's shape. Offer a copy on V2 HD (`engine: v2hd`) only
 when `get_account` shows the account can create V2 HD (`limits.v2Pro` is
-true); otherwise keep it on V2. Never offer V2 HD for any other copy
-(rule 13). Make a new avatar, not a copy, when the creator wants another
+true and `v2Access` is `granted`), checked as on a create (rule 13);
+`v2hd_access_required` goes as rule 8 says. Make a new avatar, not a copy, when the creator wants another
 face or voice.
 
 Before the call, tell the creator in two lines what the copy gets and

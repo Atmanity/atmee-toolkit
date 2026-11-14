@@ -55,11 +55,11 @@ They were proven in live sessions, including the timing rules in
    minute for the avatar's engine (`get_account`:
    `pricing.sessionPerMinuteMicrocredits` for v1,
    `pricing.sessionV2PerMinuteMicrocredits` for v2, the first where the second
-   is absent) and the
+   is absent, `pricing.sessionV2HdPerMinuteMicrocredits` for v2hd; when that
+   is absent too, say this server doesn't report V2 HD's rate and point to
+   `links.billing` instead of quoting a number) and the
    balance (`get_balance`: `spendableMicrocredits`), each divided by 100 for
-   credits, say both, and ask. An existing V2 HD avatar's sessions have their
-   own rate, which is for Enterprise customers: quote no figure, say only that
-   it bills at its own V2 HD rate, give the balance, and ask. One yes covers the short tests of this piece
+   credits, say both, and ask. One yes covers the short tests of this piece
    of work, since building an app takes many; ask again before a long test or
    when the balance runs low. Keep tests short with `maxDurationSeconds`.
    A link for someone who only wants to talk to the avatar is not a test of
@@ -111,16 +111,17 @@ step 0), and go on whatever it says.
 
 Call `list_avatars` (the atmee avatars server; run `atmee-setup` if its tools
 are missing). The app needs one that is `ready`, `readyToChat`, engine `v2`
-or `v2hd` (an existing Atmee V2 HD avatar, a larger v2 model: everything in
-this skill works the same for it, at its own frame size). Never make a new
-V2 HD one: it is for Enterprise customers on custom plans (contact us through
-the Studio help center, the origin of `get_account` `links.billing` plus
-`/studio/help-center`); offer Atmee V2.
-None fits: make one with the `create-avatar` skill first. Building Atmee V2 needs Pro and up; below Pro, an invite code unlocks it:
-when `get_account`'s `v2Access` is `invite_required` (and, on an older server that still
-reports `get_balance`'s `v2SpendableMicrocredits`, that figure is not above 0), the account needs it before it can
-make one: suggest Pro and up, or ask the user for an invite code and
-redeem it with `redeem_code`. Talking to an existing avatar, any model, never needs it.
+or `v2hd` (an Atmee V2 HD avatar, a larger v2 model: everything in
+this skill works the same for it, at its own frame size and rate). A new
+V2 HD one needs Growth and up (`get_account` `limits.v2Pro` true; make it
+with `create-avatar`); below Growth, offer the upgrade to Growth or a V2
+avatar.
+None fits: make one with the `create-avatar` skill first. Building Atmee V2 needs Pro and up:
+when `get_account`'s `v2Access` is `invite_required` (the API's name for a plan below Pro; there
+are no invites, never ask for a code) (and, on an older server that still
+reports `get_balance`'s `v2SpendableMicrocredits`, that figure is not above 0), the account
+can't make one: offer the upgrade to Pro or an Atmee V1 avatar. Existing V2 and V2 HD
+avatars keep working on any plan, and talking to an existing avatar, any model, never needs it.
 
 The persona is the avatar's: it greets and introduces itself as it was made,
 whatever the app says, unless the session starts with `welcome: false`, for an
@@ -135,6 +136,11 @@ app around a conversation Atmee runs, or a face for their own agent), or
 asks what Atmee offers or costs, use the `atmee-product` skill first. When
 the app itself is still an idea (no settled user, flow or tools), plan it
 with the `plan-avatar-app` skill and build from its brief.
+
+When they pick Avatar-only (a face for their own agent), tell them the two
+tips in `references/server.md` (Avatar-only tips): speak with the avatar's
+own voice, and keep their stack fast, since the avatar talks as soon as
+their audio arrives.
 
 Settle these with the developer, then name the closest shape in
 `references/patterns.md` in one line and build to it:

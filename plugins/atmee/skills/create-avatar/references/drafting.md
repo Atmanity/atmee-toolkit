@@ -42,7 +42,7 @@ Check what the creator has against these rules. Warn, don't block.
 - **Portrait:** run the portrait checks (the portrait-checks reference). In
   short: at least the avatar's frame on each side (the engine keeps the centre
   crop of that frame: square 512×512 unless another v2 size such as 672×384
-  (16:9) or 384×672 (9:16) is chosen; on an existing V2 HD avatar square
+  (16:9) or 384×672 (9:16) is chosen; on a V2 HD avatar square
   640×640 unless another of its sizes is), one person
   facing the camera, the mouth and jaw visible and uncovered, lips slightly
   parted or a relaxed smile; jpg, png or webp up to 10 MB. A v2 avatar takes a

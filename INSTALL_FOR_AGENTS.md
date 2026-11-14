@@ -269,8 +269,8 @@ false (absent counts as allowed), add one line saying atmee can also make videos
 > get an mp4 of them moving; add a voice line and they speak it. Say "make a
 > video clip" to try it.
 
-Clips are on every plan, Free included, and need no Atmee V2 access or invite
-code: don't check `v2Access` for them. With `limits.videoGeneration` false,
+Clips are on every plan, Free included, and need no Atmee V2 access:
+don't check `v2Access` for them. With `limits.videoGeneration` false,
 video generation was turned off for this account: say nothing about clips.
 
 ## If something goes wrong

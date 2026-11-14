@@ -55,7 +55,6 @@ Local files go up in the create or replace request itself, so the CLI does not u
 ```bash
 atmee balance [--json]         # credits left on your account
 atmee account [--json]         # plan, limits, prices per minute, v2 and V2 HD sizes, capture quota, payout status, v2 access
-atmee redeem CODE [--json]     # redeem an invite or credit code (needs atmee login, not an API key)
 ```
 
 Both work for a signed-in user, and for a key with `sessions` or `avatars:read` (an
@@ -75,27 +74,27 @@ Account 11111111-1111-4111-8111-111111111111
 Plan         Scale (scale) · 1,000.00 credits a cycle · cycle ends 2026-11-01
 API access   on
 Limits       session length no plan cap · 7 at once · 50 API avatars
-Per minute   conversation v1 1.00/min, v2 2.00/min · avatar session v1 0.50/min, v2 1.50/min
+Per minute   conversation v1 1.00/min, v2 2.00/min, V2 HD 3.00/min · avatar session v1 0.50/min, v2 1.50/min, V2 HD 2.00/min
 Preview clip 0.00 credits
 Generation   portraits 1.00 · enhance 1.00 · voice 1.00 credits
 Clip sizes   480x480 0.10/0.30/0.50, 640x480 0.10/0.30/0.50, 480x640 0.10/0.30/0.50, 832x468 0.30/0.70/1.00, 468x832 0.30/0.70/1.00, 720x720 0.50/1.00/1.50, 960x720 0.50/1.00/1.50, 720x960 0.50/1.00/1.50, 1280x720 0.80/1.40/2.00, 720x1280 0.80/1.40/2.00 credits a clip up to 5/10/15 s, charged at the next length up (--resolution)
 v2 sizes     512x512, 672x384, 384x672, 576x448, 448x576 (--resolution)
-V2 HD        Enterprise only, on custom plans: contact us through Creator Studio's help center (https://www.atmee.ai/studio/help-center)
+V2 HD        yes (--engine v2hd)
 V2 HD sizes  640x640, 864x480, 480x864, 736x544, 544x736 (--resolution)
 Captures     0 of 10 queued or running
 Payouts      verified since 2026-09-01
 ```
 
 **Spendable** is what a session can be started on. There is one kind of credit: it pays for
-every model (V1, V2, V2 HD) at its rate, and anyone can talk to any avatar. (An older server may
+every model (V2 HD, V2, V1) at its rate, and anyone can talk to any avatar. (An older server may
 still say a metered key spends plan and top-up credits only, in its coupon line.) Credits held by running sessions
 are already out of the buckets; what a session does not use comes back when it ends.
 **Payouts** is the status of the account's payout account (`not started`, `unverified`,
 `pending`, `verified` or `suspended`); monetizing an avatar needs it verified, and payouts
 are set up in Creator Studio. **Per minute** shows a conversation rate for each engine; a server
 that doesn't report the v2 rate shows one `conversation` rate, which then applies to both.
-Atmee V2 HD's rates are not shown: it is for Enterprise customers on custom plans
-(`--json` carries what the server reports).
+Atmee V2 HD's own rates (conversation and avatar session) appear where the server
+reports them; elsewhere its price is not shown.
 **Clip sizes** are the sizes `generate clip --resolution` takes on this server, each with its
 price per clip for up to 5, 10 and 15 seconds: a clip pays the next length up, so a 7-second
 clip pays the 10-second price (`pricing.generation.clipPrices` in `--json`). A server without `clipPrices`, which priced
@@ -105,11 +104,12 @@ instead. **v2 sizes** (shown when the deployment offers only some of the sizes t
 allows) are the frame sizes an avatar's `--resolution` takes (`limits.v2Resolutions`; on an
 older server, `pricing.generation.clipResolutions`). **Video clips** appears only when video
 generation was turned off for the account (`limits.videoGeneration` false; clips are on every
-plan otherwise), and says to contact us through Creator Studio's help center. **V2 HD** appears only where the server reports Atmee V2 HD (`limits.v2Pro`, true or false):
-it is for Enterprise customers on custom plans, so the line says to contact us through Creator
-Studio's help center, on the website the account's `links` point to (named without an address
-when the server reports no links). **v2 avatars** says whether the account may build Atmee V2:
-on Pro and up it comes with the plan, below Pro an invite code unlocks it. Clips never need it.
+plan otherwise), and says to contact us through Creator Studio's help center. **V2 HD** appears only where the server reports Atmee V2 HD (`limits.v2Pro`):
+`yes` on Growth and up (an admin can also switch it per account),
+`yes, where Atmee V2 is on this account` when Atmee V2 isn't on it yet, or `can't build`
+below Growth (Pro included), which says Atmee V2 HD needs Growth and up. **v2 avatars** says whether the account may build Atmee V2:
+it comes with Pro and up; below Pro it says `can't build` and creates default to V1. Clips never need it.
+Existing V2 and V2 HD avatars keep working, and stay editable, on any plan.
 **V2 HD sizes** are the frame sizes a V2 HD avatar's `--resolution` takes on this server
 (`limits.v2ProResolutions`, 640x640 first); the example above is one server's list.
 
@@ -169,7 +169,7 @@ the new key here with `--out` to get one.
 
 ```bash
 atmee avatars create --name NAME [--image IMG] [--voice SAMPLE] [flags] [--wait] [--json]   # without one: a draft
-atmee avatars duplicate ID [--name NAME] [--engine v1|v2|v2hd] [--wait] [--json]   # a private copy, on its own engine or any other
+atmee avatars duplicate ID [--name NAME] [--engine v2hd|v2|v1] [--wait] [--json]   # a private copy, on its own engine or any other
 atmee avatars list [--sort created|updated|name|users|avgChat|totalChat] [--order asc|desc] [--q TEXT] [--visibility LIST] [--engine LIST] [--frame LIST] [--badge LIST] [--sponsored true|false] [--limit 50] [--offset N] [--all] [--json]   # newest created first; each row with users, average and total chat minutes, and the V2 copy made from it by an upgrade
 atmee avatars list --before CURSOR [--limit 50] [--all] [--json]   # page by creation time instead (no usage)
 atmee avatars get ID [--json]                    # status, and what was set: persona, language, facts and knowledge summary, public page
@@ -222,17 +222,19 @@ or 544x736 (3:4); 512x512 and the other v2 sizes are not V2 HD sizes. The CLI ch
 and, where `atmee account` lists sizes, against that list before sending; the server has the
 last word.
 
-**Atmee V2 HD (`--engine v2hd`) is for Enterprise customers on custom plans.** To get it,
-contact us through Creator Studio's help center (`atmee account` gives its address). A larger
+**Atmee V2 HD (`--engine v2hd`) is for Growth and up** (Atmee V2 is for Pro and up).
+`atmee account` shows whether the account may build it (the `V2 HD` line,
+`limits.v2Pro`); below Growth, upgrade to Growth, or use v2. A larger
 v2 model, on its own GPUs: it builds, previews and serves exactly like v2 (candidates,
-versions, the conductor, the runtime seed) at larger frame sizes. Existing V2 HD avatars keep
-working: `avatars list` and `get` show their engine as `v2hd`, and they take the same
+versions, the conductor, the runtime seed) at larger frame sizes, at its own per-minute rates
+(`atmee account` shows them on the **Per minute** line). Existing V2 HD avatars keep
+working, and stay editable, on any plan: `avatars list` and `get` show their engine as `v2hd`, and they take the same
 commands as v2 ones. `--engine v2pro`, its first name, still works. A V2 HD create, capture or
-rebuild the account may not make answers `403 v2_pro_not_in_plan`; a server without V2 HD
+rebuild the account may not make answers `403 v2hd_access_required`; a server without V2 HD
 answers `503 engine_unavailable`; the CLI adds what to do. Video clips are the same whatever
 engine you use.
 
-`create` flags: `--engine v2|v1|v2hd` (default v2; v1 for an account that cannot build v2: below Pro and no invite code (`atmee account` shows `v2 avatars` can't build yet), or a v2 create refused with `v2_access_required`; v2hd for Atmee V2 HD, for Enterprise customers, above), `--candidates 1-10`
+`create` flags: `--engine v2hd|v2|v1` (default v2; v1 for an account that cannot build v2: below Pro (`atmee account` shows `v2 avatars` can't build), or a v2 create refused with `v2_access_required`; v2hd for Atmee V2 HD, Growth and up, above), `--candidates 1-10`
 (default 1 on v2), `--seed-selection auto|manual` (default auto on v2: the first candidate
 finished is used; both need `--image` and `--voice`, a v2 draft takes one candidate,
 used automatically, once completed), `--preview-message` (v2: at most 300
@@ -306,8 +308,8 @@ model (v2 or v2hd onto v1, v2hd onto v2). Between v2 and v2hd the copy takes the
 size nearest the source's shape; v1 works best with a front-facing, shoulders-up
 portrait. The engine is checked as
 on create (`402 insufficient_v2_credits`, `403 v2_access_required`, `503
-engine_unavailable`, each printed with what to do). Atmee V2 HD (`--engine v2hd`) is for
-Enterprise customers on custom plans. `--name` renames the copy (1-100 characters; default: the
+engine_unavailable`, each printed with what to do). A V2 HD copy (`--engine v2hd`) needs
+Growth and up (`403 v2hd_access_required` otherwise). `--name` renames the copy (1-100 characters; default: the
 source's name).
 
 - **Copied:** the name and description, language, persona (`--who-prompt`,
@@ -418,8 +420,8 @@ balance`); it works signed in or with an account-wide key with `avatars:read`.
 ## Generate
 
 ```bash
-atmee generate portraits --description TEXT [--engine v1|v2|v2hd] [--idempotency-key K] [--json]
-atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--engine v1|v2|v2hd | --avatar ID] \
+atmee generate portraits --description TEXT [--engine v2hd|v2|v1] [--idempotency-key K] [--json]
+atmee generate enhance --image PATH|URL|upload:ID [--prompt TEXT] [--engine v2hd|v2|v1 | --avatar ID] \
   [--idempotency-key K] [--json]
 atmee generate voice --description TEXT [--name NAME] [--language LANG] [--text SAMPLE] \
   [--idempotency-key K] [--json]
@@ -473,7 +475,7 @@ files). A reference works once and lasts 24 hours.
   serve is `400 invalid_input`, and the message lists the ones it does. Without
   `--resolution` the server's own default size is used. The renderer works at each side rounded up to a multiple of 32 and crops the
   centre. Local files go up through `POST /v1/uploads` first. Clips are on every
-  plan, Free included, and need no Atmee V2 access or invite code; `403
+  plan, Free included, and need no Atmee V2 access; `403
   video_generation_not_in_plan` means video generation was turned off for the account (contact
   us through Creator Studio's help center). Credits pay for it. It comes back as an `upload:<uploadId>` with a download
   link for 24 hours.
@@ -524,6 +526,19 @@ it at once, like every other error, `no_capacity` included. On a cold v2 pool th
 itself can take minutes: pass `--wait-joined`, with which each attempt waits up to 10 minutes
 for the join (on top of any warm-up retries); without it each attempt gives up after the
 60 s request timeout.
+
+Two tips for an avatar-only session (`session render`, or `livekit-plugins-atmee`):
+
+- **Use the avatar's own voice.** An Atmee V2 or V2 HD avatar learns its mouth movement from
+  the voice it was built with, so lip sync is best when your agent speaks with that voice (for
+  example a clone of the uploaded voice sample), and worse the further the voice is from it: a
+  different gender, pitch, speaking pace or language shows most. To switch voices, replace the
+  avatar's voice (`atmee avatars replace-voice`) so it is rebuilt with the new one, rather than
+  feeding a different voice into the same avatar.
+- **Response time is your stack's.** The avatar starts speaking as soon as your agent's audio
+  arrives, so how fast it answers is up to your speech, model and voice. Use streaming
+  text-to-speech and a fast, non-reasoning model: a reasoning model, or text-to-speech that
+  returns whole clips, adds seconds before the avatar talks.
 
 `session chat` is for an app's own client, or for testing one: to give someone a link to
 talk to an avatar, send its chat page, `links.chat` from `atmee avatars get ID --json`,

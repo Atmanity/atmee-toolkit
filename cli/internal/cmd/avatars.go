@@ -137,9 +137,9 @@ func (a *app) createCmd() *cobra.Command {
 			"person speaking, which is cloned): one candidate, a short talking clip, used as soon as it is finished. If " +
 			"its lips don't match, build more (`atmee avatars candidates add`) and choose one " +
 			"(`atmee avatars candidates pick` or `select`).\n\n" +
-			"Atmee V2 HD (--engine v2hd), a larger v2 model at larger frame sizes (640x640 by default), is for " +
-			"Enterprise customers on custom plans: contact us through Creator Studio's help center. Existing V2 HD " +
-			"avatars keep working.\n\n" +
+			"--engine v2hd makes an Atmee V2 HD avatar: a larger v2 model that builds, previews and serves like v2, " +
+			"at its own rates, at larger frame sizes (640x640 by default). It is for Growth and up (`atmee account` shows " +
+			"a V2 HD line; where it can't build, use v2). Existing V2 HD avatars keep working.\n\n" +
 			"Both files can come later: without one the avatar is a draft (status draft) whose persona and knowledge " +
 			"build; give them with `atmee avatars replace-appearance` and `replace-voice`, in either order, and it " +
 			"builds then. A v1 avatar with only --image is render-only (no voice).\n\n" +
@@ -278,8 +278,8 @@ func (a *app) createCmd() *cobra.Command {
 			}
 			// v2 is the default, with one candidate used as soon as it is
 			// finished, wherever the flags and --config chose nothing. An
-			// account that cannot build v2 (Atmee V2 not on its plan or not
-			// in where v2 is still invite-only, or v2 not on this server)
+			// account that cannot build v2 (Atmee V2 not on its plan, or v2
+			// not on this server)
 			// gets v1 instead, unless v2-only options were asked for. A draft
 			// (no portrait or no voice yet) gets the candidate options from
 			// the API when it is completed.
@@ -307,7 +307,7 @@ func (a *app) createCmd() *cobra.Command {
 				if err := cl.CheckSize(ctx(), in.Engine, *r); err != nil {
 					var pro *api.V2ProSizeError
 					if errors.As(err, &pro) {
-						return usagef("%v: that size is Atmee V2 HD's, and V2 HD is Enterprise-only (contact us through Creator Studio's help center); pick a v2 size (`atmee account` lists them)", err)
+						return usagef("%v: that size is Atmee V2 HD's, so make one with --engine v2hd (Growth and up: `atmee account` shows a V2 HD line), or pick a v2 size (`atmee account` lists them)", err)
 					}
 					return usagef("%v", err)
 				}
@@ -348,7 +348,7 @@ func (a *app) createCmd() *cobra.Command {
 	_ = c.MarkFlagRequired("name")
 	f.StringVar(&image, "image", "", "Portrait: local file, https URL or upload:ID (from atmee generate). Front-facing, face at least a third of the frame, lips slightly parted (without it: a draft, completed by replace-appearance)")
 	f.StringVar(&voice, "voice", "", "Voice sample to clone, 10-60 s: local file, https URL or upload:ID (from atmee generate) (without it: a draft, completed by replace-voice; a v1 avatar with only --image is render-only)")
-	f.StringVar(&eng, "engine", "", "v2 (default), v1, or v2hd (Atmee V2 HD, for Enterprise customers on custom plans; v2pro, its first name, also works)")
+	f.StringVar(&eng, "engine", "", "v2hd (Atmee V2 HD, for Growth and up; v2pro, its first name, also works), v2 (default), or v1")
 	f.IntVar(&candidates, "candidates", 0, "v2, with --image and --voice: how many candidates to build, 1-10 (default 1)")
 	f.StringVar(&selection, "seed-selection", "", "v2, with --image and --voice: auto (default: the first one finished is used) or manual (you pick a candidate)")
 	f.StringVar(&previewMsg, "preview-message", "", "The line the candidates speak (v2: at most 300 characters)")
@@ -394,8 +394,7 @@ func (a *app) duplicateCmd() *cobra.Command {
 			"(checked as on create: the account needs Atmee V2). --engine may also name an older model (v2 or v2hd onto v1, " +
 			"v2hd onto v2). Between v2 and v2hd the copy takes the engine's size nearest the source's shape; v1 works best " +
 			"with a front-facing, shoulders-up portrait. " +
-			"Atmee V2 HD (--engine v2hd) is for Enterprise customers on custom plans: contact us through Creator Studio's " +
-			"help center.\n\n" +
+			"A new Atmee V2 HD copy (--engine v2hd) is checked as on create: the account needs Atmee V2 HD (Growth and up), or copy onto v2.\n\n" +
 			"Not copied: sharing and money. The copy is private and not monetized, with no sponsor pool, Explore " +
 			"profile or thumbnail, statement or conductor. A v2 copy builds its own candidate (a few minutes) instead " +
 			"of taking the source's; a preview message longer than v2's 300 characters is left out of a v2 copy.\n\n" +
@@ -420,7 +419,7 @@ func (a *app) duplicateCmd() *cobra.Command {
 				switch api.CanonicalEngine(eng) {
 				case api.EngineV1, api.EngineV2, api.EngineV2Pro:
 				default:
-					return usagef("--engine takes v1, v2 or v2hd")
+					return usagef("--engine takes v2hd, v2 or v1")
 				}
 			}
 			cl, err := a.api()
@@ -449,7 +448,7 @@ func (a *app) duplicateCmd() *cobra.Command {
 	}
 	f := c.Flags()
 	f.StringVar(&name, "name", "", "The copy's name (default: the source's)")
-	f.StringVar(&eng, "engine", "", "The copy's engine: the source's or a newer one (v1, v2 or v2hd; Atmee V2 HD is for Enterprise customers on custom plans) (default: the source's)")
+	f.StringVar(&eng, "engine", "", "The copy's engine: the source's or a newer one (v2hd, v2 or v1; Atmee V2 HD is for Growth and up) (default: the source's)")
 	f.BoolVar(&wait, "wait", false, "Wait until it is ready (a draft, missing its voice, is printed as it is)")
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
@@ -556,7 +555,7 @@ func (a *app) listCmd() *cobra.Command {
 				allowed     []string
 			}{
 				{"--visibility", q.Visibility, []string{"public", "unlisted", "private"}},
-				{"--engine", q.Engine, []string{"v1", "v2", "v2hd"}},
+				{"--engine", q.Engine, []string{"v2hd", "v2", "v1"}},
 				{"--frame", q.Frame, []string{"square", "landscape", "portrait"}},
 				{"--badge", q.Badge, []string{"verified", "monetizing", "standard"}},
 			} {
@@ -654,7 +653,7 @@ func (a *app) listCmd() *cobra.Command {
 	c.Flags().StringVar(&q.Order, "order", "", "asc or desc (default desc: newest, largest or last in the alphabet first)")
 	c.Flags().StringVar(&q.Q, "q", "", "Only avatars whose name contains this text, ignoring case")
 	c.Flags().StringVar(&q.Visibility, "visibility", "", "Only these visibilities, comma-separated: public, unlisted, private")
-	c.Flags().StringVar(&q.Engine, "engine", "", "Only these models, comma-separated: v1, v2, v2hd (each matches its own model)")
+	c.Flags().StringVar(&q.Engine, "engine", "", "Only these models, comma-separated: v2hd, v2, v1 (each matches its own model)")
 	c.Flags().StringVar(&q.Frame, "frame", "", "Only these frame shapes, comma-separated: square, landscape, portrait")
 	c.Flags().StringVar(&q.Badge, "badge", "", "Only these badges, comma-separated: verified, monetizing, standard (neither)")
 	c.Flags().StringVar(&sponsored, "sponsored", "", "true: only sponsored avatars; false: only the others")
@@ -1070,15 +1069,32 @@ func download(link, path string) error {
 	return os.Rename(f.Name(), path)
 }
 
-const redeemV2Hint = "redeem an invite code with `atmee redeem CODE` (or in Creator Studio's Billing page)"
-
-// noV2Plan is the refusal to build Atmee V2 for an account below Pro that
-// no invite code unlocked, and getV2Hint how to get it. Talking to any
-// avatar never needs it: one kind of credit pays for every model.
+// noV2Plan is the refusal to build Atmee V2 for an account whose plan is
+// below Pro, and getV2Hint the way to it. Talking to any avatar never needs
+// it: one kind of credit pays for every model.
 const (
-	noV2Plan  = "this account can't build Atmee V2 yet (building V2 avatars needs Pro and up, or an invite code)"
-	getV2Hint = "upgrade to Pro and up, or `atmee redeem CODE` with an invite code"
+	noV2Plan  = "this account can't build Atmee V2 (Atmee V2 needs Pro and up)"
+	getV2Hint = "upgrade to Pro and up"
 )
+
+// noV2HD is the refusal to create Atmee V2 HD for an account whose plan is
+// below Growth, and getV2HDHint the way to it.
+const (
+	noV2HD      = "this account can't build Atmee V2 HD (Atmee V2 HD needs Growth and up)"
+	getV2HDHint = "upgrade to Growth and up"
+)
+
+// v2HDRefused is the code a refused V2 HD create, copy or rebuild answers;
+// older servers answer v2_pro_not_in_plan, which means the same.
+func v2HDRefused(code string) bool {
+	return code == "v2hd_access_required" || code == "v2_pro_not_in_plan"
+}
+
+// v2HDHints are the V2 HD refusal's hints.
+var v2HDHints = struct{ create, other string }{
+	create: noV2HD + ": " + getV2HDHint + ", or use --engine v2",
+	other:  noV2HD + ": " + getV2HDHint + ", or use a v2 avatar",
+}
 
 // engineOffer says where `atmee account` shows which engines a server offers.
 const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 HD line only where V2 HD is offered"
@@ -1087,13 +1103,11 @@ const engineOffer = "`atmee account` shows the v2 avatars line, and a V2 HD line
 // on a create, which takes --engine, and on any other command (an update,
 // a capture, a session), where the avatar's engine is already set.
 var engineHints = map[string]struct{ create, other string }{
-	"v2_pro_not_in_plan": {
-		create: "Atmee V2 HD is for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use --engine v2",
-		other:  "Atmee V2 HD is for Enterprise customers on custom plans: contact us through Creator Studio's help center, or use a v2 avatar",
-	},
+	"v2hd_access_required": v2HDHints,
+	"v2_pro_not_in_plan":   v2HDHints, // older servers
 	"v2_access_required": {
-		create: noV2Plan + ": " + getV2Hint + " (" + redeemV2Hint + "), or use --engine v1",
-		other:  noV2Plan + ": " + getV2Hint + " (" + redeemV2Hint + ")",
+		create: noV2Plan + ": " + getV2Hint + ", or use --engine v1",
+		other:  noV2Plan + ": " + getV2Hint,
 	},
 	// Older servers that decided Atmee V2 by credits: the balance usable on
 	// V2 (`atmee balance --json`'s v2SpendableMicrocredits) doesn't cover it.
@@ -1118,10 +1132,25 @@ func engineHint(cmd *cobra.Command, err error) string {
 	if !ok {
 		return ""
 	}
-	if cmd != nil && cmd.Name() == "duplicate" && apiErr.Code == "v2_pro_not_in_plan" {
-		// The server already says V2 HD is Enterprise-only; add only what is
-		// particular to a copy: any source may be copied onto v2.
-		return "copy it onto v2 instead (--engine v2)"
+	if apiErr.Code == "v2_access_required" {
+		// A current server's message already names every way on (Pro and
+		// up, engine v1): nothing to add.
+		// An older server's message points to invite codes: give the hint.
+		if m := strings.ToLower(apiErr.Message); strings.Contains(m, "pro and up") && strings.Contains(m, "engine v1") && !strings.Contains(m, "invite") {
+			return ""
+		}
+	}
+	if v2HDRefused(apiErr.Code) {
+		// A current server's message already names every way on (Growth
+		// and up, engine v2): nothing to add. Any other message gets the
+		// full hint.
+		if m := strings.ToLower(apiErr.Message); strings.Contains(m, "growth and up") && strings.Contains(m, "engine v2") && !strings.Contains(m, "invite") {
+			return ""
+		}
+		if cmd != nil && cmd.Name() == "duplicate" {
+			// What is particular to a copy: any source may be copied onto v2.
+			return noV2HD + ": " + getV2HDHint + ", or copy it onto v2 instead (--engine v2)"
+		}
 	}
 	if cmd != nil && cmd.Flags().Lookup("engine") != nil {
 		return h.create
@@ -1131,10 +1160,10 @@ func engineHint(cmd *cobra.Command, err error) string {
 
 // noV2Reason is why the account cannot make v2 avatars, or "" when it can
 // or that can't be told (the create then says so itself). The account's
-// v2Access decides: invite_required means no Atmee V2 access (below Pro,
-// no invite code). An older server decided by credits instead: while the
-// balance still reports v2SpendableMicrocredits, an account without an
-// invite but with a positive figure may still build v2.
+// v2Access decides: invite_required means Atmee V2 is not on the account's
+// plan (it needs Pro and up). An older server decided by credits instead:
+// while the balance still reports v2SpendableMicrocredits, an account
+// without V2 access but with a positive figure may still build v2.
 func noV2Reason(cl *api.Client) string {
 	acct, err := cl.Account(ctx())
 	if err != nil || acct.V2Access == nil {

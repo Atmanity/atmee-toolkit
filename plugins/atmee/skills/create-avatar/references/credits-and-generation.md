@@ -111,17 +111,20 @@ a generated portrait is framed from the shoulders up. v2 animates whatever
 the portrait shows, so for v2 enhancing keeps the photo's pose, gaze, hands,
 framing and background and only improves its quality, and a generated
 portrait is framed half-body, from the waist up with both hands visible,
-unless the description sets another framing. A new portrait for an existing
-Atmee V2 HD avatar (`engine: v2hd`, the candidates reference, Model) is made
-as for v2; never make one for a new avatar.
+unless the description sets another framing. A portrait for an
+Atmee V2 HD avatar (`engine: v2hd`: the candidates
+reference, Model) is made as for v2.
 
 - **Settle the engine before the first paid portrait call,** in step 1:
   v2 when `get_account`'s `v2Access` is `granted` (on an older server whose
   `get_balance` still reports `v2SpendableMicrocredits`, also when that figure
-  is above 0). Otherwise ask for an invite code
-  (or suggest Pro and up) as the candidates reference's
-  Create says, and use v1 only when the creator has neither and agrees. Use v1 too when the creator asks for
-  it.
+  is above 0). Otherwise say Atmee V2 needs Pro and up and offer the
+  upgrade to Pro or v1, as the candidates reference's
+  Create says, and use v1 only when the creator agrees. Use v1 too when the creator asks for
+  it, and v2hd when they ask for V2 HD, `get_account` `limits.v2Pro` is
+  true and `v2Access` is `granted` (Growth and up; `SKILL.md`,
+  rule 13). Below Growth, offer the upgrade to Growth or v2 first, then
+  v2hd once `limits.v2Pro` is true.
 - **Pass it as `engine`** on every `generate_portraits` and
   `enhance_portrait` call for a new avatar, and write it into the pending
   `paid_calls` entry's `inputs`. Left out, the server makes a v1 portrait.
@@ -271,7 +274,7 @@ make the sample longer.
 `image` moving as `prompt` says, with sound if audio is given. `image` and
 `prompt` are required. No avatar is made: offer it only when the creator asks
 for a clip (a teaser, a post), not as part of the five steps. Clips are on
-every plan, Free included, and need no Atmee V2 access or invite code: make
+every plan, Free included, and need no Atmee V2 access: make
 one on any plan, without checking `v2Access`. Credits pay for it, at
 the price per clip `get_account`'s `pricing.generation` lists. Where `get_account`
 `limits.videoGeneration` is false (absent counts as allowed) the call answers

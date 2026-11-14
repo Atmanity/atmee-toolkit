@@ -60,7 +60,7 @@ func (a *app) balanceCmd() *cobra.Command {
 		Use:   "balance",
 		Short: "Credits left on the account, and what expires when.",
 		Long: "Credits left on your account (the signed-in user's or the API key's; 100 microcredits = 1 credit): what a session can spend now, " +
-			"the plan, top-up and coupon buckets, what running sessions hold, and the credits that expire next. One kind of credit pays for every model (V1, V2, V2 HD), each at its rate. " +
+			"the plan, top-up and coupon buckets, what running sessions hold, and the credits that expire next. One kind of credit pays for every model (V2 HD, V2, V1), each at its rate. " +
 			"Works for a signed-in user, or a key with the sessions or avatars:read scope.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -137,9 +137,9 @@ func (a *app) accountCmd() *cobra.Command {
 	return c
 }
 
-// helpCenter is Creator Studio's help center, where Enterprise customers
-// contact us: on the website the account's links point to, or named
-// without an address when the server reports no links.
+// helpCenter is Creator Studio's help center, where an account contacts
+// us: on the website the account's links point to, or named without an
+// address when the server reports no links.
 func helpCenter(links *avatarapi.AccountLinks) string {
 	const name = "Creator Studio's help center"
 	if links == nil {
@@ -192,7 +192,7 @@ func (a *app) printAccount(x *api.Account) {
 	if v := x.V2Access; v != nil {
 		a.printf("v2 avatars   %s\n", map[string]string{
 			api.V2AccessGranted:        "yes",
-			api.V2AccessInviteRequired: "can't build yet: building Atmee V2 needs Pro and up, or an invite code (`atmee redeem CODE`); creates default to V1 without it. Anyone can talk to any avatar",
+			api.V2AccessInviteRequired: "can't build: Atmee V2 needs Pro and up; creates default to V1 without it. Existing V2 avatars keep working, and anyone can talk to any avatar",
 			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
 	}
@@ -205,9 +205,15 @@ func (a *app) printAccount(x *api.Account) {
 	if x.SessionV2Reported {
 		conversation = "v1 " + conversation + ", v2 " + creditsPerMinute(pr.SessionV2PerMinuteMicrocredits)
 	}
-	// Atmee V2 HD's rates are left unsaid even where the server reports
-	// them: it is for Enterprise customers on custom plans (--json keeps them).
+	// Atmee V2 HD's own rates, where the server reports them; otherwise its
+	// price is left unsaid rather than taken for v2's.
+	if v := pr.SessionV2HdPerMinuteMicrocredits; v != nil {
+		conversation += ", V2 HD " + creditsPerMinute(*v)
+	}
 	render := "v1 " + creditsPerMinute(pr.RenderV1PerMinuteMicrocredits) + ", v2 " + creditsPerMinute(pr.RenderV2PerMinuteMicrocredits)
+	if v := pr.RenderV2HdPerMinuteMicrocredits; v != nil {
+		render += ", V2 HD " + creditsPerMinute(*v)
+	}
 	a.printf("Per minute   conversation %s · avatar session %s\n", conversation, render)
 	if pr.SpeechPerMinuteMicrocredits != nil {
 		a.printf("             speech session %s\n", creditsPerMinute(*pr.SpeechPerMinuteMicrocredits))
@@ -262,10 +268,19 @@ func (a *app) printAccount(x *api.Account) {
 	if len(v2Sizes) > 0 {
 		a.printf("v2 sizes     %s (--resolution)\n", strings.Join(v2Sizes, ", "))
 	}
-	// Atmee V2 HD, where this server reports it: for Enterprise customers,
-	// whatever limits.v2Pro says. Its sizes stay for existing V2 HD avatars.
-	if l.V2Pro != nil {
-		a.printf("V2 HD        Enterprise only, on custom plans: contact us through %s\n", helpCenter(x.Links))
+	// Atmee V2 HD, where this server reports it: new V2 HD avatars are for
+	// Growth and up (an admin can switch an account on or off), which
+	// limits.v2Pro says. Its sizes show either way, for existing V2 HD
+	// avatars too.
+	if v := l.V2Pro; v != nil {
+		switch {
+		case !*v:
+			a.printf("V2 HD        can't build: Atmee V2 HD needs Growth and up; --engine v2hd answers 403 v2hd_access_required without it. Existing V2 HD avatars keep working\n")
+		case x.V2Access != nil && string(*x.V2Access) != api.V2AccessGranted:
+			a.printf("V2 HD        yes, where Atmee V2 is on this account (--engine v2hd)\n")
+		default:
+			a.printf("V2 HD        yes (--engine v2hd)\n")
+		}
 		if rs := l.V2ProResolutions; rs != nil && len(*rs) > 0 {
 			sizes := make([]string, len(*rs))
 			for i, r := range *rs {
@@ -433,11 +448,12 @@ func (a *app) redeemCmd() *cobra.Command {
 	var jsonOut bool
 	c := &cobra.Command{
 		Use:   "redeem CODE",
-		Short: "Redeem an invite or credit code for the account.",
-		Long: "Redeems a code for your account, as Creator Studio's Billing page does. A code can add credits, " +
-			"unlock Atmee V2, or both (Pro and up include Atmee V2 already). Each account redeems a code once. " +
-			"Needs `atmee login`: an API key cannot redeem codes.",
-		Args: cobra.ExactArgs(1),
+		Short: "Redeem a code: credits, or access to Atmee V2 or V2 HD.",
+		Long: "Redeem a code: credits, or access to Atmee V2 or V2 HD. Redeems it for your account, as Creator " +
+			"Studio's Billing page does. Each account redeems a code once. Needs `atmee login`: an API key cannot " +
+			"redeem codes.",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cl, err := a.api()
 			if err != nil {
@@ -454,10 +470,16 @@ func (a *app) redeemCmd() *cobra.Command {
 			if res.MicrocreditsGranted > 0 {
 				parts = append(parts, credits(res.MicrocreditsGranted)+" credits added")
 			}
-			if res.V2Access != nil {
+			// What the account may create now (not only what this code added):
+			// v2Pro (a current server) says V2 HD, v2Access says V2.
+			v2 := res.V2Access == nil || *res.V2Access == api.V2AccessGranted
+			switch {
+			case res.V2Pro != nil && *res.V2Pro && v2:
+				parts = append(parts, "this account can build Atmee V2 and V2 HD")
+			case res.V2Access != nil:
 				parts = append(parts, map[string]string{
-					api.V2AccessGranted:        "Atmee V2 is unlocked",
-					api.V2AccessInviteRequired: "it did not unlock building Atmee V2 (Pro and up include it; below that, an invite code unlocks it)",
+					api.V2AccessGranted:        "this account can build Atmee V2",
+					api.V2AccessInviteRequired: "it did not unlock building Atmee V2 (Atmee V2 needs Pro and up)",
 					api.V2AccessUnavailable:    "v2 avatars are not offered on this server",
 				}[string(*res.V2Access)])
 			}

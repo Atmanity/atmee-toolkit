@@ -227,8 +227,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "clip --image PATH --prompt TEXT",
 		Short: "Render a video clip from an image and a prompt.",
-		Long: "Render an mp4 of the person or character in the image, moving as the prompt says, silent or speaking " +
-			"--audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
+		Long: "Render an mp4 that starts on the image (any subject: a person, character, animal, product or scene) and moves as the prompt " +
+			"says, silent or with --audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
 			"seconds for a silent clip.\n\n" +
 			"A clip lasts at least 1 second, up to the server's limit (15 seconds on current servers); a longer --duration " +
 			"is refused with the limit.\n\n" +
@@ -251,8 +251,8 @@ func (a *app) generateClipCmd() *cobra.Command {
 			if in.Image == "" {
 				return usagef("--image is required: a local jpg, png or webp, an https URL or upload:ID")
 			}
-			if strings.TrimSpace(in.Prompt) == "" || utf8.RuneCountInString(in.Prompt) > 2000 {
-				return usagef("--prompt takes 1 to 2000 characters: the shot and the motion")
+			if strings.TrimSpace(in.Prompt) == "" || utf8.RuneCountInString(in.Prompt) > 8000 {
+				return usagef("--prompt takes 1 to 8000 characters: the shot and the motion")
 			}
 			for flag, v := range map[string]string{"--image": in.Image, "--audio": in.Audio} {
 				if strings.HasPrefix(v, "http://") {
@@ -335,9 +335,9 @@ func (a *app) generateClipCmd() *cobra.Command {
 	}
 	f := c.Flags()
 	f.StringVar(&in.Image, "image", "", "Who or what the clip shows: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required)")
-	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion, up to 2000 characters (required)")
-	f.StringVar(&in.Audio, "audio", "", "What the clip says or plays: a local audio file, an https URL or upload:ID; without it the clip is silent")
-	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, from 1 up to the server's limit (15 on current servers; the price does not depend on it): required with --audio, set to the audio's length; default 8 for a silent clip")
+	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion (required): the model reads up to 1,024 tokens, about 5,000 characters of English and about 1,400 of Chinese; the server refuses a longer one")
+	f.StringVar(&in.Audio, "audio", "", "What the person says: a speech recording (local file, https URL or upload:ID), its words and voice kept and lip-synced; without it the clip is silent. The clip adds no speech, music or sound effects of its own")
+	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, from 1 up to the server's limit (15 on current servers; it sets the price tier, up to 5, 10 or 15 seconds, charged at the next length up): required with --audio, set to the audio's length; default 8 for a silent clip")
 	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, one this server serves (`atmee account` lists them; e.g. 480x480, the default on current servers)")
 	f.Int64Var(&seed, "seed", 0, "The render's seed; another seed gives other motion")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)

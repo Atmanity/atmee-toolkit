@@ -1,6 +1,6 @@
 ---
 name: atmee-product
-description: What Atmee is - live video avatars and v2 video clips from a photo - features, plans, pricing, the path for an idea. Use when asked what Atmee can do or costs, or before a build. NOT for making one.
+description: What Atmee is - live video avatars and v2 video clips from a picture - features, plans, pricing, the path for an idea. Use when asked what Atmee can do or costs, or before a build. NOT for making one.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -25,12 +25,19 @@ Atmee or integrate them anywhere. People make avatars of themselves (a
 digital twin), a brand's concierge, an expert, a teacher, a companion, a
 historical figure or an original character.
 
-Atmee v2 also makes **video clips**: from a photo and a prompt, a short mp4
-of that person or character moving as the prompt says, speaking a voice line
-when one is given (silent without), with no avatar needed (a teaser, a social
-post, an ad, a product demo). Whenever someone asks what Atmee can do, or
-wants a video rather than a conversation, say that it makes clips too;
-`create-avatar` makes them. Clips are on every plan, Free included, with
+Atmee v2 also makes **video clips**: from a picture and a prompt, a short
+mp4 that starts on the picture and moves as the prompt says, with no avatar
+needed (a teaser, a social post, an ad, a product demo, a story beat). Any
+picture works: a person, a drawn or anime character, an animal, a product or
+a scene, with small or big motion; nothing restricts the subject, and the
+user decides what to try. Whenever someone asks what Atmee can do, or wants
+a video rather than a conversation, say that it makes clips too;
+`create-avatar` makes them, with tips from real renders. A clip takes one
+picture (its first frame, cropped to the clip's shape), a prompt and an
+optional audio file. Speech in the audio drives the speaker's lips and face,
+so a talking clip with a recording moves far more than a silent one. Music and sound
+effects play back as given (they don't move lips) or go on in an editor.
+Clips are on every plan, Free included, with
 no Atmee V2 access needed; a server offers them only when
 `get_account`'s `pricing.generation` has a clip price.
 

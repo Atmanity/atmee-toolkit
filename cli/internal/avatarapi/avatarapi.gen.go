@@ -3984,16 +3984,16 @@ type FrameworkErrorResponse struct {
 
 // GenerateClipRequest defines model for GenerateClipRequest.
 type GenerateClipRequest struct {
-	// Audio What the clip says or plays, `upload:<uploadId>` (a `voice` upload) or a public https link to an audio file. Absent, the clip is silent.
+	// Audio What is said in the clip, `upload:<uploadId>` (a `voice` upload) or a public https link to a speech recording. Speech drives the lips and face; other sound plays back as given. Absent, the clip is silent. The clip makes no speech, music or sound effects of its own.
 	Audio *string `json:"audio,omitempty"`
 
-	// DurationSeconds The clip's length, 1 to 15 at every size. Required with `audio` (set it to the audio's length; it is not read from the file); default 8 for a silent clip.
+	// DurationSeconds The clip's length, 1 to 15 at every size. Required with `audio`, set to the audio's length in whole seconds, rounded up, at most 15 (longer audio is cut; the file is not measured); default 8 for a silent clip.
 	DurationSeconds *int `json:"durationSeconds,omitempty"`
 
-	// Image Who or what the clip shows, `upload:<uploadId>` (a `portrait` upload) or a public https link (jpg, png or webp, at most 10 MB).
+	// Image The clip's first frame, any subject (a person, character, animal, product or scene), `upload:<uploadId>` (an image upload of kind `portrait`) or a public https link (jpg, png or webp, at most 10 MB).
 	Image string `json:"image"`
 
-	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following".
+	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following". Limited in tokens, not characters. The model reads at most 1,024 of its tokens (about 5,000 characters of English, about 1,400 of Chinese). A longer prompt is refused as `invalid_input` naming the prompt, at no charge; 8,000 characters (maxLength) is only a size cap on top.
 	Prompt string `json:"prompt"`
 
 	// Resolution A clip's output size in pixels, one of these. Credits per clip by
@@ -5866,10 +5866,9 @@ type ClientInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Card**: the share card (title, subtitle, tags, social links) and a
-	//   custom Explore thumbnail are copied too, the thumbnail inside
-	//   storage, once the copy is made; an automatic thumbnail is not (the
-	//   copy gets its own). A part that can no longer be copied, such as a
+	// - **Card**: the share card (title, subtitle, tags, social links) and
+	//   the Explore thumbnail, uploaded or automatic, are copied too, the
+	//   thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
@@ -5934,10 +5933,9 @@ type ClientInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Card**: the share card (title, subtitle, tags, social links) and a
-	//   custom Explore thumbnail are copied too, the thumbnail inside
-	//   storage, once the copy is made; an automatic thumbnail is not (the
-	//   copy gets its own). A part that can no longer be copied, such as a
+	// - **Card**: the share card (title, subtitle, tags, social links) and
+	//   the Explore thumbnail, uploaded or automatic, are copied too, the
+	//   thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
@@ -6285,17 +6283,21 @@ type ClientInterface interface {
 
 	// GenerateClipWithBody Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-	// in `image`, moving as `prompt` describes and optionally speaking
-	// `audio`. No avatar is needed.
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// moves as `prompt` describes, optionally with `audio`. Any picture works:
+	// a person, a drawn character, an animal, a product or a scene, with
+	// small or large motion. No avatar is needed.
 	//
-	// - **Inputs**: `image` is a `portrait` upload or a public https link
-	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-	//   The audio plays once from the start, padded with silence or cut at the
-	//   end. The prompt and the image are moderated; if the image shows a real
-	//   person other than you, get their permission first.
-	// - **Duration**: `durationSeconds` is required with `audio` (set it to
-	//   the audio's length; the file is not measured) and defaults to 8 for a
+	// - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+	//   shows) or a public https link (jpg, png or webp, up to 10 MB);
+	//   `audio` is a `voice` upload or link. Speech in the audio drives the
+	//   speaker's lips and face; other sound plays back as given. Audio
+	//   shorter than the clip is padded with silence, longer audio is cut at
+	//   the end. The prompt and the image are moderated; if the image
+	//   shows a real person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio`, set to the
+	//   audio's length in whole seconds, rounded up, at most 15 (longer audio
+	//   is cut at the end; the file is not measured). It defaults to 8 for a
 	//   silent clip; 1 to 15 seconds at every size.
 	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 	//   output size, one of the sizes in `ClipResolution` (listed with
@@ -6329,7 +6331,7 @@ type ClientInterface interface {
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type.
@@ -6339,17 +6341,21 @@ type ClientInterface interface {
 
 	// GenerateClip Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-	// in `image`, moving as `prompt` describes and optionally speaking
-	// `audio`. No avatar is needed.
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// moves as `prompt` describes, optionally with `audio`. Any picture works:
+	// a person, a drawn character, an animal, a product or a scene, with
+	// small or large motion. No avatar is needed.
 	//
-	// - **Inputs**: `image` is a `portrait` upload or a public https link
-	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-	//   The audio plays once from the start, padded with silence or cut at the
-	//   end. The prompt and the image are moderated; if the image shows a real
-	//   person other than you, get their permission first.
-	// - **Duration**: `durationSeconds` is required with `audio` (set it to
-	//   the audio's length; the file is not measured) and defaults to 8 for a
+	// - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+	//   shows) or a public https link (jpg, png or webp, up to 10 MB);
+	//   `audio` is a `voice` upload or link. Speech in the audio drives the
+	//   speaker's lips and face; other sound plays back as given. Audio
+	//   shorter than the clip is padded with silence, longer audio is cut at
+	//   the end. The prompt and the image are moderated; if the image
+	//   shows a real person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio`, set to the
+	//   audio's length in whole seconds, rounded up, at most 15 (longer audio
+	//   is cut at the end; the file is not measured). It defaults to 8 for a
 	//   silent clip; 1 to 15 seconds at every size.
 	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 	//   output size, one of the sizes in `ClipResolution` (listed with
@@ -6383,7 +6389,7 @@ type ClientInterface interface {
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type.
@@ -8061,10 +8067,9 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Card**: the share card (title, subtitle, tags, social links) and a
-//     custom Explore thumbnail are copied too, the thumbnail inside
-//     storage, once the copy is made; an automatic thumbnail is not (the
-//     copy gets its own). A part that can no longer be copied, such as a
+//   - **Card**: the share card (title, subtitle, tags, social links) and
+//     the Explore thumbnail, uploaded or automatic, are copied too, the
+//     thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
@@ -8139,10 +8144,9 @@ func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdP
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Card**: the share card (title, subtitle, tags, social links) and a
-//     custom Explore thumbnail are copied too, the thumbnail inside
-//     storage, once the copy is made; an automatic thumbnail is not (the
-//     copy gets its own). A part that can no longer be copied, such as a
+//   - **Card**: the share card (title, subtitle, tags, social links) and
+//     the Explore thumbnail, uploaded or automatic, are copied too, the
+//     thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
@@ -8700,17 +8704,21 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 
 // GenerateClipWithBody Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-// in `image`, moving as `prompt` describes and optionally speaking
-// `audio`. No avatar is needed.
+// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// moves as `prompt` describes, optionally with `audio`. Any picture works:
+// a person, a drawn character, an animal, a product or a scene, with
+// small or large motion. No avatar is needed.
 //
-//   - **Inputs**: `image` is a `portrait` upload or a public https link
-//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-//     The audio plays once from the start, padded with silence or cut at the
-//     end. The prompt and the image are moderated; if the image shows a real
-//     person other than you, get their permission first.
-//   - **Duration**: `durationSeconds` is required with `audio` (set it to
-//     the audio's length; the file is not measured) and defaults to 8 for a
+//   - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+//     shows) or a public https link (jpg, png or webp, up to 10 MB);
+//     `audio` is a `voice` upload or link. Speech in the audio drives the
+//     speaker's lips and face; other sound plays back as given. Audio
+//     shorter than the clip is padded with silence, longer audio is cut at
+//     the end. The prompt and the image are moderated; if the image
+//     shows a real person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio`, set to the
+//     audio's length in whole seconds, rounded up, at most 15 (longer audio
+//     is cut at the end; the file is not measured). It defaults to 8 for a
 //     silent clip; 1 to 15 seconds at every size.
 //   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 //     output size, one of the sizes in `ClipResolution` (listed with
@@ -8744,7 +8752,7 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type.
@@ -8764,17 +8772,21 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 
 // GenerateClip Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-// in `image`, moving as `prompt` describes and optionally speaking
-// `audio`. No avatar is needed.
+// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// moves as `prompt` describes, optionally with `audio`. Any picture works:
+// a person, a drawn character, an animal, a product or a scene, with
+// small or large motion. No avatar is needed.
 //
-//   - **Inputs**: `image` is a `portrait` upload or a public https link
-//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-//     The audio plays once from the start, padded with silence or cut at the
-//     end. The prompt and the image are moderated; if the image shows a real
-//     person other than you, get their permission first.
-//   - **Duration**: `durationSeconds` is required with `audio` (set it to
-//     the audio's length; the file is not measured) and defaults to 8 for a
+//   - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+//     shows) or a public https link (jpg, png or webp, up to 10 MB);
+//     `audio` is a `voice` upload or link. Speech in the audio drives the
+//     speaker's lips and face; other sound plays back as given. Audio
+//     shorter than the clip is padded with silence, longer audio is cut at
+//     the end. The prompt and the image are moderated; if the image
+//     shows a real person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio`, set to the
+//     audio's length in whole seconds, rounded up, at most 15 (longer audio
+//     is cut at the end; the file is not measured). It defaults to 8 for a
 //     silent clip; 1 to 15 seconds at every size.
 //   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 //     output size, one of the sizes in `ClipResolution` (listed with
@@ -8808,7 +8820,7 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type.
@@ -12566,10 +12578,9 @@ type ClientWithResponsesInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Card**: the share card (title, subtitle, tags, social links) and a
-	//   custom Explore thumbnail are copied too, the thumbnail inside
-	//   storage, once the copy is made; an automatic thumbnail is not (the
-	//   copy gets its own). A part that can no longer be copied, such as a
+	// - **Card**: the share card (title, subtitle, tags, social links) and
+	//   the Explore thumbnail, uploaded or automatic, are copied too, the
+	//   thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
@@ -12634,10 +12645,9 @@ type ClientWithResponsesInterface interface {
 	//   `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 	//   672x384); any other copy takes the target engine's size nearest
 	//   its portrait's shape (the creator's crop, else the image).
-	// - **Card**: the share card (title, subtitle, tags, social links) and a
-	//   custom Explore thumbnail are copied too, the thumbnail inside
-	//   storage, once the copy is made; an automatic thumbnail is not (the
-	//   copy gets its own). A part that can no longer be copied, such as a
+	// - **Card**: the share card (title, subtitle, tags, social links) and
+	//   the Explore thumbnail, uploaded or automatic, are copied too, the
+	//   thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
@@ -12997,17 +13007,21 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithBodyWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-	// in `image`, moving as `prompt` describes and optionally speaking
-	// `audio`. No avatar is needed.
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// moves as `prompt` describes, optionally with `audio`. Any picture works:
+	// a person, a drawn character, an animal, a product or a scene, with
+	// small or large motion. No avatar is needed.
 	//
-	// - **Inputs**: `image` is a `portrait` upload or a public https link
-	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-	//   The audio plays once from the start, padded with silence or cut at the
-	//   end. The prompt and the image are moderated; if the image shows a real
-	//   person other than you, get their permission first.
-	// - **Duration**: `durationSeconds` is required with `audio` (set it to
-	//   the audio's length; the file is not measured) and defaults to 8 for a
+	// - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+	//   shows) or a public https link (jpg, png or webp, up to 10 MB);
+	//   `audio` is a `voice` upload or link. Speech in the audio drives the
+	//   speaker's lips and face; other sound plays back as given. Audio
+	//   shorter than the clip is padded with silence, longer audio is cut at
+	//   the end. The prompt and the image are moderated; if the image
+	//   shows a real person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio`, set to the
+	//   audio's length in whole seconds, rounded up, at most 15 (longer audio
+	//   is cut at the end; the file is not measured). It defaults to 8 for a
 	//   silent clip; 1 to 15 seconds at every size.
 	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 	//   output size, one of the sizes in `ClipResolution` (listed with
@@ -13041,7 +13055,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -13051,17 +13065,21 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-	// in `image`, moving as `prompt` describes and optionally speaking
-	// `audio`. No avatar is needed.
+	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// moves as `prompt` describes, optionally with `audio`. Any picture works:
+	// a person, a drawn character, an animal, a product or a scene, with
+	// small or large motion. No avatar is needed.
 	//
-	// - **Inputs**: `image` is a `portrait` upload or a public https link
-	//   (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-	//   The audio plays once from the start, padded with silence or cut at the
-	//   end. The prompt and the image are moderated; if the image shows a real
-	//   person other than you, get their permission first.
-	// - **Duration**: `durationSeconds` is required with `audio` (set it to
-	//   the audio's length; the file is not measured) and defaults to 8 for a
+	// - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+	//   shows) or a public https link (jpg, png or webp, up to 10 MB);
+	//   `audio` is a `voice` upload or link. Speech in the audio drives the
+	//   speaker's lips and face; other sound plays back as given. Audio
+	//   shorter than the clip is padded with silence, longer audio is cut at
+	//   the end. The prompt and the image are moderated; if the image
+	//   shows a real person other than you, get their permission first.
+	// - **Duration**: `durationSeconds` is required with `audio`, set to the
+	//   audio's length in whole seconds, rounded up, at most 15 (longer audio
+	//   is cut at the end; the file is not measured). It defaults to 8 for a
 	//   silent clip; 1 to 15 seconds at every size.
 	// - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 	//   output size, one of the sizes in `ClipResolution` (listed with
@@ -13095,7 +13113,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// | Error | When |
 	// |---|---|
-	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 	// | `503 generation_unavailable` | Clips are not offered here |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -17869,10 +17887,9 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Card**: the share card (title, subtitle, tags, social links) and a
-//     custom Explore thumbnail are copied too, the thumbnail inside
-//     storage, once the copy is made; an automatic thumbnail is not (the
-//     copy gets its own). A part that can no longer be copied, such as a
+//   - **Card**: the share card (title, subtitle, tags, social links) and
+//     the Explore thumbnail, uploaded or automatic, are copied too, the
+//     thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
@@ -17943,10 +17960,9 @@ func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Co
 //     `resolution` (a legacy 384x640 or 640x384 moves to 384x672 or
 //     672x384); any other copy takes the target engine's size nearest
 //     its portrait's shape (the creator's crop, else the image).
-//   - **Card**: the share card (title, subtitle, tags, social links) and a
-//     custom Explore thumbnail are copied too, the thumbnail inside
-//     storage, once the copy is made; an automatic thumbnail is not (the
-//     copy gets its own). A part that can no longer be copied, such as a
+//   - **Card**: the share card (title, subtitle, tags, social links) and
+//     the Explore thumbnail, uploaded or automatic, are copied too, the
+//     thumbnail inside storage, once the copy is made. A part that can no longer be copied, such as a
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
@@ -18432,17 +18448,21 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 
 // GenerateClipWithBodyWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-// in `image`, moving as `prompt` describes and optionally speaking
-// `audio`. No avatar is needed.
+// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// moves as `prompt` describes, optionally with `audio`. Any picture works:
+// a person, a drawn character, an animal, a product or a scene, with
+// small or large motion. No avatar is needed.
 //
-//   - **Inputs**: `image` is a `portrait` upload or a public https link
-//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-//     The audio plays once from the start, padded with silence or cut at the
-//     end. The prompt and the image are moderated; if the image shows a real
-//     person other than you, get their permission first.
-//   - **Duration**: `durationSeconds` is required with `audio` (set it to
-//     the audio's length; the file is not measured) and defaults to 8 for a
+//   - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+//     shows) or a public https link (jpg, png or webp, up to 10 MB);
+//     `audio` is a `voice` upload or link. Speech in the audio drives the
+//     speaker's lips and face; other sound plays back as given. Audio
+//     shorter than the clip is padded with silence, longer audio is cut at
+//     the end. The prompt and the image are moderated; if the image
+//     shows a real person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio`, set to the
+//     audio's length in whole seconds, rounded up, at most 15 (longer audio
+//     is cut at the end; the file is not measured). It defaults to 8 for a
 //     silent clip; 1 to 15 seconds at every size.
 //   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 //     output size, one of the sizes in `ClipResolution` (listed with
@@ -18476,7 +18496,7 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -18492,17 +18512,21 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 
 // GenerateClipWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) of the person or character
-// in `image`, moving as `prompt` describes and optionally speaking
-// `audio`. No avatar is needed.
+// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// moves as `prompt` describes, optionally with `audio`. Any picture works:
+// a person, a drawn character, an animal, a product or a scene, with
+// small or large motion. No avatar is needed.
 //
-//   - **Inputs**: `image` is a `portrait` upload or a public https link
-//     (jpg, png or webp, up to 10 MB); `audio` is a `voice` upload or link.
-//     The audio plays once from the start, padded with silence or cut at the
-//     end. The prompt and the image are moderated; if the image shows a real
-//     person other than you, get their permission first.
-//   - **Duration**: `durationSeconds` is required with `audio` (set it to
-//     the audio's length; the file is not measured) and defaults to 8 for a
+//   - **Inputs**: `image` is an image upload (kind `portrait`, whatever it
+//     shows) or a public https link (jpg, png or webp, up to 10 MB);
+//     `audio` is a `voice` upload or link. Speech in the audio drives the
+//     speaker's lips and face; other sound plays back as given. Audio
+//     shorter than the clip is padded with silence, longer audio is cut at
+//     the end. The prompt and the image are moderated; if the image
+//     shows a real person other than you, get their permission first.
+//   - **Duration**: `durationSeconds` is required with `audio`, set to the
+//     audio's length in whole seconds, rounded up, at most 15 (longer audio
+//     is cut at the end; the file is not measured). It defaults to 8 for a
 //     silent clip; 1 to 15 seconds at every size.
 //   - **Resolution**: 480 × 480 unless you pass `resolution`, the clip's
 //     output size, one of the sizes in `ClipResolution` (listed with
@@ -18536,7 +18560,7 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //
 // | Error | When |
 // |---|---|
-// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (no face, an unreadable file), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
+// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
 // | `503 generation_unavailable` | Clips are not offered here |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).

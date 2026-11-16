@@ -1,6 +1,6 @@
 ---
 name: create-avatar
-description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a v2 video clip from a photo. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
+description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a v2 video clip from a picture. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -204,7 +204,7 @@ every call (setup saves it for a sign-in that belongs to several accounts).
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
-  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, priced by size and length, charged at the next length up; 1080p coming soon) of a portrait moving as a prompt says, silent, or with sound from an audio file; no avatar is made |
+  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, priced by size and length, charged at the next length up; 1080p coming soon) that starts on any picture (person, character, animal, product, scene) and moves as a prompt says, silent or with audio (speech drives the lips; other sound plays back as given; plan it with the reference's Planning a good clip); no avatar is made |
   | `get_clip` | a clip's status by its `requestId`, free: follow a render after `request_in_progress` and get its download link |
 
   If the server lists none of them, or `get_account` has no

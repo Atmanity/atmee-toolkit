@@ -108,8 +108,11 @@ instead. The API is at `https://api.atmanity.us`.
   version of a photo, voice previews from a description (each paid per call); the outputs
   go straight into an avatar's create or replace (a key needs
   `generation:write` with `avatars:write`). Where offered, a **clip**: an
-  mp4 of a portrait moving as a prompt says, silent, or with sound from an
-  audio file, 1 to 15 seconds at one of the clip sizes: 480×480 (the
+  mp4 that starts on any picture (a person, character, animal, product or
+  scene) and moves as a prompt says, silent, or with an audio file (speech
+  drives the speaker's lips; other sound plays back as given), with a prompt
+  of up to 1,024 model tokens (a token limit, not a character one: about
+  5,000 characters of English), 1 to 15 seconds at one of the clip sizes: 480×480 (the
   default), 640×480, 480×640, 832×468, 468×832, 720×720, 960×720, 720×960,
   1280×720 or 720×1280. 1080p (1080×1080, 1920×1080, 1080×1920, 1440×1080,
   1080×1440) is coming soon. No avatar is made; it

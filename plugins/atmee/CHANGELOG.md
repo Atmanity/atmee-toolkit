@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.17 (2026-11-16)
+
+
+### Documentation
+
+* **skills:** open clips to any picture and motion, with tips instead of limits
+* **skills:** plan clips around a speech recording
+
 ## 0.10.16 (2026-11-14)
 
 

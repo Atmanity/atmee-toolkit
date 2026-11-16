@@ -454,6 +454,13 @@ files). A reference works once and lasts 24 hours.
 - **`clip`** renders an mp4 from an image and a prompt, silent or speaking
   `--audio`; no avatar is made or needed. `--duration` is required with `--audio`, set to the
   audio's length, because it is not read from the file, and defaults to 8 for a silent clip.
+  `--audio` is what the person says: a speech recording, its words and voice kept as recorded,
+  that moves the lips and face; set `--duration` to its length, rounded up. Other sound (music, ambience) plays back as given without moving lips. `--image` can be
+  any picture: a person, a drawn character, an animal, a product or a scene.
+  `--prompt` is limited in tokens, not characters: the model reads at most 1,024 of its
+  tokens (about 5,000 characters of English, about 1,400 of Chinese). A longer prompt is
+  refused as `invalid_input` naming the prompt, at no charge; 8,000 characters is a hard cap
+  on top.
   A clip lasts at least 1 second, up to the server's limit: 15 seconds on current servers
   (an older server allowed more); a longer `--duration` is refused by the server, which names
   its limit. `--resolution` is one of the sizes the server serves: `atmee account` lists them

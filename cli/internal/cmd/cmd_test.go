@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -702,9 +703,9 @@ func TestV2ProRefusalHints(t *testing.T) {
 		// v2hd_access_required, and v2_pro_not_in_plan from an older server.
 		`403 {"error":"v2hd_access_required","message":"no V2 HD"}`:                                                                                 "this account can't build Atmee V2 HD (Atmee V2 HD needs Growth and up): upgrade to Growth and up, or use --engine v2",
 		`403 {"error":"v2_pro_not_in_plan","message":"the account's plan does not include V2 HD (Pro and up); upgrade the plan, or use engine v2"}`: "this account can't build Atmee V2 HD (Atmee V2 HD needs Growth and up): upgrade to Growth and up, or use --engine v2",
-		// A current server's message already says it all: nothing is added.
-		`403 {"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`:                                     "Error: 403 v2hd_access_required: " + v2HDAccessMsg + "\n",
-		`403 {"error":"v2_access_required","message":"` + v2AccessMsg + `"}`:                                         "Error: 403 v2_access_required: " + v2AccessMsg + "\n",
+		// A current server's message already says it all: only where to see the plans is added.
+		`403 {"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`:                                     "Error: 403 v2hd_access_required: " + v2HDAccessMsg + " " + seePlans + "\n",
+		`403 {"error":"v2_access_required","message":"` + v2AccessMsg + `"}`:                                         "Error: 403 v2_access_required: " + v2AccessMsg + " " + seePlans + "\n",
 		`503 {"error":"engine_unavailable","message":"V2 HD avatars are not enabled on this server; use engine v2"}`: "a V2 HD line only where V2 HD is offered",
 		// An older server's message points to invite codes: the CLI's hint is added.
 		`403 {"error":"v2_access_required","message":"Atmee V2 isn't unlocked on this account yet: upgrade to Pro and up, or redeem an invite code in Studio (Billing), or use engine v1 (Atmee V1)"}`: "this account can't build Atmee V2 (Atmee V2 needs Pro and up): upgrade to Pro and up",
@@ -740,7 +741,7 @@ func TestV2ProRefusalHints(t *testing.T) {
 }
 
 // The current server's V2 and V2 HD refusals already say what to do: the
-// CLI adds nothing.
+// CLI adds only where to see the plans.
 // v2HDAccessMsg is the V2 HD refusal's message, v2AccessMsg the V2 one's.
 const v2HDAccessMsg = "Atmee V2 HD needs Growth and up: upgrade to Growth, or use engine v2 (Atmee V2). Existing V2 HD avatars keep working."
 
@@ -1063,5 +1064,120 @@ func TestClipRefusalFromOlderServerDropsInviteText(t *testing.T) {
 	if code == 0 || !strings.Contains(errOut, "v2_access_required") || !strings.Contains(errOut, "video clips are on every plan") ||
 		strings.Contains(errOut, "invite") || strings.Contains(errOut, "redeem") {
 		t.Errorf("%d %s", code, errOut)
+	}
+}
+
+// A view-only refusal on an edit (an update, a new take, a candidate pick, a
+// new portrait) prints the API's own text and points to the plans; never an
+// upgrade to a named plan of the CLI's own, or an invite code.
+func TestViewOnlyRefusal(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	const id = "11111111-2222-4333-8444-555555555555"
+	for code, msg := range map[string]string{
+		"v2_view_only":   "This Atmee V2 avatar is view-only: editing V2 avatars needs Pro and up. It still chats, shares and embeds.",
+		"v2hd_view_only": "This Atmee V2 HD avatar is view-only: editing V2 HD avatars needs Growth and up. It still chats, shares and embeds.",
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(`{}`))
+				return
+			}
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"error":"`+code+`","message":"`+msg+`","detail":{"cause":"trial_ended","requiredPlan":"pro","trialEndedAt":"2026-12-08T12:00:00Z"}}`)
+		}))
+		t.Setenv("ATMEE_BASE_URL", srv.URL)
+		for _, args := range [][]string{
+			{"avatars", "update", id, "--greeting", "Hi"},
+			{"avatars", "candidates", "add", id},
+			{"avatars", "candidates", "select", id, "22222222-2222-4333-8444-555555555555"},
+			{"avatars", "replace-appearance", id, "https://x.example/a.png"},
+		} {
+			_, errOut, exit := run(t, "", args...)
+			want := "Error: 403 " + code + ": " + msg + " See plans on Studio's Billing page"
+			if exit == 0 || !strings.Contains(errOut, want) {
+				t.Errorf("%v: %d %s", args, exit, errOut)
+			}
+			for _, not := range []string{"pgrade to", "invite", "redeem", "--engine"} {
+				if strings.Contains(errOut, not) {
+					t.Errorf("%v: %q in %s", args, not, errOut)
+				}
+			}
+		}
+		srv.Close()
+	}
+}
+
+// A plan refusal (a create, a view-only edit) points to the account's own
+// plans page where the server reports links.billing; never to a code.
+func TestPlanRefusalPlansLink(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	const billing = "https://www.atmee.example/studio/billing"
+	for code, msg := range map[string]string{
+		"v2_access_required":   v2AccessMsg,
+		"v2hd_access_required": v2HDAccessMsg,
+		"v2_view_only":         "This Atmee V2 avatar is view-only: editing V2 avatars needs Pro and up. It still chats, shares and embeds.",
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet && r.URL.Path == "/v1/account" {
+				_, _ = w.Write([]byte(`{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"limits":{"apiAccess":true},
+					"pricing":{},"captureQuota":{"pending":0,"pendingLimit":10},"links":{"billing":"` + billing + `"}}`))
+				return
+			}
+			if r.Method == http.MethodGet {
+				_, _ = w.Write([]byte(`{}`))
+				return
+			}
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = io.WriteString(w, `{"error":"`+code+`","message":"`+msg+`","detail":{"cause":"plan_required","requiredPlan":"pro"}}`)
+		}))
+		t.Setenv("ATMEE_BASE_URL", srv.URL)
+		_, errOut, exit := run(t, "", "avatars", "update", "11111111-2222-4333-8444-555555555555", "--greeting", "Hi")
+		srv.Close()
+		if want := "Error: 403 " + code + ": " + msg + " See plans: " + billing + "\n"; exit == 0 || !strings.HasSuffix(errOut, want) {
+			t.Errorf("%s: %d %q, want %q", code, exit, errOut, want)
+		}
+		for _, not := range []string{"invite", "redeem", "code in"} {
+			if strings.Contains(errOut, not) {
+				t.Errorf("%s: %q in %s", code, not, errOut)
+			}
+		}
+	}
+}
+
+// A clip that outlasts the server's wait is replayed to the CLI under the key
+// the CLI minted: the summary says it was charged once, at the account's price
+// for its size and length, never "0.00 credits charged". With the user's own
+// --idempotency-key the replay may be of an earlier command, so the plain note stays.
+func TestClipReplayOfOwnAttemptShowsItsPrice(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	var posts atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet {
+			_, _ = w.Write([]byte(`{"pricing":{"generation":{"clipPrices":[{"width":480,"height":480,"prices":[{"upToSeconds":5,"microcredits":10},{"upToSeconds":10,"microcredits":30},{"upToSeconds":15,"microcredits":50}]}]}}}`))
+			return
+		}
+		if posts.Add(1)%2 == 1 && r.Header.Get("Idempotency-Key") != "11111111-2222-4333-8444-555555555555" {
+			w.Header().Set("Retry-After", "1")
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(`{"error":"request_in_progress","message":"still running"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"clip":{"upload":"upload:c","width":480,"height":480,"durationSeconds":8,"expiresAt":"2026-11-18T00:00:00Z"},"microcreditsCharged":0,"microcreditsFree":0,"replayed":true}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+
+	out, errOut, code := run(t, "", "generate", "clip", "--image", "https://x.example/a.png", "--prompt", "waves")
+	if code != 0 || !strings.Contains(out, "0.30 credits charged once") || strings.Contains(out, "0.00 credits") {
+		t.Errorf("own key: %d %s%s", code, out, errOut)
+	}
+	out, errOut, code = run(t, "", "generate", "clip", "--image", "https://x.example/a.png", "--prompt", "waves",
+		"--idempotency-key", "11111111-2222-4333-8444-555555555555")
+	if code != 0 || !strings.Contains(out, "0.00 credits charged; the first result, replayed") {
+		t.Errorf("user's key: %d %s%s", code, out, errOut)
 	}
 }

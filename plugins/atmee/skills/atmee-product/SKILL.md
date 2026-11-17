@@ -103,7 +103,8 @@ always its chat page: never start a session for it (`start_session`,
   Building spends no credits.
   `get_account`'s `v2Access` says whether the account may build V2.
   Creating **Atmee V2 HD** needs Growth and up. Existing V2 and V2 HD
-  avatars keep working, and stay editable, on any plan. A v2 avatar is captured several times;
+  avatars keep chatting, sharing and embedding on any plan; editing them
+  needs Pro and up for V2 and Growth and up for V2 HD. A v2 avatar is captured several times;
   each capture is a **seed** (the server says candidate or take, and the
   API's `seed` field is an informational number, not the clip) and the
   creator picks the one that serves. Studio, the Avatar API and the agent

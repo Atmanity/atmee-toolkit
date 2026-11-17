@@ -59,8 +59,9 @@ the date you read them.
   Atmee V1). Video clips are on every plan, Free
   included, and need no Atmee V2 access. Building Atmee V2 HD avatars
   needs Growth and up (`403 v2hd_access_required` below Growth: upgrade to
-  Growth, or make Atmee V2). Existing V2 and V2 HD avatars keep working,
-  and stay editable, on any plan.
+  Growth, or make Atmee V2). Existing V2 and V2 HD avatars keep chatting,
+  sharing and embedding on any plan; editing them needs Pro and up for V2
+  and Growth and up for V2 HD.
 - **Atmee V2 HD** comes with Growth and up (Growth, Scale and custom
   plans; Pro includes Atmee V2, not V2 HD);
   `get_account` `limits.v2Pro` says whether this account may create it.

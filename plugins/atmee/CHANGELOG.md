@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.18 (2026-11-17)
+
+
+### Features
+
+* **cli:** show the V2 trial window and explain view-only edit refusals
+* V2 paywall, trial length and unlock end in the SDK and CLI
+
 ## 0.10.17 (2026-11-16)
 
 

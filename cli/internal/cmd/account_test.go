@@ -470,3 +470,140 @@ func TestRedeemHidden(t *testing.T) {
 		t.Errorf("help lists redeem: %d %s%s", code, out, errOut)
 	}
 }
+
+// The V2 trial line shows only where the server reports limits.v2Trial:
+// its state and dates, and --json gives the field back as sent. Without
+// it, `atmee account` reads as before.
+func TestAccountV2Trial(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := func(trial string) string {
+		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted",
+			"limits":{"apiAccess":true` + trial + `},
+			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+				"renderV2PerMinuteMicrocredits":150,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+	}
+	window := `"startsAt":"2026-12-01T12:00:00Z","endsAt":"2026-12-08T12:00:00Z"`
+	for _, c := range []struct {
+		trial, want string
+	}{
+		{``, ""},
+		{`,"v2Trial":{"state":"not_started",` + window + `}`, "V2 trial     starts 2026-12-0"},
+		{`,"v2Trial":{"state":"active",` + window + `}`, "V2 trial     on until 2026-12-0"},
+		{`,"v2Trial":{"state":"ended",` + window + `}`, "V2 trial     ended 2026-12-0"},
+		{`,"v2Trial":{"state":"none"}`, ""},
+	} {
+		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(c.trial)).URL)
+		out := ok(t, "account")
+		if c.want == "" && strings.Contains(out, "trial") {
+			t.Errorf("%s: trial shown:\n%s", c.trial, out)
+		}
+		if c.want != "" && !strings.Contains(out, c.want) {
+			t.Errorf("%s: missing %q in:\n%s", c.trial, c.want, out)
+		}
+		if strings.Contains(out, "invite") || strings.Contains(out, "redeem") {
+			t.Errorf("%s: invite in:\n%s", c.trial, out)
+		}
+		var got struct {
+			Limits map[string]json.RawMessage `json:"limits"`
+		}
+		js := ok(t, "account", "--json")
+		if err := json.Unmarshal([]byte(js), &got); err != nil {
+			t.Fatal(err)
+		}
+		_, has := got.Limits["v2Trial"]
+		if has != (c.trial != "") {
+			t.Errorf("%s: --json v2Trial present %v:\n%s", c.trial, has, js)
+		}
+		if c.trial != "" && !strings.Contains(string(got.Limits["v2Trial"]), `"state"`) {
+			t.Errorf("%s: --json v2Trial %s", c.trial, got.Limits["v2Trial"])
+		}
+	}
+}
+
+// No trial is offered (days 0): no trial line, though the server still
+// reports the field; --json gives it back as sent, days included.
+func TestAccountV2TrialNoDays(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted",
+		"limits":{"apiAccess":true,"v2Trial":{"state":"ended","days":0,"endsAt":"2026-12-01T12:00:00Z"}},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+			"renderV2PerMinuteMicrocredits":150,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body).URL)
+	if out := ok(t, "account"); strings.Contains(out, "trial") {
+		t.Errorf("trial shown with days 0:\n%s", out)
+	}
+	if js := ok(t, "account", "--json"); !strings.Contains(js, `"days": 0`) {
+		t.Errorf("--json lost days:\n%s", js)
+	}
+	// A 7-day trial still shows.
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, strings.Replace(body, `"state":"ended","days":0`, `"state":"active","days":7`, 1)).URL)
+	if out := ok(t, "account"); !strings.Contains(out, "V2 trial     on until 2026-12-0") {
+		t.Errorf("trial missing with days 7:\n%s", out)
+	}
+}
+
+// Beside the plan's trial window, a timed unlock keeps the "V2 unlock"
+// label, so the two dates are never both "V2 trial".
+func TestAccountV2TrialAndTimedUnlock(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted",
+		"limits":{"apiAccess":true,"v2Trial":{"state":"active","startsAt":"2026-12-01T12:00:00Z","endsAt":"2026-12-08T12:00:00Z"},
+			"v2Unlock":{"level":"v2hd","source":"coupon","expiresAt":"2026-12-31T12:00:00Z"}},
+		"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+			"renderV2PerMinuteMicrocredits":150,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t, body).URL)
+	out := ok(t, "account")
+	if strings.Count(out, "V2 trial ") != 1 || !strings.Contains(out, "V2 unlock    Atmee V2 and V2 HD trial ends 2026-12-31\n") {
+		t.Errorf("want one V2 trial line and the unlock under V2 unlock:\n%s", out)
+	}
+}
+
+// limits.v2Unlock shows a timed unlock as a trial and when it ends, or
+// "unlocked" when it does not end; nothing without it (or with null). --json
+// gives it back as sent.
+func TestAccountV2Unlock(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	body := func(unlock string) string {
+		return `{"accountId":"11111111-1111-4111-8111-111111111111","plan":{},"v2Access":"granted",
+			"limits":{"apiAccess":true` + unlock + `},
+			"pricing":{"sessionPerMinuteMicrocredits":100,"monetizedPerMinuteMicrocredits":200,"renderV1PerMinuteMicrocredits":50,
+				"renderV2PerMinuteMicrocredits":150,"previewClipMicrocredits":0},"captureQuota":{"pending":0,"pendingLimit":10}}`
+	}
+	for _, c := range []struct {
+		unlock, want, json string
+	}{
+		{``, "", ""},
+		{`,"v2Unlock":null`, "", `"v2Unlock": null`},
+		{`,"v2Unlock":{"level":"v2hd","source":"coupon","expiresAt":"2026-12-31T12:00:00Z"}`, "V2 trial     Atmee V2 and V2 HD trial ends 2026-12-31\n", `"source": "coupon"`},
+		{`,"v2Unlock":{"level":"v2","source":"admin","expiresAt":"2026-12-31T12:00:00Z"}`, "V2 trial     Atmee V2 trial ends 2026-12-31\n", `"level": "v2"`},
+		{`,"v2Unlock":{"level":"v2hd","source":"coupon","expiresAt":"2026-12-31T12:00:00Z","permanentLevel":"v2"}`, "V2 trial     Atmee V2 HD trial ends 2026-12-31\n", `"permanentLevel": "v2"`},
+		{`,"v2Unlock":{"level":"v2hd","source":"coupon","expiresAt":"2026-12-31T12:00:00Z","permanentLevel":"v2hd"}`, "V2 unlock    Atmee V2 and V2 HD unlocked\n", `"permanentLevel": "v2hd"`},
+		{`,"v2Unlock":{"level":"v2hd","source":"legacy","expiresAt":null}`, "V2 unlock    Atmee V2 and V2 HD unlocked\n", `"expiresAt": null`},
+		{`,"v2Unlock":{"level":"v3","source":"admin","expiresAt":null}`, "", `"level": "v3"`},
+	} {
+		t.Setenv("ATMEE_BASE_URL", accountAPI(t, body(c.unlock)).URL)
+		out := ok(t, "account")
+		if c.want == "" && strings.Contains(out, "unlock") {
+			t.Errorf("%s: unlock shown:\n%s", c.unlock, out)
+		}
+		if c.want != "" && !strings.Contains(out, c.want) {
+			t.Errorf("%s: missing %q in:\n%s", c.unlock, c.want, out)
+		}
+		for _, not := range []string{"invite", "redeem", "coupon"} {
+			if strings.Contains(out, not) {
+				t.Errorf("%s: %q in:\n%s", c.unlock, not, out)
+			}
+		}
+		js := ok(t, "account", "--json")
+		if c.json == "" && strings.Contains(js, "v2Unlock") {
+			t.Errorf("%s: --json invents v2Unlock:\n%s", c.unlock, js)
+		}
+		if c.json != "" && !strings.Contains(js, c.json) {
+			t.Errorf("%s: --json lacks %q:\n%s", c.unlock, c.json, js)
+		}
+	}
+}

@@ -31,7 +31,8 @@ coming, never promise it.
 The editor has five steps: Appearance, Voice, Persona, Knowledge, Finalize.
 Studio builds all three models: **Atmee V1** on any plan, **Atmee V2** on Pro
 and up, **Atmee V2 HD** on Growth and up (the same rules as the Avatar API and
-the agent tooling). Avatars an account already has stay editable on any plan.
+the agent tooling). Avatars an account already has keep chatting, sharing and embedding on any
+plan; editing V2 ones needs Pro and up, and V2 HD ones Growth and up.
 
 - **Appearance:** upload or take a photo, or generate a portrait from a
   prompt (generation costs credits).

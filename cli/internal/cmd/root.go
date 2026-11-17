@@ -190,7 +190,14 @@ func ExecuteAs(v Variant, args []string, out, errOut io.Writer, in io.Reader) in
 	// An engine or plan refusal gets what to do about it here, wherever it
 	// came from (a create, an update, a capture).
 	msg := err.Error()
-	if h := engineHint(cmd, err); h != "" {
+	if h := engineHint(cmd, err); h == seePlans {
+		// The refusal's message already says which plan it takes, in whole
+		// sentences: where to see the plans is one more.
+		if !strings.HasSuffix(msg, ".") {
+			msg += "."
+		}
+		msg += " " + a.plansHint()
+	} else if h != "" {
 		// An older server's refusal points to invite codes, which are no
 		// longer offered: keep its status and code, and give only the hint.
 		if strings.Contains(strings.ToLower(msg), "invite") {

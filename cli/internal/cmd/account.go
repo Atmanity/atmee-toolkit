@@ -152,6 +152,67 @@ func helpCenter(links *avatarapi.AccountLinks) string {
 	return name + " (" + u.Scheme + "://" + u.Host + "/studio/help-center)"
 }
 
+// v2TrialLine is the account's V2 trial window, where the server reports
+// one (limits.v2Trial), or "" when it reports none, no trial is offered
+// (days 0) or a state this CLI does not know.
+func v2TrialLine(t *api.V2Trial) string {
+	if t == nil || (t.Days != nil && *t.Days <= 0) {
+		return ""
+	}
+	on := func(p *time.Time) string {
+		if p == nil {
+			return "?"
+		}
+		return day(*p)
+	}
+	switch t.State {
+	case "not_started":
+		return "starts " + on(t.StartsAt) + ", ends " + on(t.EndsAt)
+	case "active":
+		return "on until " + on(t.EndsAt) + " (started " + on(t.StartsAt) + ")"
+	case "ended":
+		return "ended " + on(t.EndsAt)
+	}
+	return ""
+}
+
+// v2UnlockLine is the account's unlock outside its plan (limits.v2Unlock)
+// as a labelled line: a timed one reads as a trial ("V2 trial", "Atmee V2
+// and V2 HD trial ends {date}", or "Atmee V2 HD trial ends {date}" where V2
+// stays after it: permanentLevel), a permanent one as "V2 unlock", "Atmee V2
+// and V2 HD unlocked". Both are "" when the server reports nothing unlocked
+// or a level this CLI does not know.
+func v2UnlockLine(u *avatarapi.AccountV2Unlock) (label, text string) {
+	if u == nil {
+		return "", ""
+	}
+	var what string
+	switch u.Level {
+	case avatarapi.AccountV2UnlockLevelV2:
+		what = "Atmee V2"
+	case avatarapi.AccountV2UnlockLevelV2hd:
+		what = "Atmee V2 and V2 HD"
+	default:
+		return "", ""
+	}
+	keep := ""
+	if u.PermanentLevel != nil {
+		keep = string(*u.PermanentLevel)
+	}
+	// What stays covers the unlock's level: nothing ends.
+	if keep == string(avatarapi.AccountV2UnlockPermanentLevelV2hd) || keep == string(u.Level) {
+		return "V2 unlock", what + " unlocked"
+	}
+	if u.ExpiresAt != nil {
+		// V2 stays once a timed V2 HD ends: only V2 HD is a trial.
+		if keep == string(avatarapi.AccountV2UnlockPermanentLevelV2) {
+			what = "Atmee V2 HD"
+		}
+		return "V2 trial", what + " trial ends " + day(*u.ExpiresAt)
+	}
+	return "V2 unlock", what + " unlocked"
+}
+
 func (a *app) printAccount(x *api.Account) {
 	a.printf("Account %s\n", x.AccountId)
 	p := x.Plan
@@ -195,6 +256,18 @@ func (a *app) printAccount(x *api.Account) {
 			api.V2AccessInviteRequired: "can't build: Atmee V2 needs Pro and up; creates default to V1 without it. Existing V2 avatars keep working, and anyone can talk to any avatar",
 			api.V2AccessUnavailable:    "not offered on this server",
 		}[string(*v)])
+	}
+	trial := v2TrialLine(x.V2Trial)
+	if trial != "" {
+		a.printf("V2 trial     %s\n", trial)
+	}
+	if label, u := v2UnlockLine(x.Limits.V2Unlock); u != "" {
+		// Beside the plan's trial window, the unlock keeps its own label
+		// so the two dates are not both "V2 trial".
+		if trial != "" {
+			label = "V2 unlock"
+		}
+		a.printf("%-13s%s\n", label, u)
 	}
 	a.printf("Limits       session length %s · %s at once · %s API avatars\n", length, limit(l.MaxConcurrentSessions), limit(l.MaxApiAvatars))
 

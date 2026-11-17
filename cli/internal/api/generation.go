@@ -75,8 +75,10 @@ const (
 // generating runs a paid generation call under one Idempotency-Key. A call
 // the server still reports running (409 request_in_progress) is sent again
 // with the same key after Retry-After, which returns its one result, charged
-// once. Nothing is sent again after a network failure or a proxy's 5xx, which
-// may follow a charge: the error carries the key for a deliberate retry.
+// once. So is a call the account's rate limit turned away (429 rate_limited
+// with a Retry-After): it was refused before it started, so nothing was
+// charged. Nothing is sent again after a network failure or a proxy's 5xx,
+// which may follow a charge: the error carries the key for a deliberate retry.
 func generating[T any](ctx context.Context, c *Client, key string, call func(ctx context.Context, key string) (*T, error)) (*T, error) {
 	if key == "" {
 		key = uuid.NewString()
@@ -93,7 +95,8 @@ func generating[T any](ctx context.Context, c *Client, key string, call func(ctx
 		if !errors.As(err, &apiErr) || (apiErr.Status >= 500 && apiErr.Code == "") {
 			return nil, fmt.Errorf("%w (it may have reached the server; retry with --idempotency-key %s: the same key never charges twice)", err, key)
 		}
-		if apiErr.Code != "request_in_progress" {
+		limited := apiErr.Code == "rate_limited" && apiErr.RetryAfter > 0
+		if apiErr.Code != "request_in_progress" && !limited {
 			return nil, err
 		}
 		wait := time.Duration(apiErr.RetryAfter) * time.Second
@@ -101,6 +104,9 @@ func generating[T any](ctx context.Context, c *Client, key string, call func(ctx
 			wait = c.InProgressSleep
 		}
 		if c.now().Add(wait).After(deadline) {
+			if limited {
+				return nil, err
+			}
 			return nil, fmt.Errorf("%w (still running; retry with --idempotency-key %s to get its one result)", err, key)
 		}
 		if err := c.sleepCtx(ctx, wait); err != nil {
@@ -291,6 +297,12 @@ var (
 // upload:<uploadId>, for the calls that take no file in their own request.
 func (c *Client) UploadPortrait(ctx context.Context, path string) (string, error) {
 	return c.uploadFile(ctx, path, avatarapi.UploadKindPortrait, portraitTypes, "a portrait", "a jpg, png or webp")
+}
+
+// UploadImage is UploadPortrait for a picture of any subject, such as a
+// clip's first frame; its refusals name it an image, not a portrait.
+func (c *Client) UploadImage(ctx context.Context, path string) (string, error) {
+	return c.uploadFile(ctx, path, avatarapi.UploadKindPortrait, portraitTypes, "an image", "a jpg, png or webp")
 }
 
 // UploadVoice is UploadPortrait for a local audio file.

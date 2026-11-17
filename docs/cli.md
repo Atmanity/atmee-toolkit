@@ -109,7 +109,9 @@ plan otherwise), and says to contact us through Creator Studio's help center. **
 `yes, where Atmee V2 is on this account` when Atmee V2 isn't on it yet, or `can't build`
 below Growth (Pro included), which says Atmee V2 HD needs Growth and up. **v2 avatars** says whether the account may build Atmee V2:
 it comes with Pro and up; below Pro it says `can't build` and creates default to V1. Clips never need it.
-Existing V2 and V2 HD avatars keep working, and stay editable, on any plan.
+Existing V2 and V2 HD avatars keep chatting, sharing and embedding on any plan; editing them needs Pro and up for V2 and Growth and up for V2 HD (otherwise `403 v2_view_only` / `v2hd_view_only`). The CLI adds `See plans:` and the account's plans page.
+**V2 trial** appears only where the server reports a trial window in `limits.v2Trial` (`state`, `days`, `startsAt`, `endsAt`); none shows when `days` is 0 (no trial offered).
+Where the server reports `limits.v2Unlock` (`level`, `source`, `expiresAt`, `permanentLevel`), a timed unlock (`expiresAt` set) shows as **V2 trial**: `Atmee V2 trial ends` (level `v2`) or `Atmee V2 and V2 HD trial ends` (level `v2hd`) and the date, or `Atmee V2 HD trial ends` where V2 stays after it (`permanentLevel` `v2`; where what stays covers the level, the unlock reads as permanent); a permanent one shows as **V2 unlock**: `Atmee V2 unlocked` or `Atmee V2 and V2 HD unlocked`; beside a **V2 trial** window line, a timed unlock is also labelled **V2 unlock**, so the two dates stay apart.
 **V2 HD sizes** are the frame sizes a V2 HD avatar's `--resolution` takes on this server
 (`limits.v2ProResolutions`, 640x640 first); the example above is one server's list.
 
@@ -228,7 +230,7 @@ last word.
 v2 model, on its own GPUs: it builds, previews and serves exactly like v2 (candidates,
 versions, the conductor, the runtime seed) at larger frame sizes, at its own per-minute rates
 (`atmee account` shows them on the **Per minute** line). Existing V2 HD avatars keep
-working, and stay editable, on any plan: `avatars list` and `get` show their engine as `v2hd`, and they take the same
+chatting, sharing and embedding on any plan (editing them needs Growth and up, otherwise `403 v2hd_view_only`): `avatars list` and `get` show their engine as `v2hd`, and they take the same
 commands as v2 ones. `--engine v2pro`, its first name, still works. A V2 HD create, capture or
 rebuild the account may not make answers `403 v2hd_access_required`; a server without V2 HD
 answers `503 engine_unavailable`; the CLI adds what to do. Video clips are the same whatever
@@ -500,7 +502,11 @@ files). A reference works once and lasts 24 hours.
 Like the other generation commands, none of these asks first.
 
 The price is in `atmee account`, charged only when something comes back. A call still
-running is waited for with the same key, up to 10 minutes. After a network failure nothing
+running is waited for with the same key, up to 10 minutes, and so is a call the account's
+rate limit turned away (`429 rate_limited` with a `Retry-After`; nothing was charged). A clip
+that outlasted the server's wait comes back as a replay of the CLI's own first attempt, so
+its summary shows the clip's price, charged once, not the replay's 0 (`--json` keeps the
+API's `microcreditsCharged: 0` with `replayed: true`). After a network failure nothing
 is sent again: the error prints the key, and `--idempotency-key` retries it without
 charging twice. They work signed in, or with a key holding `generation:write` and
 `avatars:write`.

@@ -81,6 +81,87 @@ func (e AccountPayoutsStatus) Valid() bool {
 	}
 }
 
+// Defines values for AccountV2TrialState.
+const (
+	AccountV2TrialStateActive     AccountV2TrialState = "active"
+	AccountV2TrialStateEnded      AccountV2TrialState = "ended"
+	AccountV2TrialStateNone       AccountV2TrialState = "none"
+	AccountV2TrialStateNotStarted AccountV2TrialState = "not_started"
+)
+
+// Valid indicates whether the value is a known member of the AccountV2TrialState enum.
+func (e AccountV2TrialState) Valid() bool {
+	switch e {
+	case AccountV2TrialStateActive:
+		return true
+	case AccountV2TrialStateEnded:
+		return true
+	case AccountV2TrialStateNone:
+		return true
+	case AccountV2TrialStateNotStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountV2UnlockLevel.
+const (
+	AccountV2UnlockLevelV2   AccountV2UnlockLevel = "v2"
+	AccountV2UnlockLevelV2hd AccountV2UnlockLevel = "v2hd"
+)
+
+// Valid indicates whether the value is a known member of the AccountV2UnlockLevel enum.
+func (e AccountV2UnlockLevel) Valid() bool {
+	switch e {
+	case AccountV2UnlockLevelV2:
+		return true
+	case AccountV2UnlockLevelV2hd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountV2UnlockPermanentLevel.
+const (
+	AccountV2UnlockPermanentLevelV2   AccountV2UnlockPermanentLevel = "v2"
+	AccountV2UnlockPermanentLevelV2hd AccountV2UnlockPermanentLevel = "v2hd"
+)
+
+// Valid indicates whether the value is a known member of the AccountV2UnlockPermanentLevel enum.
+func (e AccountV2UnlockPermanentLevel) Valid() bool {
+	switch e {
+	case AccountV2UnlockPermanentLevelV2:
+		return true
+	case AccountV2UnlockPermanentLevelV2hd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountV2UnlockSource.
+const (
+	Admin  AccountV2UnlockSource = "admin"
+	Coupon AccountV2UnlockSource = "coupon"
+	Legacy AccountV2UnlockSource = "legacy"
+)
+
+// Valid indicates whether the value is a known member of the AccountV2UnlockSource enum.
+func (e AccountV2UnlockSource) Valid() bool {
+	switch e {
+	case Admin:
+		return true
+	case Coupon:
+		return true
+	case Legacy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ApiKeyScopes.
 const (
 	ApiKeyScopesAvatarsRead     ApiKeyScopes = "avatars:read"
@@ -1693,8 +1774,12 @@ type Account struct {
 	// needs Pro and up); or `unavailable` (V2 is not offered here).
 	// Absent when it could not be determined. `invite_required` means a
 	// V2 create answers `403 v2_access_required` until the account
-	// upgrades to Pro. Avatars the account already owns stay editable
-	// (new takes, rebuilds, versions) whatever this says. Talking to any
+	// upgrades to Pro. Avatars the account already owns keep chatting,
+	// sharing and embedding whatever this says. Editing them (new takes,
+	// rebuilds, versions) needs Pro and up for V2 and Growth and up for
+	// V2 HD where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported) (otherwise
+	// `403 v2_view_only` / `v2hd_view_only`), and is open on any plan
+	// elsewhere. Talking to any
 	// avatar never needs it, and neither do video clips, which are on
 	// every plan, Free included. Creating V2 HD needs Growth and up
 	// (`limits.v2Pro`).
@@ -1707,8 +1792,12 @@ type Account struct {
 // needs Pro and up); or `unavailable` (V2 is not offered here).
 // Absent when it could not be determined. `invite_required` means a
 // V2 create answers `403 v2_access_required` until the account
-// upgrades to Pro. Avatars the account already owns stay editable
-// (new takes, rebuilds, versions) whatever this says. Talking to any
+// upgrades to Pro. Avatars the account already owns keep chatting,
+// sharing and embedding whatever this says. Editing them (new takes,
+// rebuilds, versions) needs Pro and up for V2 and Growth and up for
+// V2 HD where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported) (otherwise
+// `403 v2_view_only` / `v2hd_view_only`), and is open on any plan
+// elsewhere. Talking to any
 // avatar never needs it, and neither do video clips, which are on
 // every plan, Free included. Creating V2 HD needs Growth and up
 // (`limits.v2Pro`).
@@ -1773,7 +1862,10 @@ type AccountLimits struct {
 	// MaxSessionSeconds Longest session the plan allows; absent = not capped by the plan.
 	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 
-	// V2Pro Whether the account may create Atmee V2 HD avatars (engine `v2hd`), which need Growth and up (or V2 HD unlocked on the account); a V2 HD create answers `403 v2hd_access_required` when false. Existing V2 HD avatars keep working and stay editable (sessions, new takes, rebuilds) either way. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
+	// UpgradePreviews Whether upgrade previews (`/v1/avatars/{avatarId}/upgrade-preview`) are offered to the account; absent where they are not.
+	UpgradePreviews *bool `json:"upgradePreviews,omitempty"`
+
+	// V2Pro Whether the account may create Atmee V2 HD avatars (engine `v2hd`), which need Growth and up (or V2 HD unlocked on the account); a V2 HD create answers `403 v2hd_access_required` when false. Existing V2 HD avatars keep working (sessions, sharing, embedding) either way; editing them (new takes, rebuilds) needs Growth and up where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported) (otherwise `403 v2hd_view_only`), and is open on any plan elsewhere. Absent where V2 HD is not offered on this server (engine `v2hd` then answers `503 engine_unavailable`).
 	V2Pro *bool `json:"v2Pro,omitempty"`
 
 	// V2ProResolutions The frame sizes V2 HD avatars may use here (`resolution`), 640 x 640 (the default) first; another is `400 invalid_input`. Absent where V2 HD is not offered, or every size the V2 HD rule allows is.
@@ -1781,6 +1873,12 @@ type AccountLimits struct {
 
 	// V2Resolutions The frame sizes v2 avatars may use here (`resolution`), 512 x 512 first; another is `400 invalid_input`. Absent where every size the rule allows is offered.
 	V2Resolutions *[]RenderResolution `json:"v2Resolutions,omitempty"`
+
+	// V2Trial The account's Atmee V2 trial, where one is offered to it (absent otherwise).
+	V2Trial *AccountV2Trial `json:"v2Trial,omitempty"`
+
+	// V2Unlock Atmee V2 or V2 HD opened on the account outside its plan, while it lasts; `null` when there is none (or this server cannot read it). A timed unlock (`expiresAt` set) ends on its own, and the plan's rules apply again.
+	V2Unlock *AccountV2Unlock `json:"v2Unlock"`
 
 	// VideoGeneration Whether the account may make generated clips (`POST /v1/generation/clips`); clips answer `403 video_generation_not_in_plan` when false. True on every plan, Free included (video clips need no Atmee V2 access). False only where video generation is turned off for the account, or where the database does not report it yet, since clips are refused until it does.
 	VideoGeneration *bool `json:"videoGeneration,omitempty"`
@@ -1882,6 +1980,50 @@ type AccountPricing struct {
 	// SpeechPerMinuteMicrocredits A speech session (`POST /v1/speech_sessions`) per minute; null on a deployment that does not report it.
 	SpeechPerMinuteMicrocredits *int `json:"speechPerMinuteMicrocredits,omitempty"`
 }
+
+// AccountV2Trial The account's Atmee V2 trial, where one is offered to it (absent otherwise).
+type AccountV2Trial struct {
+	// CoversV2 Whether the account's plan, unlocks or grants cover Atmee V2 without the trial (V2 avatars stay editable after it, or with no trial offered). Absent where not reported.
+	CoversV2 *bool `json:"coversV2,omitempty"`
+
+	// CoversV2hd Whether the account's plan, unlocks or grants cover Atmee V2 HD without the trial. Absent where not reported.
+	CoversV2hd *bool `json:"coversV2hd,omitempty"`
+
+	// Days How many days the trial runs from its start (the same for every account; 7 unless an admin changed it). An account's `endsAt` can differ when its trial was extended or ended early. `0` means no trial is offered (`state` is `ended` from the start), so editing Atmee V2 avatars needs Pro and up and V2 HD avatars Growth and up.
+	Days     int        `json:"days"`
+	EndsAt   *time.Time `json:"endsAt,omitempty"`
+	StartsAt *time.Time `json:"startsAt,omitempty"`
+
+	// State `none`: no trial window is set; `not_started`; `active`: V2 and V2 HD may be built and edited; `ended`.
+	State AccountV2TrialState `json:"state"`
+}
+
+// AccountV2TrialState `none`: no trial window is set; `not_started`; `active`: V2 and V2 HD may be built and edited; `ended`.
+type AccountV2TrialState string
+
+// AccountV2Unlock The account's active Atmee V2 or V2 HD unlock outside its plan.
+type AccountV2Unlock struct {
+	// ExpiresAt When the unlock ends; `null` when it is permanent.
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	// Level `v2`: Atmee V2; `v2hd`: Atmee V2 and V2 HD.
+	Level AccountV2UnlockLevel `json:"level"`
+
+	// PermanentLevel What the account keeps for good once a timed unlock ends, from its plan or a permanent unlock (`v2`: Atmee V2; `v2hd`: Atmee V2 and V2 HD); left out when nothing stays. A timed `v2hd` unlock with `permanentLevel` `v2` ends only V2 HD. A server that does not report it leaves it out too.
+	PermanentLevel *AccountV2UnlockPermanentLevel `json:"permanentLevel,omitempty"`
+
+	// Source `coupon`: a redeemed code; `admin`: switched on by Atmee; `legacy`: kept from before the plan rules.
+	Source AccountV2UnlockSource `json:"source"`
+}
+
+// AccountV2UnlockLevel `v2`: Atmee V2; `v2hd`: Atmee V2 and V2 HD.
+type AccountV2UnlockLevel string
+
+// AccountV2UnlockPermanentLevel What the account keeps for good once a timed unlock ends, from its plan or a permanent unlock (`v2`: Atmee V2; `v2hd`: Atmee V2 and V2 HD); left out when nothing stays. A timed `v2hd` unlock with `permanentLevel` `v2` ends only V2 HD. A server that does not report it leaves it out too.
+type AccountV2UnlockPermanentLevel string
+
+// AccountV2UnlockSource `coupon`: a redeemed code; `admin`: switched on by Atmee; `legacy`: kept from before the plan rules.
+type AccountV2UnlockSource string
 
 // ApiErrorResponse defines model for ApiErrorResponse.
 type ApiErrorResponse struct {
@@ -2182,8 +2324,9 @@ type AvatarCreateResponse struct {
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
 	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
 	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
-	// existing one keeps working and stays editable for its account on any
-	// plan: new takes and rebuilds are not plan-gated. Offered only where
+	// existing one keeps chatting, sharing and embedding on every plan. Its
+	// new takes and rebuilds need Growth and up where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported)
+	// (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
 
@@ -2236,8 +2379,9 @@ type AvatarDetail struct {
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
 	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
 	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
-	// existing one keeps working and stays editable for its account on any
-	// plan: new takes and rebuilds are not plan-gated. Offered only where
+	// existing one keeps chatting, sharing and embedding on every plan. Its
+	// new takes and rebuilds need Growth and up where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported)
+	// (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
@@ -2505,8 +2649,9 @@ type AvatarDuplicateRequestEngine string
 // `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
 // avatar needs Growth and up (`limits.v2Pro`; otherwise `403
 // v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
-// existing one keeps working and stays editable for its account on any
-// plan: new takes and rebuilds are not plan-gated. Offered only where
+// existing one keeps chatting, sharing and embedding on every plan. Its
+// new takes and rebuilds need Growth and up where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported)
+// (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 // `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
 
@@ -2807,6 +2952,22 @@ type AvatarSessionCreateRequest struct {
 
 	// Metadata Optional free-form metadata to attach to the session.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// VoiceSampleUrl An https URL of a short clip (3 to 10 seconds of clean speech,
+	// starting with speech) in the voice your agent speaks with: wav,
+	// mp3, m4a, aac, ogg, flac, opus or webm, told by the file's bytes,
+	// at most 5 MB; the first 6 seconds of speech are used. The
+	// avatar's lip sync is tuned to the voice it was built with; with
+	// your own TTS voice, give a sample and the renderer starts on it
+	// instead. The clip is downloaded while the session starts, which
+	// then takes as long as your server takes to send it (15 seconds
+	// at most). A URL that is not https, does not download in time or
+	// does not hold audio answers 400 `invalid_voice_sample`; a
+	// deployment that does not take samples answers 503
+	// `voice_samples_unavailable`. A clip the renderer cannot decode,
+	// or that holds no speech, is ignored and the session starts on
+	// the avatar's own voice. Ignored for a v1 avatar.
+	VoiceSampleUrl *string `json:"voiceSampleUrl,omitempty"`
 }
 
 // AvatarSessionCreateResponse defines model for AvatarSessionCreateResponse.
@@ -3075,8 +3236,9 @@ type AvatarSummary struct {
 	// `sessionV2HdPerMinuteMicrocredits` and the like). Creating a `v2hd`
 	// avatar needs Growth and up (`limits.v2Pro`; otherwise `403
 	// v2hd_access_required`). Anyone can talk to a `v2hd` avatar, and an
-	// existing one keeps working and stays editable for its account on any
-	// plan: new takes and rebuilds are not plan-gated. Offered only where
+	// existing one keeps chatting, sharing and embedding on every plan. Its
+	// new takes and rebuilds need Growth and up where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported)
+	// (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine      `json:"engine,omitempty"`
 	Id     openapi_types.UUID `json:"id"`
@@ -3387,6 +3549,11 @@ type BlackoutRecoveryEffectiveDetection string
 // later stage can read `completed` from an earlier build while an earlier
 // stage rebuilds.
 type BuildStage struct {
+	// Progress How far along a running stage is, 0-99, for a progress bar. Only
+	// the `previews` stage of an Atmee V2 / V2 HD avatar reports it, while
+	// a take is being made; it stops short of 100 until the stage reads
+	// `completed`. Absent when not reported.
+	Progress     *int             `json:"progress,omitempty"`
 	Status       BuildStageStatus `json:"status"`
 	UserFeedback *string          `json:"userFeedback,omitempty"`
 }
@@ -3588,6 +3755,9 @@ type CodeRedemption struct {
 
 	// V2Pro Whether the account may create Atmee V2 HD avatars after redeeming, as `GET /v1/account` reports `limits.v2Pro`. Absent where V2 HD is not offered on this server, or when it could not be read.
 	V2Pro *bool `json:"v2Pro,omitempty"`
+
+	// V2Unlock The account's Atmee V2 or V2 HD unlock outside its plan after redeeming, as `GET /v1/account` reports `limits.v2Unlock`; `null` when there is none. Its `expiresAt` says when a timed unlock ends.
+	V2Unlock *AccountV2Unlock `json:"v2Unlock"`
 }
 
 // CodeRedemptionV2Access Whether the account may create Atmee V2 avatars after redeeming, as `GET /v1/account` reports `v2Access`. Absent when it could not be read.
@@ -5034,7 +5204,10 @@ type ClientInterface interface {
 	// - **v2**: `v2Access` says whether the account may create Atmee V2
 	//   avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
 	//   create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
-	//   the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+	//   the account already owns keep chatting, sharing and embedding on every plan; where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported),
+	//   editing V2 avatars needs Pro and up<!-- v2pro --> and V2 HD avatars Growth and up<!-- /v2pro --> (otherwise
+	//   `403 v2_view_only`<!-- v2pro --> / `v2hd_view_only`<!-- /v2pro -->), and elsewhere they stay editable on any plan.
+	//   Video clips are on every plan, Free included,
 	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
@@ -6897,7 +7070,10 @@ type ClientInterface interface {
 //   - **v2**: `v2Access` says whether the account may create Atmee V2
 //     avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
 //     create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
-//     the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+//     the account already owns keep chatting, sharing and embedding on every plan; where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported),
+//     editing V2 avatars needs Pro and up<!-- v2pro --> and V2 HD avatars Growth and up<!-- /v2pro --> (otherwise
+//     `403 v2_view_only`<!-- v2pro --> / `v2hd_view_only`<!-- /v2pro -->), and elsewhere they stay editable on any plan.
+//     Video clips are on every plan, Free included,
 //     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
@@ -11714,7 +11890,10 @@ type ClientWithResponsesInterface interface {
 	// - **v2**: `v2Access` says whether the account may create Atmee V2
 	//   avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
 	//   create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
-	//   the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+	//   the account already owns keep chatting, sharing and embedding on every plan; where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported),
+	//   editing V2 avatars needs Pro and up<!-- v2pro --> and V2 HD avatars Growth and up<!-- /v2pro --> (otherwise
+	//   `403 v2_view_only`<!-- v2pro --> / `v2hd_view_only`<!-- /v2pro -->), and elsewhere they stay editable on any plan.
+	//   Video clips are on every plan, Free included,
 	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
@@ -16820,7 +16999,10 @@ func (r GetUploadResponse) ContentType() string {
 //   - **v2**: `v2Access` says whether the account may create Atmee V2
 //     avatars (Pro and up)<!-- v2pro -->, `limits.v2Pro` whether it may
 //     create Atmee V2 HD avatars (Growth and up)<!-- /v2pro -->. Avatars
-//     the account already owns stay editable on any plan. Video clips are on every plan, Free included,
+//     the account already owns keep chatting, sharing and embedding on every plan; where the account is under the Atmee V2 access rules (`limits.v2Trial` is reported),
+//     editing V2 avatars needs Pro and up<!-- v2pro --> and V2 HD avatars Growth and up<!-- /v2pro --> (otherwise
+//     `403 v2_view_only`<!-- v2pro --> / `v2hd_view_only`<!-- /v2pro -->), and elsewhere they stay editable on any plan.
+//     Video clips are on every plan, Free included,
 //     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which

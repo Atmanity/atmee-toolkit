@@ -1023,3 +1023,59 @@ func TestVoiceDecodesEveryTTSProviderForm(t *testing.T) {
 		}
 	}
 }
+
+// A clip the account's rate limit turns away (429 rate_limited with a
+// Retry-After) is sent again under the same key after the wait: the refusal
+// came before any charge, so the second answer is the one clip.
+func TestGenerateClipWaitsOutTheRateLimit(t *testing.T) {
+	var calls atomic.Int32
+	var keys []string
+	var waited []time.Duration
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		keys = append(keys, r.Header.Get("Idempotency-Key"))
+		if calls.Add(1) == 1 {
+			w.Header().Set("Retry-After", "5")
+			w.WriteHeader(http.StatusTooManyRequests)
+			_, _ = w.Write([]byte(`{"error":"rate_limited","message":"too many generation calls for this account"}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"clip":{"upload":"upload:c","width":480,"height":480,"durationSeconds":3,"expiresAt":"2026-11-18T00:00:00Z"},"microcreditsCharged":10,"microcreditsFree":0,"replayed":false}`))
+	})
+	c.Sleep = func(d time.Duration) { waited = append(waited, d) }
+	out, err := c.GenerateClip(context.Background(), ClipInput{Image: "upload:a", Prompt: "waves"}, "")
+	if err != nil || out.MicrocreditsCharged != 10 || calls.Load() != 2 {
+		t.Fatalf("%v %+v after %d calls", err, out, calls.Load())
+	}
+	if keys[0] == "" || keys[0] != keys[1] || len(waited) != 1 || waited[0] != 5*time.Second {
+		t.Errorf("keys %v, waits %v", keys, waited)
+	}
+}
+
+// A 429 without a Retry-After (a cap the account must clear itself, such as
+// too many unused uploads) is not waited out: the error comes back at once.
+func TestGenerateClipDoesNotRetryA429WithoutRetryAfter(t *testing.T) {
+	var calls atomic.Int32
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":"upload_limit_reached","message":"too many unused uploads"}`))
+	})
+	if _, err := c.GenerateClip(context.Background(), ClipInput{Image: "upload:a", Prompt: "waves"}, ""); err == nil || calls.Load() != 1 {
+		t.Fatalf("%v after %d calls", err, calls.Load())
+	}
+}
+
+// A clip's local file that isn't a picture is refused as an image, since a
+// clip takes any subject, not only a portrait.
+func TestUploadImageNamesAnImage(t *testing.T) {
+	c := newTest(t, func(w http.ResponseWriter, r *http.Request) { t.Error("no request expected") })
+	p := filepath.Join(t.TempDir(), "notes.txt")
+	if err := os.WriteFile(p, []byte("hello"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := c.UploadImage(context.Background(), p)
+	if err == nil || !strings.Contains(err.Error(), "an image is a jpg, png or webp") || strings.Contains(err.Error(), "portrait") {
+		t.Fatalf("%v", err)
+	}
+}

@@ -1121,6 +1121,44 @@ var engineHints = map[string]struct{ create, other string }{
 	},
 }
 
+// seePlans is the hint on a plan refusal whose message already says which
+// plan it takes (a view-only edit, 403 v2_view_only or v2hd_view_only, and
+// a current server's 403 v2_access_required or v2hd_access_required): where
+// to see the plans. ExecuteAs swaps in the account's own plans link where
+// the server reports one (plansHint).
+const seePlans = "See plans on Studio's Billing page (`atmee account --json` has its link as links.billing)."
+
+// plansHint is seePlans with the account's plans page (links.billing),
+// asked for once the refusal is in, or seePlans itself when the server
+// reports no links or doesn't answer within a few seconds.
+func (a *app) plansHint() string {
+	cl, err := a.api()
+	if err != nil {
+		return seePlans
+	}
+	c, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	acct, err := cl.Account(c)
+	if err != nil || acct.Links == nil || acct.Links.Billing == "" {
+		return seePlans
+	}
+	return "See plans: " + acct.Links.Billing
+}
+
+// viewOnly says err is a view-only refusal: editing this V2 (or V2 HD)
+// avatar is not on the account's plan.
+func viewOnly(err error) bool {
+	var apiErr *api.Error
+	return errors.As(err, &apiErr) && (apiErr.Code == "v2_view_only" || apiErr.Code == "v2hd_view_only")
+}
+
+// namesWayOn says a refusal's message is a current server's: it names the
+// plan and the engine that are the ways on, and no invite code.
+func namesWayOn(msg, plan, engine string) bool {
+	m := strings.ToLower(msg)
+	return strings.Contains(m, plan) && strings.Contains(m, engine) && !strings.Contains(m, "invite")
+}
+
 // engineHint is what to do about an engine or plan refusal on cmd, or ""
 // for any other error.
 func engineHint(cmd *cobra.Command, err error) string {
@@ -1128,24 +1166,27 @@ func engineHint(cmd *cobra.Command, err error) string {
 	if !errors.As(err, &apiErr) {
 		return ""
 	}
+	if viewOnly(err) {
+		return seePlans
+	}
 	h, ok := engineHints[apiErr.Code]
 	if !ok {
 		return ""
 	}
 	if apiErr.Code == "v2_access_required" {
 		// A current server's message already names every way on (Pro and
-		// up, engine v1): nothing to add.
+		// up, engine v1): only where to see the plans is added.
 		// An older server's message points to invite codes: give the hint.
-		if m := strings.ToLower(apiErr.Message); strings.Contains(m, "pro and up") && strings.Contains(m, "engine v1") && !strings.Contains(m, "invite") {
-			return ""
+		if namesWayOn(apiErr.Message, "pro and up", "engine v1") {
+			return seePlans
 		}
 	}
 	if v2HDRefused(apiErr.Code) {
 		// A current server's message already names every way on (Growth
-		// and up, engine v2): nothing to add. Any other message gets the
-		// full hint.
-		if m := strings.ToLower(apiErr.Message); strings.Contains(m, "growth and up") && strings.Contains(m, "engine v2") && !strings.Contains(m, "invite") {
-			return ""
+		// and up, engine v2): only where to see the plans is added. Any
+		// other message gets the full hint.
+		if namesWayOn(apiErr.Message, "growth and up", "engine v2") {
+			return seePlans
 		}
 		if cmd != nil && cmd.Name() == "duplicate" {
 			// What is particular to a copy: any source may be copied onto v2.

@@ -288,7 +288,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 			}
 			var sent []string
 			if !api.IsRemote(in.Image) {
-				if in.Image, err = cl.UploadPortrait(ctx(), in.Image); err != nil {
+				if in.Image, err = cl.UploadImage(ctx(), in.Image); err != nil {
 					return err
 				}
 				sent = append(sent, "--image "+in.Image)
@@ -329,7 +329,14 @@ func (a *app) generateClipCmd() *cobra.Command {
 			if jsonOut {
 				return a.printJSON(out)
 			}
-			a.printClip(out.Clip, fmt.Sprintf(" (%s credits charged%s)", credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed)))
+			note := fmt.Sprintf(" (%s credits charged%s)", credits(int64(out.MicrocreditsCharged)), replayNote(out.Replayed))
+			if out.Replayed && key == "" {
+				// The key is this command's own, so the replay is of its own
+				// first attempt: that attempt paid for the clip, once, while
+				// the server's answer reports only the replay's charge (0).
+				note = ownReplayNote(cl, out.Clip)
+			}
+			a.printClip(out.Clip, note)
 			return nil
 		},
 	}
@@ -466,6 +473,38 @@ func paidNote(charged, free int) string {
 		s += " · " + credits(int64(free)) + " from free generation"
 	}
 	return s
+}
+
+// ownReplayNote is the charge note for a clip whose first attempt, under this
+// command's own key, ran past the server's wait and was then replayed: the
+// clip was charged once, at its size and length's price from the account's
+// table, or without a figure when the account doesn't list one.
+func ownReplayNote(cl *api.Client, clip api.GeneratedClipBody) string {
+	const once = "charged once, when this command's first attempt made it; this answer is that clip, replayed"
+	acct, err := cl.Account(ctx())
+	if err != nil || acct.Pricing.Generation == nil || acct.Pricing.Generation.ClipPrices == nil {
+		return " (" + once + ")"
+	}
+	if m, ok := clipPrice(*acct.Pricing.Generation.ClipPrices, clip.Width, clip.Height, clip.DurationSeconds); ok {
+		return fmt.Sprintf(" (%s credits %s)", credits(int64(m)), once)
+	}
+	return " (" + once + ")"
+}
+
+// clipPrice is a clip's price in microcredits from the account's table: the
+// first length tier the clip fits, at its size.
+func clipPrice(table []avatarapi.ClipSizePrices, width, height, seconds int) (int, bool) {
+	for _, size := range table {
+		if size.Width != width || size.Height != height {
+			continue
+		}
+		for _, p := range size.Prices {
+			if seconds <= p.UpToSeconds {
+				return p.Microcredits, true
+			}
+		}
+	}
+	return 0, false
 }
 
 func replayNote(replayed bool) string {

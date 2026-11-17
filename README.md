@@ -71,7 +71,8 @@ the MCP server; the CLI signs in as you or uses an API key.
 Anyone can talk to any avatar, and video clips are on every plan, Free included (they spend
 credits). Building Atmee V2 avatars, and the features built on them (candidate clips, agendas),
 needs Pro and up, and Atmee V2 HD needs Growth and up. Accounts below Pro get Atmee V1 avatars. Existing V2 and V2 HD
-avatars keep working, and stay editable, on any plan.
+avatars keep chatting, sharing and embedding on any plan; editing them needs Pro and up for V2 and Growth
+and up for V2 HD.
 
 ## Quickstart
 
@@ -262,6 +263,7 @@ format, is in [docs/cli.md](docs/cli.md).
 | `npx skills` says Node.js is too old | Install Node.js 22.20 or newer, or use the plugin route. |
 | `v2_access_required` (or `insufficient_v2_credits` from an older server) | The account can't build new Atmee V2 avatars: Atmee V2 needs Pro and up. Upgrade to Pro, or make a V1 avatar. Existing V2 avatars keep working; talking to any avatar never needs it. |
 | `v2hd_access_required` | The account can't build new Atmee V2 HD avatars: Atmee V2 HD needs Growth and up. Upgrade to Growth, or make a V2 avatar. |
+| `v2_view_only`, `v2hd_view_only` | An edit may be refused when the account's plan doesn't cover the model; the message says which plans do. See plans in Creator Studio (Billing). |
 | `402 insufficient_credits` | Top up in Creator Studio, or raise the API key's spend cap. |
 | `409 avatar_not_ready` | The avatar has no ready clip yet. Check with `atmee avatars get AVATAR_ID` or wait with `atmee avatars wait AVATAR_ID`. |
 | A build fails at `appearance` | Use a front-facing portrait with the whole head in frame, the face at least a third of it, and the lips slightly parted. |

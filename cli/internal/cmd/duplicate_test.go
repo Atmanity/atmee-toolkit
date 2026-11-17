@@ -118,12 +118,16 @@ func TestDuplicateErrors(t *testing.T) {
 		{402, `{"error":"insufficient_v2_credits","message":"Atmee V2 is not on this account's plan"}`, []string{"upgrade to Pro and up", "--engine v1"}},
 		{403, `{"error":"v2hd_access_required","message":"no V2 HD"}`, []string{"no V2 HD", "Atmee V2 HD needs Growth and up", "upgrade to Growth and up", "copy it onto v2 instead (--engine v2)"}},
 		{403, `{"error":"v2_pro_not_in_plan","message":"no V2 HD"}`, []string{"no V2 HD", "Atmee V2 HD needs Growth and up", "upgrade to Growth and up", "copy it onto v2 instead (--engine v2)"}},
-		// The current server's message says it all: nothing is added.
-		{403, `{"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`, []string{v2HDAccessMsg + "\n"}},
+		// The current server's message says it all: only where to see the plans is added.
+		{403, `{"error":"v2hd_access_required","message":"` + v2HDAccessMsg + `"}`, []string{v2HDAccessMsg + " See plans"}},
 	} {
 		var paths, bodies []string
 		duplicateAPI(t, c.status, c.payload, &paths, &bodies)
 		_, errOut, code := run(t, "", "avatars", "duplicate", dupSource, "--engine", "v2")
+		// A plan refusal also reads the account, for its plans link.
+		if len(paths) == 2 && paths[1] == "GET /v1/account" {
+			paths = paths[:1]
+		}
 		if code != 1 || len(paths) != 1 {
 			t.Errorf("%d: code %d, %d requests, %s", c.status, code, len(paths), errOut)
 		}

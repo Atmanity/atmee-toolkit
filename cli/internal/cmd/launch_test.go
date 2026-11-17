@@ -260,9 +260,13 @@ func TestGenerateClipV2AccessRefusalIsNeutral(t *testing.T) {
 func TestGenerateClipDefaults(t *testing.T) {
 	var body string
 	signedIn(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet { // the account's prices, for the replay's charge note
+			_, _ = io.WriteString(w, `{}`)
+			return
+		}
 		b, _ := io.ReadAll(r.Body)
 		body = string(b)
-		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{"clip":{"upload":"upload:clip","expiresAt":"2026-11-02T00:00:00Z","durationSeconds":8,"width":512,"height":512,"unavailable":true},`+
 			`"microcreditsCharged":0,"replayed":true}`)
 	})

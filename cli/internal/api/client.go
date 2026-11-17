@@ -159,8 +159,10 @@ func check(resp *http.Response, body []byte) error {
 		Error   string `json:"error"`
 		Code    any    `json:"code"`
 		Message string `json:"message"`
-		Detail  string `json:"detail"`
-		Reason  string `json:"reason"`
+		// A string on most errors; an object on some (a view-only
+		// refusal's cause and required plan), whose message says it all.
+		Detail json.RawMessage `json:"detail"`
+		Reason string          `json:"reason"`
 
 		Missing                 []string `json:"missing"`
 		Cap                     *int     `json:"cap"`
@@ -179,7 +181,7 @@ func check(resp *http.Response, body []byte) error {
 		}
 	}
 	if e.Message == "" {
-		e.Message = b.Detail
+		_ = json.Unmarshal(b.Detail, &e.Message)
 	}
 	// The OpenAPI validator appends the schema and value; the first line is
 	// the useful part.

@@ -21,10 +21,10 @@ import (
 // one flat price per call, whether one portrait comes back or two.
 const portraitsNote = "Costs the portrait price (`atmee account`) once per call, charged when at least one portrait comes back, so one " +
 	"portrait costs the same as two; a flagged, failed or refused call costs nothing. A paid plan's free generation allowance pays " +
-	"first. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
+	"first. Results (upload:<id>) last 7 days and work once; their printed links expire sooner. A signed-in user, or an API key with generation:write and avatars:write."
 
 const generationNote = "Costs the operation's price (`atmee account`), charged only when something comes back; a flagged, failed or refused " +
-	"call costs nothing. Results last 24 hours and work once. A signed-in user, or an API key with generation:write and avatars:write."
+	"call costs nothing. Results (upload:<id>) last 7 days and work once; their printed links expire sooner. A signed-in user, or an API key with generation:write and avatars:write."
 
 const (
 	enhanceEngineHelp = "The engine the avatar will be created with, v2hd (Atmee V2 HD, where the server offers it), v2 or v1: " +
@@ -221,15 +221,26 @@ func (a *app) generateVoiceCmd() *cobra.Command {
 
 func (a *app) generateClipCmd() *cobra.Command {
 	var in api.ClipInput
-	var resolution, key string
+	var avatar, resolution, key string
 	var seed int64
 	var jsonOut bool
 	c := &cobra.Command{
-		Use:   "clip --image PATH --prompt TEXT",
-		Short: "Render a video clip from an image and a prompt.",
-		Long: "Render an mp4 that starts on the image (any subject: a person, character, animal, product or scene) and moves as the prompt " +
-			"says, silent or with --audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file) and defaults to 8 " +
-			"seconds for a silent clip.\n\n" +
+		Use:   "clip (--image PATH --prompt TEXT | --avatar ID --transcript TEXT)",
+		Short: "Render a video clip from an image and a prompt, or of a saved avatar speaking a transcript.",
+		Long: "Render an mp4 in one of two ways.\n\n" +
+			"With --avatar and --transcript (they go together), a saved avatar speaks: its saved picture is the first frame, " +
+			"its Fish Audio voice speaks the transcript (up to 1000 characters) and the lips follow. V1 and V2 avatars both work, " +
+			"and the look and voice stay the same from clip to clip. --prompt is optional here (by default the avatar speaks to " +
+			"camera); --image, --audio and --duration are refused. The clip runs as long as the speech plus 0.4 seconds of silence " +
+			"before and after, rounded up to whole seconds, at most 15: speech past 14.2 seconds is cut, so keep each transcript to " +
+			"about 14 seconds of speech and make a longer video from several clips. It is charged at the tier its actual length " +
+			"falls in, but the balance must cover the size's 15-second price before the speech is made, so it costs from the " +
+			"size's up-to-5-seconds price to its 15-second price. An avatar with no Fish Audio voice is refused at no charge. " +
+			"An API key needs avatars:read too.\n\n" +
+			"With --image and --prompt, the clip starts on the image (any subject: a person, character, animal, product or scene) and moves as the prompt " +
+			"says, silent or with --audio. No avatar is made or needed. --duration is required with --audio (it is not read from the file). " +
+			"Pass --duration for a silent clip too, any whole number of seconds up to the limit: without it the clip runs 8 seconds. " +
+			"Prices come in tiers of up to 5, 10 and 15 seconds, and a clip pays the tier its length falls in.\n\n" +
 			"A clip lasts at least 1 second, up to the server's limit (15 seconds on current servers); a longer --duration " +
 			"is refused with the limit.\n\n" +
 			"--resolution is the clip's size, one the server serves: `atmee account` lists this server's sizes and, on a " +
@@ -239,31 +250,21 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"with its list.\n\n" +
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 24 hours. Clips are on every plan, Free included, and need no Atmee V2 access: " +
+			"The result lasts 7 days (its download link sooner; run clip-status for a fresh one). Clips are on every plan, Free included, and need no Atmee V2 access: " +
 			"they spend credits at each size's price per clip (atmee account lists them). " +
-			"A signed-in user, or an API key with generation:write (a clip needs no avatar scope; --image and --audio files upload with it too).",
-		Example: `  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
+			"A signed-in user, or an API key with generation:write (an --image clip needs no avatar scope; --image and --audio files upload " +
+			"with it too), plus avatars:read for an --avatar clip.",
+		Example: `  atmee generate clip --avatar 11111111-2222-4333-8444-555555555555 --transcript "Welcome back. Today: three tips for better sleep."
+  atmee generate clip --avatar 11111111-2222-4333-8444-555555555555 --transcript "See you tomorrow." --prompt "she smiles and waves" --resolution 720x1280
+  atmee generate clip --image ./me.jpg --prompt "she walks along the beach at sunset"
   atmee generate clip --image upload:ID --prompt "a slow nod" --audio ./line.wav --duration 6 --resolution 480x640
   atmee generate clip --image ./me.jpg --prompt "he waves at the camera" --resolution 1280x720 --duration 10`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			f := cmd.Flags()
-			if in.Image == "" {
-				return usagef("--image is required: a local jpg, png or webp, an https URL or upload:ID")
-			}
-			if strings.TrimSpace(in.Prompt) == "" || utf8.RuneCountInString(in.Prompt) > 8000 {
-				return usagef("--prompt takes 1 to 8000 characters: the shot and the motion")
-			}
-			for flag, v := range map[string]string{"--image": in.Image, "--audio": in.Audio} {
-				if strings.HasPrefix(v, "http://") {
-					return usagef("%s: asset URLs must be https:// (%s)", flag, v)
-				}
-			}
-			if in.Audio != "" && !f.Changed("duration") {
-				return usagef("--duration is required with --audio: the audio's length in seconds")
-			}
-			if f.Changed("duration") && in.Duration < 1 {
-				return usagef("--duration takes 1 second or more (the server sets the most; 15 on current servers)")
+			fromAvatar := f.Changed("avatar") || f.Changed("transcript")
+			if err := checkClipMode(f.Changed, fromAvatar, avatar, &in); err != nil {
+				return err
 			}
 			if f.Changed("resolution") {
 				r, err := api.ParseClipResolution(resolution)
@@ -278,7 +279,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 				}
 				in.Seed = &seed
 			}
-			local := !api.IsRemote(in.Image) || in.Audio != "" && !api.IsRemote(in.Audio)
+			local := !fromAvatar && (!api.IsRemote(in.Image) || in.Audio != "" && !api.IsRemote(in.Audio))
 			if key != "" && local {
 				return usagef("--idempotency-key retries the same inputs: give --image and --audio the upload:ID the failed call printed, not the file again")
 			}
@@ -287,7 +288,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 				return err
 			}
 			var sent []string
-			if !api.IsRemote(in.Image) {
+			if !fromAvatar && !api.IsRemote(in.Image) {
 				if in.Image, err = cl.UploadImage(ctx(), in.Image); err != nil {
 					return err
 				}
@@ -341,15 +342,67 @@ func (a *app) generateClipCmd() *cobra.Command {
 		},
 	}
 	f := c.Flags()
-	f.StringVar(&in.Image, "image", "", "Who or what the clip shows: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required)")
-	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion (required): the model reads up to 1,024 tokens, about 5,000 characters of English and about 1,400 of Chinese; the server refuses a longer one")
+	f.StringVar(&avatar, "avatar", "", "A saved avatar to speak --transcript: its picture is the first frame and its Fish Audio voice speaks (goes with --transcript; leave out --image, --audio and --duration)")
+	f.StringVar(&in.Transcript, "transcript", "", "What the --avatar says, 1 to 1000 characters, about 14 seconds of speech at most: speech past 14.2 seconds is cut")
+	f.StringVar(&in.Image, "image", "", "Who or what the clip shows: a local jpg, png or webp (up to 10 MB), an https URL or upload:ID (required without --avatar)")
+	f.StringVar(&in.Prompt, "prompt", "", "The shot and the motion (required with --image; optional with --avatar, which speaks to camera without it): the model reads up to 1,024 tokens, about 5,000 characters of English and about 1,400 of Chinese; the server refuses a longer one")
 	f.StringVar(&in.Audio, "audio", "", "What the person says: a speech recording (local file, https URL or upload:ID), its words and voice kept and lip-synced; without it the clip is silent. The clip adds no speech, music or sound effects of its own")
-	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, from 1 up to the server's limit (15 on current servers; it sets the price tier, up to 5, 10 or 15 seconds, charged at the next length up): required with --audio, set to the audio's length; default 8 for a silent clip")
+	f.IntVar(&in.Duration, "duration", 0, "Length in seconds, from 1 up to the server's limit (15 on current servers), any whole number of seconds, priced in tiers of up to 5, 10 or 15 seconds, charged at the next length up: required with --audio, set to the audio's length; without it a silent clip runs 8 seconds")
 	f.StringVar(&resolution, "resolution", "", "The clip's size as `WxH`, one this server serves (`atmee account` lists them; e.g. 480x480, the default on current servers)")
 	f.Int64Var(&seed, "seed", 0, "The render's seed; another seed gives other motion")
 	f.StringVar(&key, "idempotency-key", "", idempotencyHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
+}
+
+// checkClipMode checks a clip's flags before any request, for the mode they
+// choose: --avatar with --transcript (fromAvatar), or --image with --prompt.
+// changed reports whether a flag was given.
+func checkClipMode(changed func(string) bool, fromAvatar bool, avatar string, in *api.ClipInput) error {
+	if utf8.RuneCountInString(in.Prompt) > 8000 {
+		return usagef("--prompt takes 1 to 8000 characters: the shot and the motion")
+	}
+	if fromAvatar {
+		for _, flag := range []string{"image", "audio", "duration"} {
+			if changed(flag) {
+				return usagef("--%s is not taken with --avatar: the avatar's saved picture is the first frame, its voice speaks "+
+					"--transcript, and the clip runs as long as the speech", flag)
+			}
+		}
+		if avatar == "" || !changed("transcript") {
+			return usagef("--avatar and --transcript go together: the avatar's id and the words it says")
+		}
+		if strings.TrimSpace(in.Transcript) == "" || utf8.RuneCountInString(in.Transcript) > 1000 {
+			return usagef("--transcript takes 1 to 1000 characters: the words the avatar says")
+		}
+		if changed("prompt") && strings.TrimSpace(in.Prompt) == "" {
+			return usagef("--prompt takes 1 to 8000 characters: the shot and the motion (leave it out and the avatar speaks to camera)")
+		}
+		id, err := uuid.Parse(avatar)
+		if err != nil {
+			return usagef("--avatar: %q is not an avatar id (find it with `atmee avatars list`)", avatar)
+		}
+		in.AvatarID = &id
+		return nil
+	}
+	if in.Image == "" {
+		return usagef("--image is required: a local jpg, png or webp, an https URL or upload:ID (or make an avatar speak with --avatar and --transcript)")
+	}
+	if strings.TrimSpace(in.Prompt) == "" {
+		return usagef("--prompt takes 1 to 8000 characters: the shot and the motion")
+	}
+	for flag, v := range map[string]string{"--image": in.Image, "--audio": in.Audio} {
+		if strings.HasPrefix(v, "http://") {
+			return usagef("%s: asset URLs must be https:// (%s)", flag, v)
+		}
+	}
+	if in.Audio != "" && !changed("duration") {
+		return usagef("--duration is required with --audio: the audio's length in seconds")
+	}
+	if changed("duration") && in.Duration < 1 {
+		return usagef("--duration takes 1 second or more (the server sets the most; 15 on current servers)")
+	}
+	return nil
 }
 
 // printClip prints a clip: its length and size (then note), its upload
@@ -378,7 +431,7 @@ func (a *app) generateClipStatusCmd() *cobra.Command {
 			"or the --idempotency-key you gave it. It charges nothing and never starts a render, so it is safe from another " +
 			"shell or machine with the same account.\n\n" +
 			"rendering: still running; --wait keeps reading until it is done (up to 10 minutes). " +
-			"ready: the clip, with a download link signed again on each read, until its upload expires 24 hours after it was made. " +
+			"ready: the clip, with a download link signed again on each read, until its upload expires 7 days after it was made. " +
 			"expired: the clip was made but its upload has ended; it is not made again. " +
 			"stalled: the call stopped without finishing; run `atmee generate clip` again with the same inputs and " +
 			"--idempotency-key REQUEST_ID to resume it, charged at most once (exits non-zero). " +

@@ -2,24 +2,26 @@
 
 A person asked you to set up atmee: the skills and server that let them make
 and test Atmee talking avatars by talking to you. Complete every step yourself
-with your own tools. A step marked **Ask the person** needs them (loading the
-plugin, a browser sign-in): ask in one short line, wait until they say it's done, then
-go on. Tell them what to do and what they'll see; don't explain how the
-plugin works inside.
+with your own tools. A step marked **Ask the person** needs them (a browser
+sign-in, a new session): ask in one short line, wait until they say it's done, then
+go on. Tell them what to do and what they'll see; don't explain how
+atmee works inside.
 
 What gets installed:
 
-- Five skills: `create-avatar` (builds an avatar with them: a name, a photo
-  and a voice, its first seed, then its character and a test), `plan-avatar-app` (shapes an app idea
+- Six skills: `create-avatar` (builds an avatar with them: a name, a photo
+  and a voice, its first seed, then its character and a test), `make-video`
+  (makes a short video clip from a picture, or of a saved avatar speaking),
+  `plan-avatar-app` (shapes an app idea
   into a brief), `build-avatar-app` (helps them code an app or website
   around an avatar), `atmee-setup` (checks everything and fixes what it
   can) and `atmee-product` (what Atmee offers and costs, and which path fits
   an idea).
-- One server, `atmee-avatars`: it creates and updates avatars, takes uploads,
-  reports the balance and generates portraits, voices and, with Atmee V2,
-  short videos: a clip of the person in a photo moving as a prompt says, and
-  speaking a voice line when one is given (paid per call).
-  The skills-only route adds the same server under the name `atmee`.
+- One remote MCP server, `atmee`: it creates and updates avatars, takes uploads,
+  reports the balance and generates portraits, voices and short videos: a
+  clip of a picture moving as a prompt says, speaking a voice line when one
+  is given, or of a saved avatar speaking a script (paid per call). The optional plugin adds the same
+  server under the name `atmee-avatars`.
 
 ## 0. Before you start
 
@@ -35,10 +37,10 @@ What gets installed:
   firewall). Stop and tell the person: "This machine can't reach
   github.com/Atmanity/atmee-toolkit. Check the network or proxy settings and ask me
   again."
-- **Already installed?** Skip to [step 4](#4-verify) only when you have all
-  five skills (`create-avatar`, `plan-avatar-app`, `build-avatar-app`,
-  `atmee-setup` and `atmee-product`) and you
-  list `atmee-avatars` or `atmee` tools. Servers without the skills (for example added by hand) still
+- **Already installed?** Skip to [step 6](#6-verify) only when you have all
+  six skills (`create-avatar`, `make-video`, `plan-avatar-app`,
+  `build-avatar-app`, `atmee-setup` and `atmee-product`) and you
+  list `atmee` or `atmee-avatars` tools. Servers without the skills (for example added by hand) still
   need step 2, which installs or updates the skills.
 
 ## 1. Which agent are you?
@@ -78,180 +80,143 @@ EOF
 ```
 <!-- detect-host:end -->
 
-| It prints | You are | Go to |
+| It prints | You are | Skills agent id |
 |---|---|---|
-| `claude-code …` | Claude Code (terminal, IDE, or a local session in the desktop app's Code tab) | [2a. Claude Code](#2a-claude-code) |
-| `codex` | Codex (CLI, IDE or desktop) | [2b. Codex](#2b-codex) |
-| `cursor editor` or `cursor cli` | Cursor | [2c. Cursor](#2c-cursor) |
-| `gemini-cli`, `opencode` | another agent | [2d. Other agents](#2d-other-agents) |
-| `unknown` | judge for yourself: Claude Code, Codex and Cursor use their rows; anything else (Antigravity, Copilot, Windsurf, Cline, …) goes to 2d | |
+| `claude-code …` | Claude Code (terminal, IDE, or a local session in the desktop app's Code tab) | `claude-code` |
+| `codex` | Codex (CLI, IDE or desktop) | `codex` |
+| `cursor editor` or `cursor cli` | Cursor | `cursor` |
+| `gemini-cli`, `opencode` | that agent | the same name |
+| `unknown` | judge for yourself (Antigravity: `antigravity-cli`; others: `github-copilot`, `windsurf`, `cline`, …) | |
 
 If it can't run (no shell), judge for yourself the same way.
 
-## 2a. Claude Code
+**The plugin is optional.** These steps install the skills and add the
+server, the same way in every agent. Use the plugin instead only when the
+person asks for it, or when `claude plugin list` or `codex plugin list`
+already shows `atmee@atmee`, or Cursor already has the `atmee` plugin
+(`~/.cursor/plugins/local/atmee` exists, or Cursor's Plugins settings list
+it): then go to [Plugin instead](#plugin-instead)
+and don't also add the skills or the `atmee` server (two copies of every
+tool).
 
-First see what is there already:
-
-```
-claude plugin marketplace list
-claude plugin list
-```
-
-Then run the lines that apply:
-
-- No `atmee` marketplace: `claude plugin marketplace add Atmanity/atmee-toolkit`
-- The marketplace is there: `claude plugin marketplace update atmee`
-- `atmee@atmee` is not installed: `claude plugin install atmee@atmee`
-- `atmee@atmee` is installed: `claude plugin update atmee@atmee`
-
-Check it worked:
-
-```
-claude plugin list | grep -A4 'atmee@atmee'
-```
-
-The plugin should show as enabled. If it shows as disabled, run
-`claude plugin enable atmee@atmee`. The plugin has no settings: the server
-address is fixed in it.
-
-Claude Code loads the plugin into this session without a restart. You can't
-type slash commands yourself, so ask once, together with the sign-in:
-
-**Ask the person:** "Type `/reload-plugins --force` to load atmee here. Then
-run `/mcp`, pick `atmee-avatars` and choose Authenticate. Tell me when you're
-done."
-
-`--force` is needed because the plugin adds a server: without it Claude Code
-holds it back until the next session. In the desktop app, use a local
-session: plugins don't load in cloud sessions.
-
-Only if Claude Code doesn't know `/reload-plugins` (an older version), or
-`/mcp` still lists no atmee server after it, fall back to a restart:
-**Ask the person:** "Type `/exit`, run `claude -c` in this folder to reopen
-this conversation, and tell me to go on." Then ask for the sign-in as in
-[step 3](#3-sign-in).
-
-Then go to [step 4](#4-verify).
-
-## 2b. Codex
-
-First see what is there already:
-
-```
-codex plugin marketplace list
-codex plugin list
-```
-
-Then run the lines that apply:
-
-- No `atmee` marketplace:
-  `codex plugin marketplace add https://github.com/Atmanity/atmee-toolkit.git`
-- The marketplace is there: `codex plugin marketplace upgrade`
-- `atmee@atmee` is not installed, or an upgrade brought a new version:
-  `codex plugin add atmee@atmee`
-
-Check it worked:
-
-```
-codex plugin list
-```
-
-`atmee@atmee` should be listed as installed and enabled, and `codex mcp list`
-should show `atmee-avatars` as "Not logged in" until step 3.
-
-**Ask the person:** "Restart Codex, then tell me to go on." In the Codex
-desktop app they need to quit it fully and reopen it.
-
-Then go to [step 3](#3-sign-in).
-
-## 2c. Cursor
-
-Cursor installs plugins from its own settings, so this one needs the person.
-
-**Ask the person** to do one of these, then restart Cursor:
-
-- In a team: an admin opens Cursor's **Plugins > Import from Repo**, imports
-  `Atmanity/atmee-toolkit`, and members install `atmee`.
-- Alone: you can do this part. Copy the plugin into Cursor's local plugins:
-
-  ```
-  src="$(mktemp -d)"
-  git clone --depth 1 https://github.com/Atmanity/atmee-toolkit.git "$src/toolkit"
-  mkdir -p ~/.cursor/plugins/local
-  rm -rf ~/.cursor/plugins/local/atmee
-  cp -R "$src/toolkit/plugins/atmee" ~/.cursor/plugins/local/atmee
-  rm -rf "$src"
-  ```
-
-  Running it again replaces the installed copy with the latest one.
-
-  Then ask the person to restart Cursor.
-
-Then go to [step 3](#3-sign-in).
-
-## 2d. Other agents
-
-Install the skills with the skills CLI (needs Node.js 22.20 or newer; check
-with `node --version`). Use your own agent id, for example `codex`, `cursor`,
-`claude-code`, `antigravity-cli`, `gemini-cli`, `github-copilot`, `windsurf`,
-`cline` or `opencode`:
+## 2. Install the skills
 
 ```
 npx -y skills add Atmanity/atmee-toolkit --skill '*' --agent <agent-id> --yes --global
 ```
 
-Check it worked:
+It needs Node.js 22.20 or newer (`node --version`). Check it worked:
 
 ```
 npx -y skills list --global
 ```
 
-`create-avatar`, `plan-avatar-app`, `build-avatar-app`, `atmee-setup` and `atmee-product` should be listed. This route installs no
-server: the `atmee-setup` skill adds the `atmee` server to your agent the
-first time it runs, asks the person first, and says which file it changed and
-how to undo it.
+`create-avatar`, `make-video`, `plan-avatar-app`, `build-avatar-app`,
+`atmee-setup` and `atmee-product` should be listed. Running the same command again updates
+them.
 
-**Ask the person:** "Start a new session of your agent, then tell me to go
-on." New skills load only in a new session.
+**Claude Code without Node.js:** unzip each skill from the latest release
+into its skills folder instead:
 
-Then go to [step 4](#4-verify): the setup skill handles the sign-in itself.
+```
+dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/skills"; mkdir -p "$dir"
+for s in create-avatar make-video plan-avatar-app build-avatar-app atmee-setup atmee-product; do
+  tmp="$(mktemp -d)"
+  # Replace an installed copy only once the new one downloaded and unpacked.
+  if curl -fsSL "https://github.com/Atmanity/atmee-toolkit/releases/latest/download/$s.zip" -o "$tmp/$s.zip" &&
+     unzip -q "$tmp/$s.zip" -d "$tmp/new" && [ -f "$tmp/new/$s/SKILL.md" ]; then
+    rm -rf "$dir/$s" && mv "$tmp/new/$s" "$dir/$s"
+  else
+    echo "could not download $s; the installed copy, if any, is unchanged"
+  fi
+  rm -rf "$tmp"
+done
+```
 
-## 3. Sign in
+## 3. Add the server
+
+The server is `https://api.atmanity.us/mcp`, added under the name
+`atmee`. First check that no `atmee` or `atmee-avatars` server is there
+already; if one is, keep it and skip this step.
+
+| Agent | Add it | Check |
+|---|---|---|
+| Claude Code | `claude mcp add --transport http atmee https://api.atmanity.us/mcp --scope user` | `claude mcp get atmee` says it needs authentication |
+| Codex | It starts the sign-in at once, so first give the person step 4's line about the sign-in page. Then `codex mcp add atmee --url https://api.atmanity.us/mcp`, and in `~/.codex/config.toml`, under `[sandbox_workspace_write]`, set `network_access = true` (uploads and the update check need the network) | `codex mcp list` |
+| Cursor | add `"atmee": { "url": "https://api.atmanity.us/mcp" }` under `mcpServers` in `~/.cursor/mcp.json` (create it if missing, keep other entries), then `cursor-agent mcp enable atmee` | `cursor-agent mcp list` |
+| Antigravity | `agy mcp add` when `agy` exists (see `agy mcp add --help`); otherwise add `"atmee": { "serverUrl": "https://api.atmanity.us/mcp" }` under `mcpServers` in `~/.gemini/config/mcp_config.json` | its MCP settings |
+| Any other agent | its own way to add a remote HTTP MCP server with that name and address | |
+
+Tell the person which file changed (the table's command names it) and that
+`claude mcp remove atmee --scope user`, `codex mcp remove atmee` or removing
+the entry undoes it.
+
+## 4. Sign in
 
 The server signs in through the "Connect an app to Atmee" page on atmee.ai.
+The login command opens it in the person's browser and waits until they
+finish, so tell them first. Use the server's name from step 3: `atmee`, or
+the `atmee-avatars` entry you kept (`<name>` below; a plugin's server signs
+in as [Plugin instead](#plugin-instead) says). **Ask the person:** "An atmee
+sign-in page will open in your browser. Sign in there; I'll carry on when
+it's done."
 
-- **Claude Code.** Step 2a asked for it together with the reload. After a
-  restart instead, **ask the person:** "Run `/mcp`, pick `atmee-avatars` and
-  choose Authenticate."
-- **Codex.** The login opens the sign-in page in the person's browser and
-  waits until they finish there, so tell them first. **Ask the person:** "An
-  atmee sign-in page will open in your browser. Sign in there and tell me
-  when you're ready." Then run:
+Open it for them: the login commands refuse to run without a terminal
+("this isn't an interactive terminal"), and your shell isn't one, so run the
+command below inside one with `script`, in the background where your agent
+can (or with a timeout of several minutes):
 
-  ```
-  codex mcp login atmee-avatars
-  ```
+- macOS: `script -q /dev/null <command>`
+- Linux: `script -qec "<command>" /dev/null`
 
-  If the login times out or fails, run it again.
-- **Cursor. Ask the person:** "Open Settings > MCP and sign in to
-  `atmee-avatars`."
+It opens the page in the person's browser and finishes by itself once they
+sign in. Wait for it to finish before step 5: a new session started earlier
+ends the login. If no browser opened, give the person the link it printed.
+Over SSH that link alone doesn't finish (the page sends the browser back to
+`localhost` on the person's own machine): ask them to run their agent's own
+login in their SSH terminal and follow its prompt. In Claude Code that is
+`claude mcp login <name> --no-browser`: open the link it shows, then paste
+the address they land on back into that prompt. Codex and Cursor sign in
+only through their own command (`codex mcp login <name>`,
+`cursor-agent mcp login <name>`), never Claude's.
 
-## 4. Verify
+| Agent | Sign in |
+|---|---|
+| Claude Code | `claude mcp login <name>`; or the person runs `/mcp` in Claude Code, picks the server and chooses Authenticate |
+| Codex | nothing when `codex mcp list` already shows `<name>` signed in (the add in step 3 did it); otherwise `codex mcp login <name>` |
+| Cursor | `cursor-agent mcp login <name>`, or ask the person to sign in under Settings > MCP |
+| Others | ask the person to sign in from the agent's MCP settings |
 
-Run the setup skill: `/atmee:atmee-setup` in Claude Code with the plugin,
-otherwise ask yourself to "set up atmee", which runs `atmee-setup`. It checks
-the sign-in, the account, the credit balance, updates,
-and Claude Code's prompts before each atmee tool call, fixes what it can,
-and ends with one line.
+If the login times out or fails, run it again.
 
-- **"All set: …"** means the install worked. Go to step 5.
+## 5. Load it
+
+A running session doesn't pick up a server added from the shell. **Ask the
+person** to start a new one, which keeps this conversation where the agent
+allows it:
+
+- Claude Code: "Type `/exit`, then run `claude -c` in this folder, and tell
+  me to go on." In the desktop app, start a new local session.
+- Codex: "Restart Codex (quit the desktop app fully and reopen it), then
+  tell me to go on."
+- Cursor: "Restart Cursor, then tell me to go on."
+- Others: "Start a new session, then tell me to go on."
+
+## 6. Verify
+
+Ask yourself to "set up atmee", which runs the `atmee-setup` skill
+(`/atmee-setup` in Claude Code). It checks the sign-in, the account, the
+credit balance, updates and Claude Code's prompts before each atmee tool
+call, fixes what it can, and ends with one line.
+
+- **"All set: …"** means the install worked. Go to step 7.
 - Anything else is one line per problem with the one step to take. Do the
   steps you can, give the person the rest, and run the check again.
 
-Without the setup skill, call `get_balance` on `atmee-avatars`: it is free,
-and a balance in the answer means the server is signed in.
+Without the setup skill, call `get_balance` on `atmee`: it is free, and a
+balance in the answer means the server is signed in.
 
-## 5. Finish
+## 7. Finish
 
 Tell the person, in one or two lines, for example:
 
@@ -273,25 +238,76 @@ Clips are on every plan, Free included, and need no Atmee V2 access:
 don't check `v2Access` for them. With `limits.videoGeneration` false,
 video generation was turned off for this account: say nothing about clips.
 
+## Plugin instead
+
+The plugin bundles the same skills with the server under the name
+`atmee-avatars`, and updates them together. It suits Cursor teams (an admin
+imports it once) and people who prefer plugins. Plugins don't load in
+Claude Code's cloud sessions.
+
+**Claude Code.** See what is there with `claude plugin marketplace list` and
+`claude plugin list`, then run the lines that apply:
+
+- No `atmee` marketplace: `claude plugin marketplace add Atmanity/atmee-toolkit`
+- The marketplace is there: `claude plugin marketplace update atmee`
+- `atmee@atmee` is not installed: `claude plugin install atmee@atmee`
+- `atmee@atmee` is installed: `claude plugin update atmee@atmee`
+
+If `claude plugin list` shows it disabled, run `claude plugin enable atmee@atmee`.
+**Ask the person:** "Type `/reload-plugins --force` to load atmee here, then
+tell me to go on." (`--force` is needed because the plugin adds a server.)
+Then sign in: until it is signed in, Claude Code gives you an `authenticate`
+tool for the server (`mcp__plugin_atmee_atmee-avatars__authenticate`; load
+it through your tool search when it is deferred). Call it and **ask the
+person:** "Open this link and sign in to atmee.ai: <link>. Tell me when the
+page says you're connected." The atmee tools appear by themselves once they
+finish; when the person is in a remote session and the page they land on
+fails to load, pass its address to the server's `complete_authentication`
+tool. Without an `authenticate` tool, **ask the person:** "Run `/mcp`, pick
+`atmee-avatars` and choose Authenticate" (a plugin's server isn't one
+`claude mcp login` knows). Then go to [step 6](#6-verify), running
+`/atmee:atmee-setup`.
+
+**Codex.** `codex plugin marketplace add https://github.com/Atmanity/atmee-toolkit.git`
+(or `codex plugin marketplace upgrade` when it is there), then
+`codex plugin add atmee@atmee`. **Ask the person** to restart Codex, then
+sign in with `codex mcp login atmee-avatars` as in step 4, and go to step 6.
+
+**Cursor.** In a team, an admin opens **Plugins > Import from Repo**, imports
+`Atmanity/atmee-toolkit`, and members install `atmee`. Alone, copy the plugin
+into Cursor's local plugins:
+
+```
+src="$(mktemp -d)"
+git clone --depth 1 https://github.com/Atmanity/atmee-toolkit.git "$src/toolkit"
+mkdir -p ~/.cursor/plugins/local
+rm -rf ~/.cursor/plugins/local/atmee
+cp -R "$src/toolkit/plugins/atmee" ~/.cursor/plugins/local/atmee
+rm -rf "$src"
+```
+
+Then **ask the person** to restart Cursor and sign in to `atmee-avatars`
+under Settings > MCP, and go to step 6.
+
 ## If something goes wrong
 
 | What you see | What to do |
 |---|---|
-| `git ls-remote` or the marketplace add fails | The machine can't reach GitHub. Check the network or proxy, as in step 0. The repo is public, so no GitHub sign-in is needed. |
-| Claude Code lists the plugin but no atmee tools | Ask the person to type `/reload-plugins --force`, or to restart Claude Code if that doesn't help; if the tools are still missing, `/mcp` shows each server's status. |
-| Codex shows no atmee tools after a restart | Run `codex mcp list`. If `atmee-avatars` is missing, add it with the plugin's own address: `codex mcp add atmee-avatars --url https://api.atmanity.us/mcp`. Then sign in as in step 3. |
-| `npx skills` says Node.js is too old | Ask the person to install Node.js 22.20 or newer, or use the plugin route if their agent has one. |
-| `atmee-setup` says a newer plugin is out | Claude Code: `claude plugin marketplace update atmee`, then `claude plugin update atmee@atmee`, then the person types `/reload-plugins` (a restart works too). Codex: `codex plugin marketplace upgrade`, then `codex plugin add atmee@atmee`, then a restart. |
+| `git ls-remote` or a download fails | The machine can't reach GitHub. Check the network or proxy, as in step 0. The repo is public, so no GitHub sign-in is needed. |
+| `npx skills` says Node.js is too old | Ask the person to install Node.js 22.20 or newer. In Claude Code, the unzip route in step 2 needs no Node. |
+| No atmee tools after the new session | `claude mcp list`, `codex mcp list` or `cursor-agent mcp list` shows the server's status. Missing: add it as in step 3. Needs authentication: sign in as in step 4, then start a new session again. |
+| `claude mcp login` says the server is unknown | It was added in another scope or under another name: `claude mcp list` shows it; sign in to that name. |
+| `atmee-setup` says newer skills are out | Run the update it prints (for the skills: the step 2 command again), then start a new session. |
+| With the plugin: tools missing after the reload | Ask the person to type `/reload-plugins --force` again, or to restart Claude Code; `/mcp` shows each server's status. |
 
 ## Remove atmee
 
-- Claude Code: `claude plugin uninstall atmee@atmee`, then
-  `claude plugin marketplace remove atmee`.
-- Codex: `codex plugin remove atmee@atmee`, then
-  `codex plugin marketplace remove atmee`.
-- If you added `atmee-avatars` to Codex by hand (troubleshooting), also run
-  `codex mcp remove atmee-avatars`.
-- Cursor: uninstall `atmee` under Plugins, or for the local copy run
-  `rm -rf ~/.cursor/plugins/local/atmee`, then restart Cursor.
-- Skills route: `npx -y skills remove create-avatar plan-avatar-app build-avatar-app atmee-setup atmee-product --global --yes`,
-  and remove the `atmee` server the setup skill added (it said which file).
+- Skills: `npx -y skills remove create-avatar make-video plan-avatar-app build-avatar-app atmee-setup atmee-product --global --yes`
+  (or delete those six folders from the skills folder).
+- Server: `claude mcp remove atmee --scope user`, `codex mcp remove atmee`
+  (and the `network_access` line if nothing else needs it), or remove the
+  `atmee` entry from Cursor's or Antigravity's MCP file.
+- Plugin: Claude Code `claude plugin uninstall atmee@atmee`, then
+  `claude plugin marketplace remove atmee`; Codex `codex plugin remove atmee@atmee`,
+  then `codex plugin marketplace remove atmee`; Cursor: uninstall `atmee`
+  under Plugins, or `rm -rf ~/.cursor/plugins/local/atmee`, then restart.

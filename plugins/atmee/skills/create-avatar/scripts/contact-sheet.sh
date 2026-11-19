@@ -5,6 +5,12 @@
 #
 #   contact-sheet.sh <out.png> <label>=<preview-url-or-file> ...
 #
+# The crop is the lower middle of the frame, where the mouth sits in a
+# head-and-shoulders picture. For other framing (a half-body v2 portrait puts
+# the mouth higher), set MOUTH_TOP to the top of the band as a fraction of the
+# height (default 0.58; the band is a quarter of the height tall), e.g.
+# MOUTH_TOP=0.28 contact-sheet.sh ...
+#
 # Rows follow the order given; the row labels are printed, not drawn. Each
 # row line also carries motion=<n>: the mean frame-to-frame change of the
 # mouth crop (0 for a frozen mouth), to read across rows, not as a threshold.
@@ -19,6 +25,11 @@ command -v ffprobe >/dev/null || die "needs ffprobe on PATH (it comes with ffmpe
 out="$1"
 shift
 frames=12
+top="${MOUTH_TOP:-0.58}"
+case "$top" in
+  0.[0-9]|0.[0-9][0-9]) awk -v t="$top" 'BEGIN { exit !(t <= 0.75) }' || die "MOUTH_TOP must be between 0 and 0.75, got $top" ;;
+  *) die "MOUTH_TOP must be a fraction like 0.58, got $top" ;;
+esac
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
@@ -42,10 +53,10 @@ for pair in "$@"; do
   rate="$(awk -v s="${seconds:-0}" -v f="$frames" 'BEGIN { s += 0; if (s > 0) printf "%.4f", f / s; else print 2 }')"
   row="$tmp/r$i.png"
   ffmpeg -loglevel error -y -i "$clip" \
-    -vf "fps=$rate,crop=iw*0.5:ih*0.25:iw*0.25:ih*0.58,scale=96:48,tile=${frames}x1" \
+    -vf "fps=$rate,crop=iw*0.5:ih*0.25:iw*0.25:ih*$top,scale=96:48,tile=${frames}x1" \
     -frames:v 1 "$row" || die "ffmpeg failed on the preview for $label"
   motion="$(ffmpeg -loglevel error -nostats -i "$clip" \
-    -vf "fps=$rate,crop=iw*0.5:ih*0.25:iw*0.25:ih*0.58,scale=96:48,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-" \
+    -vf "fps=$rate,crop=iw*0.5:ih*0.25:iw*0.25:ih*$top,scale=96:48,format=gray,tblend=all_mode=difference,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-" \
     -f null - 2>/dev/null | LC_ALL=C awk -F= '/YAVG/ { n++; if (n > 1) s += $2 } END { if (n > 1) printf "%.1f", s / (n - 1); else print "n/a" }')"
   rows+=("$row")
   labels+=("$label motion=$motion")

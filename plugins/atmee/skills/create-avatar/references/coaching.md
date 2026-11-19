@@ -8,11 +8,10 @@
 - Another seed
 - Fixes that rebuild
 - Photo tips for Atmee V2
-- Clips
 
-This is for Atmee V2 and V2 HD avatars, and for video clips (`generate_clip`),
-which run on Atmee V2 too (Clips, below). An Atmee V1 avatar has no seeds and
-no motion setting, so none of this applies to it.
+This is for Atmee V2 and V2 HD avatars. An Atmee V1 avatar has no seeds and
+no motion setting, so none of this applies to it. A video clip that looks off
+is coached in the `make-video` skill.
 
 A creator who sees one bad seed often decides the model doesn't work. Most of
 the time the fix is another seed, a small change to the photo, or a livelier
@@ -139,35 +138,3 @@ you switch.
   mouth, which repeat in every frame.
 - Avoid a plain white or empty background, and a busy one with other people.
 - Even, soft light on the face and a relaxed, upright posture help.
-
-## Clips
-
-A clip from `generate_clip` is one render of the picture, prompt and audio,
-on Atmee V2. You can't watch it, so the creator judges it (the
-credits-and-generation reference, Clips). When they say it looks off (too
-still, lips not moving while it speaks, a warped subject, odd motion), coach
-as above, with these differences. Offer fixes as options; the creator keeps
-whatever they like, however unusual.
-
-- **Every try is a new paid clip** at the clip's price for its size and
-  length, asked first (rule 1). Say so in each choice; there is no free
-  re-render.
-- **Another render:** the same inputs with another `seed` give other motion,
-  as a new request. Renders vary a lot: from the same inputs one clip
-  talked well and one barely moved.
-- **Too still, or the motion stops early:** add concrete actions in order
-  for the whole length ("waves, then picks up the cup, then laughs"); the
-  model settles after the last action it was given.
-- **The audio:** for a talking clip, a speech recording makes the
-  mouth move; silent, it stays mostly still.
-  Otherwise a livelier recording or a different voice; flat or quiet audio,
-  and non-speech audio such as rain or music, move the lips less or not at
-  all.
-- **The subject changes as it moves away:** parts the picture never showed
-  are invented. A picture that already shows more (a wider shot, the
-  outfit, the place) keeps it closer; or keep it and enjoy the surprise.
-- **The picture:** a picture in the clip's shape isn't cropped, and a
-  retaken, cropped or restyled one is free or cheap before the new render.
-  For a talking person, the avatar photo tips above help; a big fixed smile
-  can stay fixed.
-- **Last,** a different picture altogether.

@@ -49,7 +49,7 @@ Don't ask the creator how assets are stored; record them this way:
 
 - **Generated portraits and voices:** the upload id from its
   `upload:<uploadId>` (`upload_id`) and its `provider`. It works for one
-  avatar and expires 24 hours after it was made, and its link sooner, so the
+  avatar and expires 7 days after it was made, and its link sooner (`urlExpiresAt`), so the
   saved copy under `media/` is what you show later. Never store its link.
 - **The creator's own files** have no link to refresh: the copy in
   `sources/` is the reference. When one is uploaded for a create or replace,
@@ -95,7 +95,7 @@ When the skill starts and `atmee-avatars/` has avatars:
 1. List them: name, where it stands (below), avatar id, environment. A
    folder with no iteration file yet was named but not created: read the name
    back from the folder's slug and confirm it with the creator. `clips` holds
-   standalone clips and is never an avatar, so skip it.
+   the `make-video` skill's clips and is never an avatar, so skip it.
 2. Offer to continue one from where it stands, or start a new one.
 3. When continuing, read the latest file. If its `paid_calls` has a
    `status: pending` entry, retry it first with the same `request_id`,

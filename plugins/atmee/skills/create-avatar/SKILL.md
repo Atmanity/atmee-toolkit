@@ -1,10 +1,10 @@
 ---
 name: create-avatar
-description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test - or a v2 video clip from a picture. Use when someone wants to make, continue or fix one. NOT for editing in Studio.
+description: Build an Atmee talking avatar or digital twin - name, photo, voice, character, test. Use when someone wants to make, continue or fix one. NOT for editing in Studio or a video clip (make-video).
 license: Proprietary
 metadata:
   owner: Atmanity
-allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__duplicate_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__plugin_atmee_atmee-avatars__generate_clip, mcp__plugin_atmee_atmee-avatars__get_clip, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__duplicate_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice, mcp__atmee__generate_clip, mcp__atmee__get_clip
+allowed-tools: Bash(*/scripts/media.sh *), Bash(*/scripts/update-check*), Bash(*/scripts/detect-host*), mcp__plugin_atmee_atmee-avatars__get_api_key, mcp__plugin_atmee_atmee-avatars__get_account, mcp__plugin_atmee_atmee-avatars__get_balance, mcp__plugin_atmee_atmee-avatars__list_avatars, mcp__plugin_atmee_atmee-avatars__get_avatar, mcp__plugin_atmee_atmee-avatars__create_avatar, mcp__plugin_atmee_atmee-avatars__update_avatar, mcp__plugin_atmee_atmee-avatars__duplicate_avatar, mcp__plugin_atmee_atmee-avatars__wait_for_avatar, mcp__plugin_atmee_atmee-avatars__list_candidates, mcp__plugin_atmee_atmee-avatars__add_candidates, mcp__plugin_atmee_atmee-avatars__select_candidate, mcp__plugin_atmee_atmee-avatars__create_upload, mcp__plugin_atmee_atmee-avatars__get_upload, mcp__plugin_atmee_atmee-avatars__wait_for_upload, mcp__plugin_atmee_atmee-avatars__replace_appearance, mcp__plugin_atmee_atmee-avatars__replace_voice, mcp__plugin_atmee_atmee-avatars__generate_portraits, mcp__plugin_atmee_atmee-avatars__enhance_portrait, mcp__plugin_atmee_atmee-avatars__design_voice, mcp__atmee__get_api_key, mcp__atmee__get_account, mcp__atmee__get_balance, mcp__atmee__list_avatars, mcp__atmee__get_avatar, mcp__atmee__create_avatar, mcp__atmee__update_avatar, mcp__atmee__duplicate_avatar, mcp__atmee__wait_for_avatar, mcp__atmee__list_candidates, mcp__atmee__add_candidates, mcp__atmee__select_candidate, mcp__atmee__create_upload, mcp__atmee__get_upload, mcp__atmee__wait_for_upload, mcp__atmee__replace_appearance, mcp__atmee__replace_voice, mcp__atmee__generate_portraits, mcp__atmee__enhance_portrait, mcp__atmee__design_voice
 ---
 
 # Create an Atmee avatar
@@ -96,7 +96,7 @@ Read these before anything else, and keep them for the whole conversation.
 2. **Generated portraits and voices go straight in.** Each comes back as
    `upload:<uploadId>`: pass it as it is to `create_avatar`,
    `replace_appearance` or `replace_voice`. Never download it and upload it
-   again. Each one works for one avatar and expires 24 hours after it was
+   again. Each one works for one avatar and expires 7 days after it was
    made; its `url` is only for viewing, playing and saving a copy.
 3. **Never** delete an avatar or start a paid session, and move credits only
    to sponsor an avatar when the creator asks and confirms. The creator tests the avatar on its own chat page (Step 4), not through you.
@@ -205,8 +205,6 @@ every call (setup saves it for a sign-in that belongs to several accounts).
   | `generate_portraits` | portrait options from a description, for an invented character |
   | `enhance_portrait` | cleaned-up square versions of a photo the creator gave, or with `prompt`, that person restyled ("as a 1920s detective") |
   | `design_voice` | voice previews from a description |
-  | `generate_clip` | a short video (1 to 15 s, 480×480 up to 1280×720 or 720×1280, priced by size and length, charged at the next length up; 1080p coming soon) that starts on any picture (person, character, animal, product, scene) and moves as a prompt says, silent or with audio (speech drives the lips; other sound plays back as given; plan it with the reference's Planning a good clip); no avatar is made |
-  | `get_clip` | a clip's status by its `requestId`, free: follow a render after `request_in_progress` and get its download link |
 
   If the server lists none of them, or `get_account` has no
   `pricing.generation`, say generation isn't available and work with the
@@ -234,16 +232,17 @@ so the creator always knows where they are and what is left.
    `atmee-setup` skill): it adds the atmee server if it is missing, checks
    sign-in, the account, credits and the local setup in one pass, then comes
    back here.
-2. If `atmee-avatars/clips/pending.json` exists, retry that clip first, as
-   Clips in `references/credits-and-generation.md` says.
-3. If the creator only wants a short video clip, not an avatar, skip the
-   rest of Start and the five steps: follow Clips there.
-4. If `atmee-avatars/` exists in the project, list the saved avatars, skipping
+2. If the creator only wants a short video clip, not an avatar, hand off:
+   for a short video from a photo, use the `make-video` skill. Don't make
+   clips here. If `atmee-avatars/clips/pending.json` holds an unfinished
+   clip while they asked for an avatar, say so in one line (the `make-video`
+   skill finishes it when they ask) and go on with the avatar.
+3. If `atmee-avatars/` exists in the project, list the saved avatars, skipping
    `clips`, and offer to continue one or start new
    (`references/iterations.md`, Resume). When the creator wants an existing
    avatar on Atmee V2, or a second one like it, copy it (Copy an avatar,
    below) instead of starting over.
-5. For a new avatar, say in two lines how it goes, then start step 1:
+4. For a new avatar, say in two lines how it goes, then start step 1:
    "Making an avatar takes 5 steps: **1 a name, a photo and a voice**, **2
    see it talk**, **3 give it a character**, **4 test it**, **5 hand it
    over**. Everything is saved as we go, so you can stop after any step."
@@ -363,13 +362,13 @@ Hand over the chat link and the Studio link
 (`references/test-and-handover.md`, Hand over). Clips are on every plan,
 Free included, whatever `v2Access` says (don't check it for clips). When
 `get_account`'s `limits.videoGeneration` is not false (absent
-counts as allowed) and its `pricing.generation` has clip prices (`clipSizes`;
-an older server: `clipPer15SecondsMicrocredits` or `clipPerSecondMicrocredits`),
+counts as allowed) and its `pricing.generation` has a clip price,
 add one line that Atmee can also make a short video clip from the same photo,
-with sound when they give an audio file to play (a recording, or the voice
-sample they gave) (Clips in
-`references/credits-and-generation.md`), and make one only if the creator
-asks. Without a clip price, say nothing about clips.
+with sound when they give a recording to play: for a short video from a
+photo, use the `make-video` skill. Add one more line that the avatar they
+just made can star in a clip too, saying a script in its own voice, through
+the `make-video` skill. Don't make one here. Without a clip price, say
+nothing about clips.
 
 Never offer to commit or `git init`: the iteration files are saved either
 way. Only when the creator asks, commit as `references/iterations.md`

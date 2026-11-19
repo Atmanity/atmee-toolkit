@@ -10,7 +10,7 @@
 # and exit 0. Each lookup is cut at ATMEE_UPDATE_TIMEOUT seconds (default 6).
 set -u
 
-PINNED="0.10.18" # x-release-please-version
+PINNED="0.10.19" # x-release-please-version
 
 here="$(cd "$(dirname "$0")" && pwd -P)"
 repo="Atmanity/atmee-toolkit"
@@ -122,16 +122,30 @@ check_skills() {
   fi
 }
 
-# The CLI's source ships with each release, tagged cli/vX.Y.Z, so go install
-# records the same version.
+# Each release ships prebuilt binaries that the toolkit's install.sh fetches
+# (no Go needed), stamped with the release's version, as is the source tagged
+# cli/vX.Y.Z that go install builds.
 check_cli() {
   local bin ver install
-  install="go install github.com/$repo/cli/cmd/atmee@latest"
-  # While the repo is members-only, Go fetches it with git and the gh sign-in.
-  [ -n "$public" ] || install="gh auth setup-git && GOPRIVATE=github.com/$repo $install"
+  local script="https://raw.githubusercontent.com/$repo/main/install.sh"
+  if command -v curl >/dev/null 2>&1; then
+    install="curl -fsSL $script | sh"
+  elif command -v wget >/dev/null 2>&1; then
+    # Without curl nothing above probed the plain download: check it here,
+    # within the same time limit as every other lookup.
+    if [ -n "$(quick sh -c 'wget -q --spider -T "$1" -t 1 "$2" && echo ok' _ "$limit" "$script")" ]; then
+      install="wget -qO- $script | sh"
+    fi
+  fi
+  # While the repo is members-only, the plain download fails (curl answered
+  # nothing), as it does with neither curl nor wget: Go fetches it with git
+  # and the gh sign-in instead.
+  if [ -z "${install:-}" ] || { [ -z "$public" ] && command -v curl >/dev/null 2>&1; }; then
+    install="gh auth setup-git && GOPRIVATE=github.com/$repo go install github.com/$repo/cli/cmd/atmee@latest"
+  fi
   bin="$(command -v atmee 2>/dev/null)"
   if [ -z "$bin" ]; then
-    say info cli "not installed; only API keys and agendas from the shell need it: $install"
+    say info cli "not installed (optional: only API keys written to .env and scripts need it): $install"
     return
   fi
   ver="$(quick atmee --version | awk '{ print $NF; exit }')"

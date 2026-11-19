@@ -1,0 +1,14 @@
+interface:
+  display_name: 'Make an Atmee video'
+  short_description: 'Make a short video clip from a picture, or of your avatar speaking'
+  icon_small: './assets/atmee-icon.svg'
+  icon_large: './assets/atmee-icon.svg'
+  brand_color: '#111114'
+  default_prompt: '$make-video: Make a 10-second clip of my photo waving and saying hi'
+dependencies:
+  tools:
+    - type: 'mcp'
+      value: 'atmee'
+      description: 'Atmee video clips, uploads, portraits and the balance'
+      transport: 'streamable_http'
+      url: 'https://api.atmanity.us/mcp'

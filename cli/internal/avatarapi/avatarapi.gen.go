@@ -3156,7 +3156,13 @@ type AvatarSponsor struct {
 		AutoTopupEnabled                *bool                                   `json:"autoTopupEnabled,omitempty"`
 		AutoTopupThresholdMicrocredits  *int                                    `json:"autoTopupThresholdMicrocredits,omitempty"`
 		ExhaustedBehavior               *AvatarSponsorSettingsExhaustedBehavior `json:"exhaustedBehavior,omitempty"`
-		MaxPerSessionMicrocredits       *int                                    `json:"maxPerSessionMicrocredits,omitempty"`
+
+		// MaxPerSessionMicrocredits Deprecated; use maxSessionSeconds to limit how long a sponsored session lasts. The sponsor budget one session may spend, not its length; still enforced while set.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+		MaxPerSessionMicrocredits *int `json:"maxPerSessionMicrocredits,omitempty"`
+
+		// MaxSessionSeconds Longest sponsored session, in seconds. Visitors without an account get this length; signed-in visitors get the longer of this and their own plan's length. Capped at the creator's plan session length (a larger value is stored as the plan length); null = the plan length.
+		MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 	} `json:"settings"`
 }
 
@@ -3176,6 +3182,9 @@ type AvatarSponsorPatch struct {
 
 	// MaxPerSessionMicrocredits null clears the cap.
 	MaxPerSessionMicrocredits *int `json:"maxPerSessionMicrocredits,omitempty"`
+
+	// MaxSessionSeconds Longest sponsored session, in seconds. Visitors without an account get this length; signed-in visitors get the longer of this and their own plan's length. Capped at the creator's plan session length (a larger value is stored as the plan length); null = the plan length. Send null to go back to the plan length.
+	MaxSessionSeconds *int `json:"maxSessionSeconds,omitempty"`
 }
 
 // AvatarSponsorPatchExhaustedBehavior defines model for AvatarSponsorPatch.ExhaustedBehavior.
@@ -3942,7 +3951,7 @@ type DesignedVoice struct {
 	// DurationSeconds The preview's length as the provider reported it; null when it did not.
 	DurationSeconds *float64 `json:"durationSeconds"`
 
-	// ExpiresAt When the upload stops working (24 hours after it was made).
+	// ExpiresAt When the upload stops working (7 days after it was made).
 	ExpiresAt time.Time `json:"expiresAt"`
 
 	// Provider The voice provider that designed it.
@@ -3959,8 +3968,11 @@ type DesignedVoice struct {
 	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
 	Upload string `json:"upload"`
 
-	// Url A short-lived link to play the preview; absent when the preview is unavailable or no link could be made.
+	// Url A link to play the preview, until `urlExpiresAt` (a link on this API's host, `GET /v1/files/{uploadId}`, or a Storage link, depending on the server); absent when the preview is unavailable or no link could be made.
 	Url *string `json:"url,omitempty"`
+
+	// UrlExpiresAt When `url` stops working (at most 24 hours after this answer, never after `expiresAt`); absent with `url`. Read the output again for a new one.
+	UrlExpiresAt *time.Time `json:"urlExpiresAt,omitempty"`
 }
 
 // DesignedVoicesResponse defines model for DesignedVoicesResponse.
@@ -4152,19 +4164,22 @@ type FrameworkErrorResponse struct {
 	Message *string `json:"message,omitempty"`
 }
 
-// GenerateClipRequest defines model for GenerateClipRequest.
+// GenerateClipRequest Supply either avatarId and transcript (optional motion prompt) or image and prompt (optional audio).
 type GenerateClipRequest struct {
-	// Audio What is said in the clip, `upload:<uploadId>` (a `voice` upload) or a public https link to a speech recording. Speech drives the lips and face; other sound plays back as given. Absent, the clip is silent. The clip makes no speech, music or sound effects of its own.
+	// Audio What is said in the clip, `upload:<uploadId>` (a `voice` upload) or a public https link to a speech recording. Speech drives the lips and face; other sound plays back as given. A custom-image clip is silent when audio is absent.
 	Audio *string `json:"audio,omitempty"`
 
-	// DurationSeconds The clip's length, 1 to 15 at every size. Required with `audio`, set to the audio's length in whole seconds, rounded up, at most 15 (longer audio is cut; the file is not measured); default 8 for a silent clip.
+	// AvatarId The avatar whose saved appearance and Fish Audio voice the clip uses. Requires transcript and excludes image and audio.
+	AvatarId *openapi_types.UUID `json:"avatarId,omitempty"`
+
+	// DurationSeconds The clip's length, 1 to 15 at every size. Required with `audio`, set to the audio's length in whole seconds, rounded up, at most 15 (longer audio is cut; the file is not measured). Any whole number of seconds from 1 to 15; pass it for a silent clip too, since without it a silent clip runs 8 seconds. Priced in tiers of up to 5, 10 and 15 seconds, a clip paying the tier its length falls in (7 seconds pays the 10-second price). Not accepted with `avatarId`, as an avatar clip's length follows its speech.
 	DurationSeconds *int `json:"durationSeconds,omitempty"`
 
 	// Image The clip's first frame, any subject (a person, character, animal, product or scene), `upload:<uploadId>` (an image upload of kind `portrait`) or a public https link (jpg, png or webp, at most 10 MB).
-	Image string `json:"image"`
+	Image *string `json:"image,omitempty"`
 
 	// Prompt The shot and the motion, e.g. "she walks along the beach at sunset, the camera following". Limited in tokens, not characters. The model reads at most 1,024 of its tokens (about 5,000 characters of English, about 1,400 of Chinese). A longer prompt is refused as `invalid_input` naming the prompt, at no charge; 8,000 characters (maxLength) is only a size cap on top.
-	Prompt string `json:"prompt"`
+	Prompt *string `json:"prompt,omitempty"`
 
 	// Resolution A clip's output size in pixels, one of these. Credits per clip by
 	// length; a clip pays the next length up (7 seconds pays the
@@ -4187,6 +4202,27 @@ type GenerateClipRequest struct {
 
 	// Seed The render's seed; another seed gives other motion. Default 0.
 	Seed *int64 `json:"seed,omitempty"`
+
+	// Transcript The words the avatar speaks. Requires avatarId. The clip runs 0.4 seconds of silence, the speech and 0.4 seconds of silence; speech past 14.2 seconds is cut.
+	Transcript *string `json:"transcript,omitempty"`
+	union      json.RawMessage
+}
+
+// GenerateClipRequest0 defines model for GenerateClipRequest.0.
+type GenerateClipRequest0 struct {
+	Audio           interface{} `json:"audio,omitempty"`
+	AvatarId        string      `json:"avatarId"`
+	DurationSeconds interface{} `json:"durationSeconds,omitempty"`
+	Image           interface{} `json:"image,omitempty"`
+	Transcript      string      `json:"transcript"`
+}
+
+// GenerateClipRequest1 defines model for GenerateClipRequest.1.
+type GenerateClipRequest1 struct {
+	AvatarId   interface{} `json:"avatarId,omitempty"`
+	Image      string      `json:"image"`
+	Prompt     string      `json:"prompt"`
+	Transcript interface{} `json:"transcript,omitempty"`
 }
 
 // GeneratePortraitsRequest defines model for GeneratePortraitsRequest.
@@ -4209,7 +4245,7 @@ type GeneratedClip struct {
 	// DurationSeconds The clip's length.
 	DurationSeconds int `json:"durationSeconds"`
 
-	// ExpiresAt When the upload stops working (24 hours after it was made).
+	// ExpiresAt When the upload stops working (7 days after it was made).
 	ExpiresAt time.Time `json:"expiresAt"`
 	Height    int       `json:"height"`
 
@@ -4221,9 +4257,12 @@ type GeneratedClip struct {
 	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
 	Upload string `json:"upload"`
 
-	// Url A short-lived link to download the mp4; absent when the clip is unavailable or no link could be made.
-	Url   *string `json:"url,omitempty"`
-	Width int     `json:"width"`
+	// Url A link to download the mp4, until `urlExpiresAt` (a link on this API's host, `GET /v1/files/{uploadId}`, or a Storage link, depending on the server); absent when the clip is unavailable or no link could be made.
+	Url *string `json:"url,omitempty"`
+
+	// UrlExpiresAt When `url` stops working (at most 24 hours after this answer, never after `expiresAt`); absent with `url`. Read the output again for a new one.
+	UrlExpiresAt *time.Time `json:"urlExpiresAt,omitempty"`
+	Width        int        `json:"width"`
 }
 
 // GeneratedClipResponse defines model for GeneratedClipResponse.
@@ -4242,7 +4281,7 @@ type GeneratedClipResponse struct {
 
 // GeneratedPortrait defines model for GeneratedPortrait.
 type GeneratedPortrait struct {
-	// ExpiresAt When the upload stops working (24 hours after it was made).
+	// ExpiresAt When the upload stops working (7 days after it was made).
 	ExpiresAt time.Time `json:"expiresAt"`
 
 	// Preview A small JPEG of the portrait, base64-encoded, to show without fetching `url`.
@@ -4259,8 +4298,11 @@ type GeneratedPortrait struct {
 	// Examples: upload:3f1c2a9e-8d4b-4f6a-9c2e-1b7d5a0e4c11
 	Upload string `json:"upload"`
 
-	// Url A short-lived link to view the full-size portrait; absent when the portrait is unavailable or no link could be made.
+	// Url A link to view the full-size portrait, until `urlExpiresAt` (a link on this API's host, `GET /v1/files/{uploadId}`, or a Storage link, depending on the server); absent when the portrait is unavailable or no link could be made.
 	Url *string `json:"url,omitempty"`
+
+	// UrlExpiresAt When `url` stops working (at most 24 hours after this answer, never after `expiresAt`); absent with `url`. Read the output again for a new one.
+	UrlExpiresAt *time.Time `json:"urlExpiresAt,omitempty"`
 }
 
 // GeneratedPortraitsResponse defines model for GeneratedPortraitsResponse.
@@ -5051,6 +5093,200 @@ type CreateSpeechSessionJSONRequestBody = SpeechSessionCreateRequest
 
 // CreateUploadJSONRequestBody defines body for CreateUpload for application/json ContentType.
 type CreateUploadJSONRequestBody = UploadCreateRequest
+
+// AsGenerateClipRequest0 returns the union data inside the GenerateClipRequest as a GenerateClipRequest0
+func (t GenerateClipRequest) AsGenerateClipRequest0() (GenerateClipRequest0, error) {
+	var body GenerateClipRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateClipRequest0 overwrites any union data inside the GenerateClipRequest as the provided GenerateClipRequest0
+func (t *GenerateClipRequest) FromGenerateClipRequest0(v GenerateClipRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateClipRequest0 performs a merge with any union data inside the GenerateClipRequest, using the provided GenerateClipRequest0
+func (t *GenerateClipRequest) MergeGenerateClipRequest0(v GenerateClipRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsGenerateClipRequest1 returns the union data inside the GenerateClipRequest as a GenerateClipRequest1
+func (t GenerateClipRequest) AsGenerateClipRequest1() (GenerateClipRequest1, error) {
+	var body GenerateClipRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromGenerateClipRequest1 overwrites any union data inside the GenerateClipRequest as the provided GenerateClipRequest1
+func (t *GenerateClipRequest) FromGenerateClipRequest1(v GenerateClipRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeGenerateClipRequest1 performs a merge with any union data inside the GenerateClipRequest, using the provided GenerateClipRequest1
+func (t *GenerateClipRequest) MergeGenerateClipRequest1(v GenerateClipRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t GenerateClipRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	object := make(map[string]json.RawMessage)
+	if t.union != nil {
+		err = json.Unmarshal(b, &object)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if t.Audio != nil {
+		object["audio"], err = json.Marshal(t.Audio)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'audio': %w", err)
+		}
+	}
+
+	if t.AvatarId != nil {
+		object["avatarId"], err = json.Marshal(t.AvatarId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'avatarId': %w", err)
+		}
+	}
+
+	if t.DurationSeconds != nil {
+		object["durationSeconds"], err = json.Marshal(t.DurationSeconds)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'durationSeconds': %w", err)
+		}
+	}
+
+	if t.Image != nil {
+		object["image"], err = json.Marshal(t.Image)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'image': %w", err)
+		}
+	}
+
+	if t.Prompt != nil {
+		object["prompt"], err = json.Marshal(t.Prompt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'prompt': %w", err)
+		}
+	}
+
+	if t.Resolution != nil {
+		object["resolution"], err = json.Marshal(t.Resolution)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolution': %w", err)
+		}
+	}
+
+	if t.Seed != nil {
+		object["seed"], err = json.Marshal(t.Seed)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'seed': %w", err)
+		}
+	}
+
+	if t.Transcript != nil {
+		object["transcript"], err = json.Marshal(t.Transcript)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'transcript': %w", err)
+		}
+	}
+	b, err = json.Marshal(object)
+	return b, err
+}
+
+func (t *GenerateClipRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	if err != nil {
+		return err
+	}
+	object := make(map[string]json.RawMessage)
+	err = json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["audio"]; found {
+		err = json.Unmarshal(raw, &t.Audio)
+		if err != nil {
+			return fmt.Errorf("error reading 'audio': %w", err)
+		}
+	}
+
+	if raw, found := object["avatarId"]; found {
+		err = json.Unmarshal(raw, &t.AvatarId)
+		if err != nil {
+			return fmt.Errorf("error reading 'avatarId': %w", err)
+		}
+	}
+
+	if raw, found := object["durationSeconds"]; found {
+		err = json.Unmarshal(raw, &t.DurationSeconds)
+		if err != nil {
+			return fmt.Errorf("error reading 'durationSeconds': %w", err)
+		}
+	}
+
+	if raw, found := object["image"]; found {
+		err = json.Unmarshal(raw, &t.Image)
+		if err != nil {
+			return fmt.Errorf("error reading 'image': %w", err)
+		}
+	}
+
+	if raw, found := object["prompt"]; found {
+		err = json.Unmarshal(raw, &t.Prompt)
+		if err != nil {
+			return fmt.Errorf("error reading 'prompt': %w", err)
+		}
+	}
+
+	if raw, found := object["resolution"]; found {
+		err = json.Unmarshal(raw, &t.Resolution)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolution': %w", err)
+		}
+	}
+
+	if raw, found := object["seed"]; found {
+		err = json.Unmarshal(raw, &t.Seed)
+		if err != nil {
+			return fmt.Errorf("error reading 'seed': %w", err)
+		}
+	}
+
+	if raw, found := object["transcript"]; found {
+		err = json.Unmarshal(raw, &t.Transcript)
+		if err != nil {
+			return fmt.Errorf("error reading 'transcript': %w", err)
+		}
+	}
+
+	return err
+}
 
 // AsFrameworkErrorResponse returns the union data inside the CreateSpeechSession422JSONResponseBody as a FrameworkErrorResponse
 func (t CreateSpeechSession422JSONResponseBody) AsFrameworkErrorResponse() (FrameworkErrorResponse, error) {
@@ -6456,7 +6692,19 @@ type ClientInterface interface {
 
 	// GenerateClipWithBody Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// To make a saved avatar speak, send `avatarId` and `transcript` together.
+	// The first frame uses the avatar's saved appearance. Its configured Fish
+	// Audio voice speaks the transcript. An optional `prompt` directs the
+	// motion (default: the subject speaks to camera). Omit `image` and `audio`
+	// in this mode. The transcript is moderated along with the prompt and image.
+	// The clip lasts as long as the speech plus 0.4 seconds of silence before
+	// and after, rounded up to whole seconds, at most 15: speech past 14.2
+	// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+	// is charged for that length, but the balance must cover the size's
+	// 15-second price before the speech is made. This mode requires read
+	// access to the avatar.
+	//
+	// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 	// moves as `prompt` describes, optionally with `audio`. Any picture works:
 	// a person, a drawn character, an animal, a product or a scene, with
 	// small or large motion. No avatar is needed.
@@ -6476,8 +6724,9 @@ type ClientInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-	//   short-lived `url` to download it.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	//   `url` to download it that works until `urlExpiresAt`; read the clip
+	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
 	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
 	//   7-second clip pays the up-to-10-seconds price
@@ -6496,8 +6745,8 @@ type ClientInterface interface {
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
 	//   setup may still answer `403 v2_access_required`.
-	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
-	//   needs no avatar scope: with `generation:write` alone a key can upload
+	// - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+	//   With `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 	//   /v1/uploads/{uploadId}`).
@@ -6505,7 +6754,7 @@ type ClientInterface interface {
 	// | Error | When |
 	// |---|---|
 	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-	// | `503 generation_unavailable` | Clips are not offered here |
+	// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6514,7 +6763,19 @@ type ClientInterface interface {
 
 	// GenerateClip Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// To make a saved avatar speak, send `avatarId` and `transcript` together.
+	// The first frame uses the avatar's saved appearance. Its configured Fish
+	// Audio voice speaks the transcript. An optional `prompt` directs the
+	// motion (default: the subject speaks to camera). Omit `image` and `audio`
+	// in this mode. The transcript is moderated along with the prompt and image.
+	// The clip lasts as long as the speech plus 0.4 seconds of silence before
+	// and after, rounded up to whole seconds, at most 15: speech past 14.2
+	// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+	// is charged for that length, but the balance must cover the size's
+	// 15-second price before the speech is made. This mode requires read
+	// access to the avatar.
+	//
+	// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 	// moves as `prompt` describes, optionally with `audio`. Any picture works:
 	// a person, a drawn character, an animal, a product or a scene, with
 	// small or large motion. No avatar is needed.
@@ -6534,8 +6795,9 @@ type ClientInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-	//   short-lived `url` to download it.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	//   `url` to download it that works until `urlExpiresAt`; read the clip
+	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
 	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
 	//   7-second clip pays the up-to-10-seconds price
@@ -6554,8 +6816,8 @@ type ClientInterface interface {
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
 	//   setup may still answer `403 v2_access_required`.
-	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
-	//   needs no avatar scope: with `generation:write` alone a key can upload
+	// - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+	//   With `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 	//   /v1/uploads/{uploadId}`).
@@ -6563,7 +6825,7 @@ type ClientInterface interface {
 	// | Error | When |
 	// |---|---|
 	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-	// | `503 generation_unavailable` | Clips are not offered here |
+	// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6581,8 +6843,8 @@ type ClientInterface interface {
 	// | `status` | Meaning |
 	// |---|---|
 	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
-	// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
-	// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
+	// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
 	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 	//
 	// `404 clip_not_found` means this account has no clip under the id: the
@@ -6648,8 +6910,8 @@ type ClientInterface interface {
 	//
 	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.image`) and `PUT
-	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+	//   days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
 	//   new call with a larger count is `400 invalid_input`.
@@ -6678,8 +6940,8 @@ type ClientInterface interface {
 	//
 	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.image`) and `PUT
-	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+	//   days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
 	//   new call with a larger count is `400 invalid_input`.
@@ -6711,7 +6973,7 @@ type ClientInterface interface {
 	//   reports what it actually says in `spokenText`.
 	// - **Output**: each preview is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 	//   `null` when the length is unknown.
 	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 	// - **Scopes**: `generation:write` and `avatars:write`.
@@ -6733,7 +6995,7 @@ type ClientInterface interface {
 	//   reports what it actually says in `spokenText`.
 	// - **Output**: each preview is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 	//   `null` when the length is unknown.
 	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 	// - **Scopes**: `generation:write` and `avatars:write`.
@@ -8880,7 +9142,19 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 
 // GenerateClipWithBody Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// To make a saved avatar speak, send `avatarId` and `transcript` together.
+// The first frame uses the avatar's saved appearance. Its configured Fish
+// Audio voice speaks the transcript. An optional `prompt` directs the
+// motion (default: the subject speaks to camera). Omit `image` and `audio`
+// in this mode. The transcript is moderated along with the prompt and image.
+// The clip lasts as long as the speech plus 0.4 seconds of silence before
+// and after, rounded up to whole seconds, at most 15: speech past 14.2
+// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+// is charged for that length, but the balance must cover the size's
+// 15-second price before the speech is made. This mode requires read
+// access to the avatar.
+//
+// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 // moves as `prompt` describes, optionally with `audio`. Any picture works:
 // a person, a drawn character, an animal, a product or a scene, with
 // small or large motion. No avatar is needed.
@@ -8900,8 +9174,9 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-//     short-lived `url` to download it.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//     `url` to download it that works until `urlExpiresAt`; read the clip
+//     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
 //     up to 5, 10 or 15 seconds, charged at the next length up, so a
 //     7-second clip pays the up-to-10-seconds price
@@ -8920,8 +9195,8 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
 //     setup may still answer `403 v2_access_required`.
-//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
-//     needs no avatar scope: with `generation:write` alone a key can upload
+//   - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+//     With `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 //     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 //     /v1/uploads/{uploadId}`).
@@ -8929,7 +9204,7 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 // | Error | When |
 // |---|---|
 // | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-// | `503 generation_unavailable` | Clips are not offered here |
+// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 //
 // Takes any type of body and a specified content type.
 //
@@ -8948,7 +9223,19 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 
 // GenerateClip Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// To make a saved avatar speak, send `avatarId` and `transcript` together.
+// The first frame uses the avatar's saved appearance. Its configured Fish
+// Audio voice speaks the transcript. An optional `prompt` directs the
+// motion (default: the subject speaks to camera). Omit `image` and `audio`
+// in this mode. The transcript is moderated along with the prompt and image.
+// The clip lasts as long as the speech plus 0.4 seconds of silence before
+// and after, rounded up to whole seconds, at most 15: speech past 14.2
+// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+// is charged for that length, but the balance must cover the size's
+// 15-second price before the speech is made. This mode requires read
+// access to the avatar.
+//
+// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 // moves as `prompt` describes, optionally with `audio`. Any picture works:
 // a person, a drawn character, an animal, a product or a scene, with
 // small or large motion. No avatar is needed.
@@ -8968,8 +9255,9 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-//     short-lived `url` to download it.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//     `url` to download it that works until `urlExpiresAt`; read the clip
+//     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
 //     up to 5, 10 or 15 seconds, charged at the next length up, so a
 //     7-second clip pays the up-to-10-seconds price
@@ -8988,8 +9276,8 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
 //     setup may still answer `403 v2_access_required`.
-//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
-//     needs no avatar scope: with `generation:write` alone a key can upload
+//   - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+//     With `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 //     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 //     /v1/uploads/{uploadId}`).
@@ -8997,7 +9285,7 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 // | Error | When |
 // |---|---|
 // | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-// | `503 generation_unavailable` | Clips are not offered here |
+// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9025,8 +9313,8 @@ func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, b
 // | `status` | Meaning |
 // |---|---|
 // | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
-// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
-// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
+// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
 // | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 //
 // `404 clip_not_found` means this account has no clip under the id: the
@@ -9122,8 +9410,8 @@ func (c *Client) EnhancePortrait(ctx context.Context, params *EnhancePortraitPar
 //
 //   - **Output**: each portrait is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.image`) and `PUT
-//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-//     hours), with a short-lived `url` and a small JPEG `preview`.
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+//     days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 //   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 //     Grok portrait, in that order; 1 makes the Gemini portrait only. A
 //     new call with a larger count is `400 invalid_input`.
@@ -9162,8 +9450,8 @@ func (c *Client) GeneratePortraitsWithBody(ctx context.Context, params *Generate
 //
 //   - **Output**: each portrait is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.image`) and `PUT
-//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-//     hours), with a short-lived `url` and a small JPEG `preview`.
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+//     days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 //   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 //     Grok portrait, in that order; 1 makes the Gemini portrait only. A
 //     new call with a larger count is `400 invalid_input`.
@@ -9205,7 +9493,7 @@ func (c *Client) GeneratePortraits(ctx context.Context, params *GeneratePortrait
 //     reports what it actually says in `spokenText`.
 //   - **Output**: each preview is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 //     `null` when the length is unknown.
 //   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 //   - **Scopes**: `generation:write` and `avatars:write`.
@@ -9237,7 +9525,7 @@ func (c *Client) DesignVoiceWithBody(ctx context.Context, params *DesignVoicePar
 //     reports what it actually says in `spokenText`.
 //   - **Output**: each preview is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 //     `null` when the length is unknown.
 //   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 //   - **Scopes**: `generation:write` and `avatars:write`.
@@ -13186,7 +13474,19 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithBodyWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// To make a saved avatar speak, send `avatarId` and `transcript` together.
+	// The first frame uses the avatar's saved appearance. Its configured Fish
+	// Audio voice speaks the transcript. An optional `prompt` directs the
+	// motion (default: the subject speaks to camera). Omit `image` and `audio`
+	// in this mode. The transcript is moderated along with the prompt and image.
+	// The clip lasts as long as the speech plus 0.4 seconds of silence before
+	// and after, rounded up to whole seconds, at most 15: speech past 14.2
+	// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+	// is charged for that length, but the balance must cover the size's
+	// 15-second price before the speech is made. This mode requires read
+	// access to the avatar.
+	//
+	// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 	// moves as `prompt` describes, optionally with `audio`. Any picture works:
 	// a person, a drawn character, an animal, a product or a scene, with
 	// small or large motion. No avatar is needed.
@@ -13206,8 +13506,9 @@ type ClientWithResponsesInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-	//   short-lived `url` to download it.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	//   `url` to download it that works until `urlExpiresAt`; read the clip
+	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
 	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
 	//   7-second clip pays the up-to-10-seconds price
@@ -13226,8 +13527,8 @@ type ClientWithResponsesInterface interface {
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
 	//   setup may still answer `403 v2_access_required`.
-	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
-	//   needs no avatar scope: with `generation:write` alone a key can upload
+	// - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+	//   With `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 	//   /v1/uploads/{uploadId}`).
@@ -13235,7 +13536,7 @@ type ClientWithResponsesInterface interface {
 	// | Error | When |
 	// |---|---|
 	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-	// | `503 generation_unavailable` | Clips are not offered here |
+	// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13244,7 +13545,19 @@ type ClientWithResponsesInterface interface {
 
 	// GenerateClipWithResponse Generate a clip
 	//
-	// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+	// To make a saved avatar speak, send `avatarId` and `transcript` together.
+	// The first frame uses the avatar's saved appearance. Its configured Fish
+	// Audio voice speaks the transcript. An optional `prompt` directs the
+	// motion (default: the subject speaks to camera). Omit `image` and `audio`
+	// in this mode. The transcript is moderated along with the prompt and image.
+	// The clip lasts as long as the speech plus 0.4 seconds of silence before
+	// and after, rounded up to whole seconds, at most 15: speech past 14.2
+	// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+	// is charged for that length, but the balance must cover the size's
+	// 15-second price before the speech is made. This mode requires read
+	// access to the avatar.
+	//
+	// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 	// moves as `prompt` describes, optionally with `audio`. Any picture works:
 	// a person, a drawn character, an animal, a product or a scene, with
 	// small or large motion. No avatar is needed.
@@ -13264,8 +13577,9 @@ type ClientWithResponsesInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-	//   short-lived `url` to download it.
+	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	//   `url` to download it that works until `urlExpiresAt`; read the clip
+	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
 	//   up to 5, 10 or 15 seconds, charged at the next length up, so a
 	//   7-second clip pays the up-to-10-seconds price
@@ -13284,8 +13598,8 @@ type ClientWithResponsesInterface interface {
 	//   generation is turned off answers `403 video_generation_not_in_plan`
 	//   (`limits.videoGeneration` on `GET /v1/account`); an older billing
 	//   setup may still answer `403 v2_access_required`.
-	// - **Scope**: `generation:write`. A clip is not avatar editing, so it
-	//   needs no avatar scope: with `generation:write` alone a key can upload
+	// - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+	//   With `generation:write` alone a key can upload
 	//   the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 	//   and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 	//   /v1/uploads/{uploadId}`).
@@ -13293,7 +13607,7 @@ type ClientWithResponsesInterface interface {
 	// | Error | When |
 	// |---|---|
 	// | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-	// | `503 generation_unavailable` | Clips are not offered here |
+	// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13311,8 +13625,8 @@ type ClientWithResponsesInterface interface {
 	// | `status` | Meaning |
 	// |---|---|
 	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
-	// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
-	// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
+	// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
 	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 	//
 	// `404 clip_not_found` means this account has no clip under the id: the
@@ -13380,8 +13694,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.image`) and `PUT
-	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+	//   days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
 	//   new call with a larger count is `400 invalid_input`.
@@ -13410,8 +13724,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// - **Output**: each portrait is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.image`) and `PUT
-	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-	//   hours), with a short-lived `url` and a small JPEG `preview`.
+	//   /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+	//   days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 	// - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 	//   Grok portrait, in that order; 1 makes the Gemini portrait only. A
 	//   new call with a larger count is `400 invalid_input`.
@@ -13443,7 +13757,7 @@ type ClientWithResponsesInterface interface {
 	//   reports what it actually says in `spokenText`.
 	// - **Output**: each preview is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 	//   `null` when the length is unknown.
 	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 	// - **Scopes**: `generation:write` and `avatars:write`.
@@ -13465,7 +13779,7 @@ type ClientWithResponsesInterface interface {
 	//   reports what it actually says in `spokenText`.
 	// - **Output**: each preview is an `upload:<uploadId>` that `POST
 	//   /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-	//   take as is, with a short-lived `url` to play it. `durationSeconds` is
+	//   take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 	//   `null` when the length is unknown.
 	// - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 	// - **Scopes**: `generation:write` and `avatars:write`.
@@ -18630,7 +18944,19 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 
 // GenerateClipWithBodyWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// To make a saved avatar speak, send `avatarId` and `transcript` together.
+// The first frame uses the avatar's saved appearance. Its configured Fish
+// Audio voice speaks the transcript. An optional `prompt` directs the
+// motion (default: the subject speaks to camera). Omit `image` and `audio`
+// in this mode. The transcript is moderated along with the prompt and image.
+// The clip lasts as long as the speech plus 0.4 seconds of silence before
+// and after, rounded up to whole seconds, at most 15: speech past 14.2
+// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+// is charged for that length, but the balance must cover the size's
+// 15-second price before the speech is made. This mode requires read
+// access to the avatar.
+//
+// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 // moves as `prompt` describes, optionally with `audio`. Any picture works:
 // a person, a drawn character, an animal, a product or a scene, with
 // small or large motion. No avatar is needed.
@@ -18650,8 +18976,9 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-//     short-lived `url` to download it.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//     `url` to download it that works until `urlExpiresAt`; read the clip
+//     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
 //     up to 5, 10 or 15 seconds, charged at the next length up, so a
 //     7-second clip pays the up-to-10-seconds price
@@ -18670,8 +18997,8 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
 //     setup may still answer `403 v2_access_required`.
-//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
-//     needs no avatar scope: with `generation:write` alone a key can upload
+//   - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+//     With `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 //     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 //     /v1/uploads/{uploadId}`).
@@ -18679,7 +19006,7 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 // | Error | When |
 // |---|---|
 // | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-// | `503 generation_unavailable` | Clips are not offered here |
+// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18694,7 +19021,19 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 
 // GenerateClipWithResponse Generate a clip
 //
-// Renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
+// To make a saved avatar speak, send `avatarId` and `transcript` together.
+// The first frame uses the avatar's saved appearance. Its configured Fish
+// Audio voice speaks the transcript. An optional `prompt` directs the
+// motion (default: the subject speaks to camera). Omit `image` and `audio`
+// in this mode. The transcript is moderated along with the prompt and image.
+// The clip lasts as long as the speech plus 0.4 seconds of silence before
+// and after, rounded up to whole seconds, at most 15: speech past 14.2
+// seconds is cut. `durationSeconds` is not accepted in this mode. The clip
+// is charged for that length, but the balance must cover the size's
+// 15-second price before the speech is made. This mode requires read
+// access to the avatar.
+//
+// With custom media, this renders a short mp4 (1 to 15 seconds, 25 fps) that starts on `image` and
 // moves as `prompt` describes, optionally with `audio`. Any picture works:
 // a person, a drawn character, an animal, a product or a scene, with
 // small or large motion. No avatar is needed.
@@ -18714,8 +19053,9 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 24 hours), with a
-//     short-lived `url` to download it.
+//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//     `url` to download it that works until `urlExpiresAt`; read the clip
+//     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
 //     up to 5, 10 or 15 seconds, charged at the next length up, so a
 //     7-second clip pays the up-to-10-seconds price
@@ -18734,8 +19074,8 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     generation is turned off answers `403 video_generation_not_in_plan`
 //     (`limits.videoGeneration` on `GET /v1/account`); an older billing
 //     setup may still answer `403 v2_access_required`.
-//   - **Scope**: `generation:write`. A clip is not avatar editing, so it
-//     needs no avatar scope: with `generation:write` alone a key can upload
+//   - **Scope**: `generation:write`, plus `avatars:read` when using an avatar.
+//     With `generation:write` alone a key can upload
 //     the clip's portrait and voice (`POST /v1/uploads`), make the clip,
 //     and read it back (`GET /v1/generation/clips/{requestId}`, `GET
 //     /v1/uploads/{uploadId}`).
@@ -18743,7 +19083,7 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 // | Error | When |
 // |---|---|
 // | `400 invalid_input` | A bad input, `audio` without `durationSeconds`, or an input the renderer cannot use: `input_failure image` or `audio` (a file that can't be read), `input_failure prompt` (longer than the model's 1,024 tokens), a size that is not a clip size or not served here yet (the message lists the sizes), `input_failure resolution` (a size the renderer cannot serve right now) |
-// | `503 generation_unavailable` | Clips are not offered here |
+// | `503 generation_unavailable` | Clips are unavailable here, or voice synthesis is unconfigured for avatar clips |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18767,8 +19107,8 @@ func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, para
 // | `status` | Meaning |
 // |---|---|
 // | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
-// | `ready` | `clip` is the mp4, with a newly signed `url` on every read until it expires. |
-// | `expired` | The clip was made and charged, but its upload has expired (24 hours after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
+// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
 // | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 //
 // `404 clip_not_found` means this account has no clip under the id: the
@@ -18854,8 +19194,8 @@ func (c *ClientWithResponses) EnhancePortraitWithResponse(ctx context.Context, p
 //
 //   - **Output**: each portrait is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.image`) and `PUT
-//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-//     hours), with a short-lived `url` and a small JPEG `preview`.
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+//     days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 //   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 //     Grok portrait, in that order; 1 makes the Gemini portrait only. A
 //     new call with a larger count is `400 invalid_input`.
@@ -18890,8 +19230,8 @@ func (c *ClientWithResponses) GeneratePortraitsWithBodyWithResponse(ctx context.
 //
 //   - **Output**: each portrait is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.image`) and `PUT
-//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 24
-//     hours), with a short-lived `url` and a small JPEG `preview`.
+//     /v1/avatars/{avatarId}/appearance` take as is (it expires after 7
+//     days), with a `url` that works until `urlExpiresAt` and a small JPEG `preview`.
 //   - **Count**: `count` is 1 or 2 (default 2). 2 makes a Gemini and a
 //     Grok portrait, in that order; 1 makes the Gemini portrait only. A
 //     new call with a larger count is `400 invalid_input`.
@@ -18929,7 +19269,7 @@ func (c *ClientWithResponses) GeneratePortraitsWithResponse(ctx context.Context,
 //     reports what it actually says in `spokenText`.
 //   - **Output**: each preview is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 //     `null` when the length is unknown.
 //   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 //   - **Scopes**: `generation:write` and `avatars:write`.
@@ -18957,7 +19297,7 @@ func (c *ClientWithResponses) DesignVoiceWithBodyWithResponse(ctx context.Contex
 //     reports what it actually says in `spokenText`.
 //   - **Output**: each preview is an `upload:<uploadId>` that `POST
 //     /v1/avatars` (`assets.voice`) and `PUT /v1/avatars/{avatarId}/voice`
-//     take as is, with a short-lived `url` to play it. `durationSeconds` is
+//     take as is, with a `url` to play it that works until `urlExpiresAt`. `durationSeconds` is
 //     `null` when the length is unknown.
 //   - **Billing and idempotency**: as for `POST /v1/generation/portraits`.
 //   - **Scopes**: `generation:write` and `avatars:write`.
@@ -21464,6 +21804,9 @@ func ParseGenerateClipResponse(rsp *http.Response) (*GenerateClipResponse, error
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	case rsp.StatusCode == 404:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest GenerationConflict

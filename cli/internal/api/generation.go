@@ -33,11 +33,16 @@ type DesignVoiceInput struct {
 	Description, AvatarName, Language, SampleText string
 }
 
-// ClipInput is a clip; Image and Prompt are required, and Duration is required
-// with Audio. Zero values and nil are left for the API's defaults.
+// ClipInput is a clip, in one of two modes. A custom-media clip takes Image
+// and Prompt, and Duration with Audio. An avatar clip takes AvatarID and
+// Transcript, with an optional Prompt, and no Image, Audio or Duration: the
+// avatar's saved picture is the first frame and its voice speaks the
+// transcript. Zero values and nil are left for the API's defaults.
 type ClipInput struct {
 	Image, Prompt, Audio string
 	Duration             int
+	AvatarID             *uuid.UUID
+	Transcript           string
 	// Resolution is the clip's size, one the server offers (nil: the
 	// server's default, 480x480 on a server that lists clipSizes).
 	Resolution *ClipResolution
@@ -181,14 +186,26 @@ func (c *Client) DesignVoice(ctx context.Context, in DesignVoiceInput, key strin
 	})
 }
 
-// GenerateClip renders a clip from an image and a prompt.
+// GenerateClip renders a clip: from an image and a prompt, or, with
+// AvatarID, from a saved avatar speaking Transcript.
 func (c *Client) GenerateClip(ctx context.Context, in ClipInput, key string) (*GeneratedClip, error) {
-	req := avatarapi.GenerateClipRequest{Image: in.Image, Prompt: in.Prompt, Resolution: in.Resolution, Seed: in.Seed}
-	if in.Audio != "" {
-		req.Audio = &in.Audio
-	}
-	if in.Duration > 0 {
-		req.DurationSeconds = &in.Duration
+	req := avatarapi.GenerateClipRequest{Resolution: in.Resolution, Seed: in.Seed}
+	if in.AvatarID != nil {
+		// An avatar clip: its length follows the speech, and the avatar
+		// gives the picture and the voice, so image, audio and
+		// durationSeconds stay out.
+		req.AvatarId, req.Transcript = in.AvatarID, &in.Transcript
+		if in.Prompt != "" {
+			req.Prompt = &in.Prompt
+		}
+	} else {
+		req.Image, req.Prompt = &in.Image, &in.Prompt
+		if in.Audio != "" {
+			req.Audio = &in.Audio
+		}
+		if in.Duration > 0 {
+			req.DurationSeconds = &in.Duration
+		}
 	}
 	if key == "" {
 		key = uuid.NewString()

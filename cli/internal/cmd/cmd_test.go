@@ -191,6 +191,45 @@ func TestGrantAmountMustBeAWholeNumber(t *testing.T) {
 	}
 }
 
+// sponsor update sends maxSessionSeconds in seconds when set, null when
+// cleared and leaves it out otherwise.
+func TestSponsorUpdateMaxSession(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	var bodies []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, r.Method+" "+string(b))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"avatarId":"11111111-2222-4333-8444-555555555555","balance":{},"settings":{}}`))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	id := "11111111-2222-4333-8444-555555555555"
+	for _, tc := range []struct {
+		args []string
+		want string
+	}{
+		{[]string{"--max-session-minutes", "20"}, `PATCH {"maxSessionSeconds":1200}`},
+		{[]string{"--clear-max-session"}, `PATCH {"maxSessionSeconds":null}`},
+		{[]string{"--max-per-session", "500"}, `PATCH {"maxPerSessionMicrocredits":500}`},
+	} {
+		bodies = nil
+		if _, errOut, code := run(t, "", append([]string{"avatars", "sponsor", "update", id}, tc.args...)...); code != 0 {
+			t.Fatalf("%v: %d %s", tc.args, code, errOut)
+		}
+		if len(bodies) != 1 || bodies[0] != tc.want {
+			t.Errorf("%v: sent %v, want %s", tc.args, bodies, tc.want)
+		}
+	}
+	for _, args := range [][]string{{"--max-session-minutes", "0"}, {"--max-session-minutes", "241"},
+		{"--max-session-minutes", "20", "--clear-max-session"}} {
+		if _, errOut, code := run(t, "", append([]string{"avatars", "sponsor", "update", id}, args...)...); code != 2 || !strings.Contains(errOut, "max-session") {
+			t.Errorf("%v: %d %s", args, code, errOut)
+		}
+	}
+}
+
 // avatarServer answers every request with the avatar detail body.
 func avatarServer(t *testing.T, body string) {
 	t.Helper()

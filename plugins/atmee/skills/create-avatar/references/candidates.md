@@ -160,6 +160,13 @@ the sheet yourself with `scripts/contact-sheet.sh` (with a shell and
 `ffmpeg` installed). Pass each seed's label and preview link in list
 order, then read the image it writes:
 
+The sheet crops the lower middle of the frame, where the mouth sits in a
+head-and-shoulders picture. A half-body portrait (the usual v2 framing) puts
+the mouth higher: look at one frame first and set `MOUTH_TOP` to the top of the
+mouth band as a fraction of the height (about 0.08 above the lips, e.g.
+`MOUTH_TOP=0.28` when the lips are at a third of the height). Check that the
+first row shows lips before you read its motion.
+
 - one row per completed seed, in list order
 - twelve crops of the mouth area across each clip
 - a `motion=<n>` number per row: the mean frame-to-frame change of the mouth

@@ -123,7 +123,15 @@ instead. The API is at `https://api.atmanity.us`.
   clip for up to 5, 10 and 15 seconds, charged at the next length up
   (`pricing.generation.clipPrices`). A clip is not avatar editing: a key
   needs only `generation:write`, which also covers the clip's uploads and
-  reading it back.
+  reading it back. An **avatar clip** (`avatarId` with `transcript`) stars a
+  saved V1 or V2 avatar instead: its saved picture is the first frame and its
+  Fish Audio voice speaks the transcript, lip-synced; the length follows the
+  speech (at most 15 seconds), it is charged at its actual length's tier but
+  the balance must cover the size's 15-second price first, and a key also
+  needs `avatars:read`. Every generated output (a portrait, a voice preview,
+  a clip) is kept 7 days; its link works until `urlExpiresAt`, and reading a clip
+  again (`get_clip`) gives a new one. The account can delete one sooner (`DELETE
+  /v1/uploads/{uploadId}`, MCP `delete_output`).
 - **API keys:** list, create, rotate, revoke (signed in as the account's
   owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest
@@ -140,7 +148,10 @@ instead. The API is at `https://api.atmanity.us`.
 ## Agent tooling: the atmee plugin
 
 - **Skills:** `create-avatar` (a v2 avatar from a name, a photo and a voice:
-  see it talk, then give it a character and test it), `plan-avatar-app` (an
+  see it talk, then give it a character and test it), `make-video` (one
+  short video clip from a picture, silent or with a recording, or of a saved
+  avatar speaking a script),
+  `plan-avatar-app` (an
   app idea shaped into a brief), `build-avatar-app` (an app or website
   around an avatar), `atmee-setup` (connects and checks everything) and
   `atmee-product` (this one).

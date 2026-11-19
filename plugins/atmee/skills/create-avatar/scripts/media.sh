@@ -10,7 +10,8 @@
 # save writes <avatar-folder>/media/<kind>/<name>.<ext> and prints that path.
 # The extension comes from the link's path, else from the server's content
 # type; only image, audio and mp4 types are kept, up to 60 MB. Server links
-# expire (generated assets in about a day, seed links in about an hour),
+# expire (generated assets after 7 days and their links sooner, seed links in
+# about an hour),
 # so save before showing anything.
 #
 # show prints a Markdown block per file, separated by blank lines, for the

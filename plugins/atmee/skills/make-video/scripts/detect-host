@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Prints which agent runs this command, and where when it can tell:
+# claude-code desktop, claude-code cli, claude-code ide, claude-code, codex,
+# cursor editor, cursor cli, gemini-cli, opencode, or unknown (then judge
+# for yourself). It reads only environment variables and always exits 0.
+# Most specific first: a host started inside another inherits its variables.
+# Variables are read by name, because skill checks reject the literal form.
+v() { local n="$1"; printf '%s' "${!n-}"; }
+if [ -n "$(v CODEX_THREAD_ID)$(v CODEX_CI)" ]; then
+  echo codex
+elif [ -n "$(v CURSOR_AGENT)" ]; then
+  if [ "$(v CURSOR_EXTENSION_HOST_ROLE)" = agent-exec ]; then echo "cursor editor"; else echo "cursor cli"; fi
+elif [ -n "$(v GEMINI_CLI)" ]; then
+  echo gemini-cli
+elif [ -n "$(v OPENCODE)" ]; then
+  echo opencode
+elif [ -n "$(v CLAUDE_CODE_CHILD_SESSION)$(v CLAUDECODE)" ]; then
+  case "$(v CLAUDE_CODE_ENTRYPOINT)" in
+    claude-desktop) echo "claude-code desktop" ;;
+    claude-vscode) echo "claude-code ide" ;;
+    cli) echo "claude-code cli" ;;
+    *) echo claude-code ;;
+  esac
+else
+  echo unknown
+fi

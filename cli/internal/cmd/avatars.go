@@ -217,6 +217,8 @@ func (a *app) createCmd() *cobra.Command {
 				in.SponsorMicrocredits = &sponsorMicro
 			}
 			if f.Changed("sponsor-max-per-session") {
+				// Deprecated. Warn on stderr, never stdout, so --json output stays parseable.
+				fmt.Fprintln(cmd.ErrOrStderr(), "warning: --sponsor-max-per-session is deprecated; set a conversation's length with `atmee avatars sponsor update --max-session-minutes`")
 				in.SponsorMaxPerSession = &sponsorCap
 			}
 			if f.Changed("runtime-seed") {
@@ -371,7 +373,7 @@ func (a *app) createCmd() *cobra.Command {
 	f.StringVar(&configPath, "config", "", "Read these options from a JSON file, keys in snake_case (- reads stdin)")
 	f.BoolVar(&wait, "wait", false, "Wait until it is ready (with --seed-selection manual, until you need to pick a candidate)")
 	f.IntVar(&sponsorMicro, "sponsor-microcredits", 0, "Put credits in its sponsor pool so visitors talk for free (100 = 1 credit; a signed-in user, or an API key with billing:write)")
-	f.IntVar(&sponsorCap, "sponsor-max-per-session", 0, "Most the sponsor pool pays for one conversation, in microcredits")
+	f.IntVar(&sponsorCap, "sponsor-max-per-session", 0, "Deprecated: most the sponsor pool pays for one conversation, in microcredits; set the length with `sponsor update --max-session-minutes`")
 	f.IntVar(&runtimeSeed, "runtime-seed", 0, runtimeSeedHelp)
 	f.StringVar(&resolution, "resolution", "", resolutionHelp)
 	f.BoolVar(&jsonOut, "json", false, jsonHelp)

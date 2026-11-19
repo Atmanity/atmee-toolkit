@@ -122,7 +122,8 @@ path, times the minutes the developer expects, against the plan's limits
 
 An avatar can have its own **sponsor pool**: credits moved from the account
 into the avatar so that visitors talk on them instead of their own. Its
-settings: the most one session may spend, what happens when the pool runs
+settings: the most one session may spend, how long one sponsored session may
+last (`maxSessionSeconds`, at most the creator's plan length), what happens when the pool runs
 out (pause, or spend the account's balance), automatic top-up, and whether
 visitors with no Atmee account may talk (with a daily allowance per
 visitor). Credits that no session holds can be withdrawn back.

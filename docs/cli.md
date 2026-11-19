@@ -1,7 +1,7 @@
 # CLI Reference
 
-`atmee` is a single Go binary, released with the plugin as source that
-`go install` builds. Avatar commands use the
+`atmee` is a single Go binary, released with the plugin as prebuilt binaries
+that the toolkit's `install.sh` installs, and as source that `go install` builds. Avatar commands use the
 public Avatar API as a signed-in user (`atmee login`) or with an API key. To install it
 and get started, see the [README](../README.md#install). For building an app around an
 avatar (sessions, app tools, agendas), see the `build-avatar-app` skill's
@@ -246,8 +246,9 @@ characters), `--runtime-seed` (v2: 0-2147483647, default 42; also on `update`, s
 characters, saved as Studio's "Facts with context"), `--knowledge FILE` (repeatable; v1
 conversations use knowledge, v2 ones do not yet),
 `--alias`, `--language`, `--visibility`, `--previews`/`--no-previews`,
-`--sponsor-microcredits N` and `--sponsor-max-per-session N` (fund the sponsor pool on
-create; needs `billing:write`), `--config FILE|-`.
+`--sponsor-microcredits N` (fund the sponsor pool on create; needs `billing:write`;
+`--sponsor-max-per-session N` is deprecated, set the length afterwards with
+`sponsor update --max-session-minutes`), `--config FILE|-`.
 
 Image, voice and knowledge are all https URLs or all local files; local files are sent as
 one zip bundle. A create is sent once: after a network failure, check `atmee avatars list`
@@ -429,13 +430,16 @@ atmee generate voice --description TEXT [--name NAME] [--language LANG] [--text 
   [--idempotency-key K] [--json]
 atmee generate clip --image PATH|URL|upload:ID --prompt TEXT [--audio PATH|URL|upload:ID] \
   [--duration SECONDS] [--resolution WxH] [--seed N] [--idempotency-key K] [--json]
+atmee generate clip --avatar ID --transcript TEXT [--prompt TEXT] [--resolution WxH] [--seed N] \
+  [--idempotency-key K] [--json]
 atmee generate clip-status REQUEST_ID [--wait] [--json]
 ```
 
-Each answers with `upload:<uploadId>` references and short-lived links to look or listen.
+Each answers with `upload:<uploadId>` references and links to look or listen that
+work until they expire (`urlExpiresAt` in `--json`).
 `avatars create --image/--voice` and `avatars replace-appearance/replace-voice` take a
 reference as they are, as they do an https URL (with `create`, not mixed with local
-files). A reference works once and lasts 24 hours.
+files). A reference works once and lasts 7 days.
 
 - **`portraits`** is for invented characters only. For a real person, with their
   permission, use `enhance` on their own photo.
@@ -455,7 +459,9 @@ files). A reference works once and lasts 24 hours.
   `--text` is what every preview says, in `--language`.
 - **`clip`** renders an mp4 from an image and a prompt, silent or speaking
   `--audio`; no avatar is made or needed. `--duration` is required with `--audio`, set to the
-  audio's length, because it is not read from the file, and defaults to 8 for a silent clip.
+  audio's length, because it is not read from the file. Give a silent clip a `--duration` too,
+  any whole number of seconds up to the limit: without it the clip runs 8 seconds. Prices come
+  in tiers of up to 5, 10 and 15 seconds, and a clip pays the tier its length falls in.
   `--audio` is what the person says: a speech recording, its words and voice kept as recorded,
   that moves the lips and face; set `--duration` to its length, rounded up. Other sound (music, ambience) plays back as given without moving lips. `--image` can be
   any picture: a person, a drawn character, an animal, a product or a scene.
@@ -487,17 +493,31 @@ files). A reference works once and lasts 24 hours.
   plan, Free included, and need no Atmee V2 access; `403
   video_generation_not_in_plan` means video generation was turned off for the account (contact
   us through Creator Studio's help center). Credits pay for it. It comes back as an `upload:<uploadId>` with a download
-  link for 24 hours.
+  link that expires sooner; the clip itself lasts 7 days (`clip-status` signs a new link).
+- **`clip --avatar ID --transcript TEXT`** makes an avatar clip: a saved V1 or V2 avatar
+  speaks. Its saved picture is the first frame, its Fish Audio voice speaks the transcript
+  (1 to 1000 characters, moderated with the prompt) and the lips follow, so the avatar looks
+  and sounds the same from clip to clip. `--avatar` and `--transcript` go together; `--prompt`
+  is optional (by default the avatar speaks to camera), and `--image`, `--audio` and
+  `--duration` are refused before anything is sent. The clip runs as long as the speech plus
+  0.4 seconds of silence before and after, rounded up to whole seconds, at most 15: speech past
+  14.2 seconds is cut, so make a longer video from several clips, splitting the script at
+  sentence breaks. It is charged at the tier its actual length falls in, but the balance must
+  cover the size's 15-second price before the speech is made, so it costs from the size's
+  up-to-5-seconds price to its 15-second price; the summary prints the actual length and
+  charge. An avatar with no Fish Audio voice is `400 invalid_input` at no charge, and an
+  avatar that isn't the account's is `404 avatar_not_found`. An API key needs `avatars:read`
+  next to `generation:write`.
 - **`clip-status`** reads a clip by its request id, the `--idempotency-key` a `clip` call was
   given or printed when it stopped waiting, through `GET /v1/generation/clips/{requestId}`. It
   charges nothing and never starts a render, so it works from another shell or machine with
   the same account. It prints `rendering` (`--wait` keeps reading, up to 10 minutes), the clip
   and a newly signed download link when `ready`, the upload when `expired` (made, but its
-  24 hours are over; it is not made again), or, for `stalled` (the call stopped without
+  7 days are over; it is not made again), or, for `stalled` (the call stopped without
   finishing), how to resume it: run `clip` again with the same inputs and
   `--idempotency-key`, charged at most once, and it exits non-zero. A request id with no
   clip is `404 clip_not_found`: the call ended without a clip and charged nothing. It needs
-  `avatars:read` or `avatars:write`.
+  `generation:write`, `avatars:read` or `avatars:write`.
 
 Like the other generation commands, none of these asks first.
 
@@ -515,9 +535,10 @@ charging twice. They work signed in, or with a key holding `generation:write` an
 
 ```bash
 atmee avatars sponsor show ID
-atmee avatars sponsor update ID [--max-per-session N] [--when-exhausted pause|spend_balance]
+atmee avatars sponsor update ID [--when-exhausted pause|spend_balance]
                                 [--anonymous|--no-anonymous] [--anonymous-daily-seconds N]
-                                [--clear-max-per-session] [--clear-anonymous-daily-seconds]
+                                [--max-session-minutes N] [--clear-max-per-session]
+                                [--clear-anonymous-daily-seconds] [--clear-max-session]
 atmee avatars sponsor grant ID MICROCREDITS [--idempotency-key K]   # 100 microcredits = 1 credit
 atmee avatars sponsor withdraw ID [--microcredits N]                 # all unreserved by default
 
@@ -531,6 +552,13 @@ atmee avatars session end SESSION_ID
 ```
 
 `sponsor` and `session` commands always print JSON; `--json` is accepted for consistency.
+
+`--max-per-session` (deprecated) was a sponsor budget one conversation may spend, in
+microcredits, not its length; it still works, and `--clear-max-per-session` removes one. `--max-session-minutes N` is the longest sponsored conversation (1 to 240 minutes, sent
+as `maxSessionSeconds`): visitors without an account get it, signed-in visitors the longer of it
+and their own plan's length. It is capped at your plan's session length (a larger value is
+stored as that length; `sponsor show` reads it back); `--clear-max-session` goes back to the
+plan length, which is also what an absent `maxSessionSeconds` means.
 
 Avatar-only starts (`session render`) of a v2 avatar retry `503 avatar_warming` (a
 rendering node is fetching the newly published avatar) after `Retry-After` seconds, for up

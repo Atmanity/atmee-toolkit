@@ -19,11 +19,13 @@ of it in one file with no packages; its two `/api` routes are what to port.
 Only a signed-in owner or admin of the account creates keys, and the secret
 exists once, in the answer to create or rotate. Get it straight into the
 backend's environment file so it never passes through the chat, with the
-`atmee` CLI. When `atmee --version` fails, install it with Go (its source is
-in `Atmanity/atmee-toolkit`) and sign in against the server the plugin uses:
+`atmee` CLI. The server's `create_api_key` tool never returns the secret, so
+it can't do this; without the CLI, the developer creates the key on the API
+keys page and pastes it into `.env` themselves. When `atmee --version` fails, install it (a prebuilt binary from
+`Atmanity/atmee-toolkit`, no Go needed; ask first) and sign in against the server the plugin uses:
 
 ```bash
-go install github.com/Atmanity/atmee-toolkit/cli/cmd/atmee@latest
+curl -fsSL https://raw.githubusercontent.com/Atmanity/atmee-toolkit/main/install.sh | sh
 export ATMEE_BASE_URL=https://api.atmanity.us
 atmee login        # opens the browser; the same account as the avatar
 ```
@@ -42,11 +44,15 @@ rest of the backend's environment to the same file:
 ```bash
 ATMEE_BASE_URL=https://api.atmanity.us
 AVATAR_ID=<avatarId>
-``` With
-only the MCP tools, `create_api_key` makes the key but withholds the secret:
-give the developer `atmee keys rotate <keyId> --out .env`, or the API keys page
-in Atmee Studio. Check that `.env` is in `.gitignore`; in production the key
-goes into the platform's secret store.
+```
+
+When the developer would rather not install the CLI, use the MCP tools:
+`create_api_key` makes the key with the same name, avatar and cap but
+withholds the secret. Then give them `links.apiKeys` from `get_account` (the
+API keys page in Atmee Studio): they rotate that key there and paste the
+secret into `.env` as `ATMEE_API_KEY=` themselves, never into the chat. Check
+that `.env` is in `.gitignore`; in production the key goes into the platform's
+secret store.
 
 Keep the key narrow:
 

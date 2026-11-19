@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -310,9 +311,9 @@ func (a *app) sponsorShowCmd() *cobra.Command {
 }
 
 func (a *app) sponsorUpdateCmd() *cobra.Command {
-	var maxPer, daily int
+	var maxPer, daily, sessionMin int
 	var exhausted string
-	var anon, noAnon, clearMax, clearDaily bool
+	var anon, noAnon, clearMax, clearDaily, clearSession bool
 	c := &cobra.Command{
 		Use:   "update AVATAR_ID",
 		Short: "Change who the pool pays for and how much (signed-in user, or API key with billing:write).",
@@ -322,12 +323,15 @@ func (a *app) sponsorUpdateCmd() *cobra.Command {
 			"(409 monetized_avatar_cannot_be_sponsored).",
 		Example: `  atmee avatars update AVATAR_ID --visibility unlisted
   atmee avatars sponsor grant AVATAR_ID 1000
-  atmee avatars sponsor update AVATAR_ID --anonymous --anonymous-daily-seconds 300`,
+  atmee avatars sponsor update AVATAR_ID --anonymous --anonymous-daily-seconds 300
+  atmee avatars sponsor update AVATAR_ID --max-session-minutes 20`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			f := cmd.Flags()
 			s := map[string]any{}
 			if f.Changed("max-per-session") {
+				// Deprecated. Warn on stderr, never stdout, so --json output stays parseable.
+				fmt.Fprintln(cmd.ErrOrStderr(), "warning: --max-per-session is deprecated; limit a conversation's length with --max-session-minutes")
 				s["maxPerSessionMicrocredits"] = maxPer
 			}
 			if f.Changed("when-exhausted") {
@@ -347,6 +351,18 @@ func (a *app) sponsorUpdateCmd() *cobra.Command {
 			if clearDaily {
 				s["anonymousDailySecondsPerVisitor"] = nil
 			}
+			if f.Changed("max-session-minutes") {
+				if clearSession {
+					return usagef("--max-session-minutes and --clear-max-session cannot be used together")
+				}
+				if sessionMin < 1 || sessionMin > 240 {
+					return usagef("--max-session-minutes must be 1 to 240")
+				}
+				s["maxSessionSeconds"] = sessionMin * 60
+			}
+			if clearSession {
+				s["maxSessionSeconds"] = nil
+			}
 			if len(s) == 0 {
 				return usagef("nothing to update: pass at least one setting flag")
 			}
@@ -362,13 +378,15 @@ func (a *app) sponsorUpdateCmd() *cobra.Command {
 		},
 	}
 	f := c.Flags()
-	f.IntVar(&maxPer, "max-per-session", 0, "Most the pool pays for one conversation, in microcredits (100 = 1 credit)")
+	f.IntVar(&maxPer, "max-per-session", 0, "Deprecated: the sponsor budget one conversation may spend, in microcredits (100 = 1 credit); use --max-session-minutes to limit its length")
 	f.StringVar(&exhausted, "when-exhausted", "", "When the pool is empty: pause (refuse new conversations) or spend_balance (charge your account)")
 	f.BoolVar(&anon, "anonymous", false, "Allow anonymous visitors")
 	f.BoolVar(&noAnon, "no-anonymous", false, "Disallow anonymous visitors")
 	f.IntVar(&daily, "anonymous-daily-seconds", 0, "Daily seconds per anonymous visitor")
-	f.BoolVar(&clearMax, "clear-max-per-session", false, "Remove the per-session cap")
+	f.BoolVar(&clearMax, "clear-max-per-session", false, "Remove the deprecated per-session credit cap")
 	f.BoolVar(&clearDaily, "clear-anonymous-daily-seconds", false, "Remove the daily anonymous limit")
+	f.IntVar(&sessionMin, "max-session-minutes", 0, "Longest sponsored conversation, in minutes (at most your plan's session length)")
+	f.BoolVar(&clearSession, "clear-max-session", false, "Go back to your plan's session length")
 	return c
 }
 

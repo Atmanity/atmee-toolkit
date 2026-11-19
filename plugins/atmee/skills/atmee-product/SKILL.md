@@ -1,6 +1,6 @@
 ---
 name: atmee-product
-description: What Atmee is - live video avatars and v2 video clips from a picture - features, plans, pricing, the path for an idea. Use when asked what Atmee can do or costs, or before a build. NOT for making one.
+description: What Atmee is - live video avatars and short video clips - features, plans, pricing, the path for an idea. Use when asked what Atmee can do or costs, or before a build. NOT for making one.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -32,11 +32,15 @@ picture works: a person, a drawn or anime character, an animal, a product or
 a scene, with small or big motion; nothing restricts the subject, and the
 user decides what to try. Whenever someone asks what Atmee can do, or wants
 a video rather than a conversation, say that it makes clips too;
-`create-avatar` makes them, with tips from real renders. A clip takes one
+the `make-video` skill makes them, one clip at a time, with tips from real
+renders. A clip takes one
 picture (its first frame, cropped to the clip's shape), a prompt and an
 optional audio file. Speech in the audio drives the speaker's lips and face,
 so a talking clip with a recording moves far more than a silent one. Music and sound
 effects play back as given (they don't move lips) or go on in an editor.
+An **avatar clip** stars one of the user's saved avatars instead: its look
+is the first frame and its own voice speaks a script, so it looks and sounds
+the same in every clip, with no picture or recording needed.
 Clips are on every plan, Free included, with
 no Atmee V2 access needed; a server offers them only when
 `get_account`'s `pricing.generation` has a clip price.
@@ -52,7 +56,7 @@ and some ids. In anything a person reads, say Atmee.
 | **atmee.ai** | people who talk to avatars | explore avatars, visit creators' profiles, talk to an avatar from its share link | `https://www.atmee.ai` |
 | **Atmee Studio** | creators, no code | make and edit avatars (Atmee V1 on any plan, V2 on Pro and up, V2 HD on Growth and up), set visibility, share, analytics, API keys (Studio → API & Embeds), plans, top-ups, sponsoring and earnings (Studio → Billing) | `https://www.atmee.ai/studio`, signed in |
 | **Avatar API** | developers | put an avatar in their own product: start conversations from their backend, create and manage avatars and keys | docs `https://www.atmee.ai/docs/api` |
-| **Agent tooling** | anyone working through an agent | the skills `create-avatar`, `plan-avatar-app`, `build-avatar-app`, `atmee-setup` and this one, the avatars server (with generation), the `atmee` CLI | the atmee plugin |
+| **Agent tooling** | anyone working through an agent | the skills `create-avatar`, `make-video`, `plan-avatar-app`, `build-avatar-app`, `atmee-setup` and this one, the avatars server (with generation), the `atmee` CLI | the atmee plugin |
 
 What each surface offers in detail: `references/features.md`.
 
@@ -97,8 +101,7 @@ always its chat page: never start a session for it (`start_session`,
 - **Two engines.** v1 animates a talking head from one portrait: sharp and
   cheaper. v2 adds emotion,
   expression and motion. Anyone can talk to any avatar (V2 HD, V2 or V1),
-  and one kind of credit pays for every model at its rate. Video clips are
-  on every plan, Free included (credits pay for them). **Building
+  and one kind of credit pays for every model at its rate. **Building
   Atmee V2** needs Pro and up (Free, Starter and older plans make V1).
   Building spends no credits.
   `get_account`'s `v2Access` says whether the account may build V2.
@@ -168,7 +171,8 @@ last column.
 | Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
-| A portrait, a voice or a short video they don't have | the avatars server's generation tools, paid per call; a clip of 1 to 15 seconds is priced by its size (480×480 up to 1280×720 or 720×1280; 1080p coming soon) and its length, charged at the next length up (up to 5, 10 or 15 s), with or without sound, on every plan, Free included | `create-avatar` |
+| A portrait or a voice they don't have | the avatars server's generation tools, paid per call | `create-avatar` |
+| A short video from a picture, or of a saved avatar speaking a script | a **clip** from the avatars server, paid per clip: 1 to 15 seconds, priced by its size (480×480 up to 1280×720 or 720×1280; 1080p coming soon) and its length, charged at the next length up (up to 5, 10 or 15 s), with or without sound, on every plan, Free included; a longer video is several clips | `make-video` |
 | A voice conversation over a WebSocket, with no video | **Speech session** (`start_speech_session`, `atmee speech start`); the avatar needs a voice | `build-avatar-app` |
 | To manage avatars from code or CI | the Avatar API or the `atmee` CLI | `docs/cli.md` in the GitHub repo `Atmanity/atmee-toolkit` |
 
@@ -193,7 +197,7 @@ path that works:
   app keeps them if it needs one.
 - **Built but not open to everyone:** live streams and the avatar profile
   page on atmee.ai, mini-apps and apps inside a call, and voice design in
-  Studio (the generation server has it). Name these as coming, never promise
+  Studio (the avatars server's `design_voice` has it). Name these as coming, never promise
   them; `references/features.md` marks each where its surface is described.
 
 `build-avatar-app`'s "Current limits" has the full list for builders.

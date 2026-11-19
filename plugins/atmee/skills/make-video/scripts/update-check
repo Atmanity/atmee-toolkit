@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Is a newer atmee skill set or atmee CLI out? Prints one line per finding,
+# like atmee-setup's checks: `ok|fix|info <name> <message>`, where a `fix`
+# line names the upgrade command for the agent this copy is installed in.
+#
+#   update-check            at most once every ATMEE_UPDATE_EVERY hours (default 12); silent when skipped
+#   update-check --force    check now
+#
+# Never fails the task: no network, no gh or a slow answer is an `info` line
+# and exit 0. Each lookup is cut at ATMEE_UPDATE_TIMEOUT seconds (default 6).
+set -u
+
+PINNED="0.10.19" # x-release-please-version
+
+here="$(cd "$(dirname "$0")" && pwd -P)"
+repo="Atmanity/atmee-toolkit"
+every="${ATMEE_UPDATE_EVERY:-12}"
+limit="${ATMEE_UPDATE_TIMEOUT:-6}"
+stamp="${XDG_CACHE_HOME:-$HOME/.cache}/atmee/update-check"
+
+say() { printf '%s %s %s\n' "$1" "$2" "$3"; }
+
+# Runs a command, printing its output, or nothing once $limit seconds pass.
+quick() {
+  local out pid watcher
+  out="$(mktemp)"
+  "$@" > "$out" 2>/dev/null &
+  pid=$!
+  # The watcher must not hold the caller's $(...) open while it sleeps.
+  ( sleep "$limit"; kill "$pid" 2>/dev/null ) > /dev/null 2>&1 &
+  watcher=$!
+  wait "$pid" 2>/dev/null
+  local status=$?
+  kill "$watcher" 2>/dev/null
+  wait "$watcher" 2>/dev/null
+  [ "$status" -eq 0 ] && cat "$out"
+  rm -f "$out"
+  return 0
+}
+
+# True when dotted version $1 is older than $2.
+older() {
+  [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | head -n 1)" = "$1" ]
+}
+
+if [ "${1:-}" != "--force" ] && [ -f "$stamp" ]; then
+  last="$(cat "$stamp" 2>/dev/null)"
+  now="$(date +%s)"
+  case "$last" in
+    '' | *[!0-9]*) ;;
+    *) [ $((now - last)) -lt $((every * 3600)) ] && exit 0 ;;
+  esac
+fi
+mkdir -p "$(dirname "$stamp")" 2>/dev/null && date +%s > "$stamp" 2>/dev/null
+
+# The upgrade command for wherever this copy of the skills was installed.
+skills_upgrade() {
+  case "$here" in
+    */plugins/cache/*)
+      echo "claude plugin marketplace update atmee, then claude plugin update atmee@atmee, then /reload-plugins in Claude Code (or /plugin marketplace update atmee, update atmee under Installed in /plugin, /reload-plugins)" ;;
+    */.codex/*)
+      echo "codex plugin marketplace upgrade, then codex plugin add atmee@atmee, then restart Codex" ;;
+    */.cursor/plugins/*)
+      echo "update atmee under Cursor's Plugins settings (a local copy: copy plugins/atmee from a fresh clone of $repo over ~/.cursor/plugins/local/atmee), then restart Cursor" ;;
+    *)
+      echo "npx -y skills add $repo --skill '*' --agent <agent-id> --yes --global, then restart the agent" ;;
+  esac
+}
+
+# The public release's plugins/atmee/VERSION, over plain https.
+raw_version() {
+  curl -fsSL --max-time "$limit" "https://raw.githubusercontent.com/$repo/main/plugins/atmee/VERSION"
+}
+
+# main's plugins/atmee/VERSION, through a depth-1 fetch into the empty dir $1,
+# over https and then ssh: whichever the creator's git can already reach.
+main_version() {
+  local url
+  git -C "$1" init -q || return 1
+  for url in "https://github.com/$repo.git" "git@github.com:$repo.git"; do
+    if GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="ssh -o BatchMode=yes" git -C "$1" fetch -q --depth 1 "$url" main 2>/dev/null; then
+      git -C "$1" show FETCH_HEAD:plugins/atmee/VERSION
+      return
+    fi
+  done
+  return 1
+}
+
+# Sets $latest to the released version, from main's VERSION: a plain download,
+# then gh, then a shallow git fetch with whatever access the skills were
+# installed with. $public says whether the plain download worked.
+latest="" public=""
+latest_version() {
+  local v="" tmp
+  command -v curl >/dev/null 2>&1 && v="$(quick raw_version | tr -d '[:space:]')"
+  [ -n "$v" ] && public=1
+  if [ -z "$v" ] && command -v gh >/dev/null 2>&1; then
+    v="$(quick gh api "repos/$repo/contents/plugins/atmee/VERSION" -H 'Accept: application/vnd.github.raw' | tr -d '[:space:]')"
+  fi
+  if [ -z "$v" ] && command -v git >/dev/null 2>&1 && tmp="$(mktemp -d 2>/dev/null)"; then
+    v="$(quick main_version "$tmp" | tr -d '[:space:]')"
+    rm -rf "$tmp"
+  fi
+  case "$v" in '' | *[!0-9.]*) ;; *) latest="$v" ;; esac
+}
+
+check_skills() {
+  local mine="$PINNED" top
+  # Only a clone of the plugin's own repo is a development checkout; a project
+  # or a home folder that happens to be a git repo is an install like any other.
+  top="$(git -C "$here" rev-parse --show-toplevel 2>/dev/null)"
+  if [ -n "$top" ] && [ -f "$top/plugins/atmee/VERSION" ] && [ "${here#"$top"/plugins/atmee/skills/}" != "$here" ]; then
+    say info skills "version $mine, loaded from a git checkout; update it with git pull there"
+    return
+  fi
+  if [ -z "$latest" ]; then
+    say info skills "version $mine; could not reach GitHub to compare, skipped"
+  elif older "$mine" "$latest"; then
+    say fix skills "version $mine is installed and $latest is out: $(skills_upgrade)"
+  else
+    say ok skills "version $mine (latest)"
+  fi
+}
+
+# Each release ships prebuilt binaries that the toolkit's install.sh fetches
+# (no Go needed), stamped with the release's version, as is the source tagged
+# cli/vX.Y.Z that go install builds.
+check_cli() {
+  local bin ver install
+  local script="https://raw.githubusercontent.com/$repo/main/install.sh"
+  if command -v curl >/dev/null 2>&1; then
+    install="curl -fsSL $script | sh"
+  elif command -v wget >/dev/null 2>&1; then
+    # Without curl nothing above probed the plain download: check it here,
+    # within the same time limit as every other lookup.
+    if [ -n "$(quick sh -c 'wget -q --spider -T "$1" -t 1 "$2" && echo ok' _ "$limit" "$script")" ]; then
+      install="wget -qO- $script | sh"
+    fi
+  fi
+  # While the repo is members-only, the plain download fails (curl answered
+  # nothing), as it does with neither curl nor wget: Go fetches it with git
+  # and the gh sign-in instead.
+  if [ -z "${install:-}" ] || { [ -z "$public" ] && command -v curl >/dev/null 2>&1; }; then
+    install="gh auth setup-git && GOPRIVATE=github.com/$repo go install github.com/$repo/cli/cmd/atmee@latest"
+  fi
+  bin="$(command -v atmee 2>/dev/null)"
+  if [ -z "$bin" ]; then
+    say info cli "not installed (optional: only API keys written to .env and scripts need it): $install"
+    return
+  fi
+  ver="$(quick atmee --version | awk '{ print $NF; exit }')"
+  ver="${ver#v}"
+  # A release is X.Y.Z; a pseudo-version (0.0.0-2026...-abc) is a build from source.
+  case "$ver" in
+    '' | *[!0-9.]*) say info cli "installed at $bin as a build from source (${ver:-no version}); update it where it was built"; return ;;
+  esac
+  if [ -z "$latest" ]; then
+    say info cli "version $ver; could not reach GitHub to compare, skipped"
+  elif older "$ver" "$latest"; then
+    say fix cli "version $ver is installed and $latest is out: $install"
+  else
+    say ok cli "version $ver (latest)"
+  fi
+}
+
+latest_version
+check_skills
+check_cli
+exit 0

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.10.19 (2026-11-19)
+
+
+### Features
+
+* add a make-video skill and move clip-making out of create-avatar
+* install atmee as skills plus the MCP server, with the plugin optional and a CLI that needs no Go
+* make clips of a saved avatar speaking a script
+* say generated outputs last 7 days and links about an hour
+* sponsored session length limit in the CLI
+
+
+### Bug Fixes
+
+* offer 5, 10 or 15 second clips and plan longer videos as several clips
+* open the sign-in page for the person, keep the CLI optional, and fix app and avatar steps found on staging
+
+
+### Documentation
+
+* bring the skills and docs in line with make-video, avatar clips and 7-day outputs
+
 ## 0.10.18 (2026-11-17)
 
 

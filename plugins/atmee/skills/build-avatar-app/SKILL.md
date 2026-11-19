@@ -159,7 +159,11 @@ Settle these with the developer, then name the closest shape in
 
 One key per app, narrow: `sessions`, bound to the avatar, with a spend cap,
 its secret written straight into the backend's `.env` by the `atmee` CLI
-(`references/server.md`, Keys, also for installing the CLI).
+(`references/server.md`, Keys, also for installing the CLI). This is where an
+app needs the CLI: the server's `create_api_key` never returns a secret, so it
+can't fill `.env`. Without the CLI, the developer creates the key on the API
+keys page (the `links` the API returns) and pastes it into `.env` themselves,
+never into the chat.
 
 ### 4. Build the backend
 
@@ -175,6 +179,12 @@ talk (its audio or a first caption; its video shows whenever it comes), wait
 for the agent to link the user, hold typed turns while the avatar has the floor
 (`references/room.md`). Write `state` and `event` texts the way
 `references/room.md` shows.
+
+While the browser asks for the microphone, say so on the page ("Allow the
+microphone to talk to <name>, or type below"): the browser's prompt sits by
+the address bar, and a page that only says "Calling…" looks stuck. Show it
+until the browser answers; if the visitor declines, carry on without the
+microphone so they can type (as `templates/try.html` does).
 
 Show the conversation in one place, a chat panel or captions, never both,
 and put the user's own words in it: their speech arrives transcribed on

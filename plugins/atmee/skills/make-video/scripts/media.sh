@@ -10,7 +10,7 @@
 # save writes <avatar-folder>/media/<kind>/<name>.<ext> and prints that path.
 # The extension comes from the link's path, else from the server's content
 # type; only image, audio and mp4 types are kept, up to 60 MB. Server links
-# expire (generated assets after 7 days and their links sooner, seed links in
+# expire (clips after 30 days, portraits and voices after 7, their links sooner, seed links in
 # about an hour),
 # so save before showing anything.
 #

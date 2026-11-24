@@ -306,6 +306,42 @@ func (e ApiKeyUpdateRequestSpendCapWindow) Valid() bool {
 	}
 }
 
+// Defines values for AvatarCopyOptionsRelation.
+const (
+	AvatarCopyOptionsRelationOwn    AvatarCopyOptionsRelation = "own"
+	AvatarCopyOptionsRelationPublic AvatarCopyOptionsRelation = "public"
+)
+
+// Valid indicates whether the value is a known member of the AvatarCopyOptionsRelation enum.
+func (e AvatarCopyOptionsRelation) Valid() bool {
+	switch e {
+	case AvatarCopyOptionsRelationOwn:
+		return true
+	case AvatarCopyOptionsRelationPublic:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AvatarCopyTargetRequiredPlan.
+const (
+	Growth AvatarCopyTargetRequiredPlan = "growth"
+	Pro    AvatarCopyTargetRequiredPlan = "pro"
+)
+
+// Valid indicates whether the value is a known member of the AvatarCopyTargetRequiredPlan enum.
+func (e AvatarCopyTargetRequiredPlan) Valid() bool {
+	switch e {
+	case Growth:
+		return true
+	case Pro:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AvatarCreateJsonRequestEngine.
 const (
 	AvatarCreateJsonRequestEngineV1    AvatarCreateJsonRequestEngine = "v1"
@@ -576,6 +612,24 @@ func (e AvatarEngine) Valid() bool {
 	case AvatarEngineV2:
 		return true
 	case AvatarEngineV2hd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AvatarIntegrationsCopyStatus.
+const (
+	AvatarIntegrationsCopyStatusCopied AvatarIntegrationsCopyStatus = "copied"
+	AvatarIntegrationsCopyStatusFailed AvatarIntegrationsCopyStatus = "failed"
+)
+
+// Valid indicates whether the value is a known member of the AvatarIntegrationsCopyStatus enum.
+func (e AvatarIntegrationsCopyStatus) Valid() bool {
+	switch e {
+	case AvatarIntegrationsCopyStatusCopied:
+		return true
+	case AvatarIntegrationsCopyStatusFailed:
 		return true
 	default:
 		return false
@@ -1443,6 +1497,162 @@ func (e GeneratePortraitsRequestEngine) Valid() bool {
 	}
 }
 
+// Defines values for GenerationKind.
+const (
+	GenerationKindClip     GenerationKind = "clip"
+	GenerationKindPortrait GenerationKind = "portrait"
+	GenerationKindVoice    GenerationKind = "voice"
+)
+
+// Valid indicates whether the value is a known member of the GenerationKind enum.
+func (e GenerationKind) Valid() bool {
+	switch e {
+	case GenerationKindClip:
+		return true
+	case GenerationKindPortrait:
+		return true
+	case GenerationKindVoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationOperation.
+const (
+	GenerationOperationClip                GenerationOperation = "clip"
+	GenerationOperationPortraitEnhancement GenerationOperation = "portrait_enhancement"
+	GenerationOperationPortraitGeneration  GenerationOperation = "portrait_generation"
+	GenerationOperationVoiceDesign         GenerationOperation = "voice_design"
+)
+
+// Valid indicates whether the value is a known member of the GenerationOperation enum.
+func (e GenerationOperation) Valid() bool {
+	switch e {
+	case GenerationOperationClip:
+		return true
+	case GenerationOperationPortraitEnhancement:
+		return true
+	case GenerationOperationPortraitGeneration:
+		return true
+	case GenerationOperationVoiceDesign:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationStatus.
+const (
+	GenerationStatusDeleted   GenerationStatus = "deleted"
+	GenerationStatusExpired   GenerationStatus = "expired"
+	GenerationStatusReady     GenerationStatus = "ready"
+	GenerationStatusRendering GenerationStatus = "rendering"
+	GenerationStatusStalled   GenerationStatus = "stalled"
+)
+
+// Valid indicates whether the value is a known member of the GenerationStatus enum.
+func (e GenerationStatus) Valid() bool {
+	switch e {
+	case GenerationStatusDeleted:
+		return true
+	case GenerationStatusExpired:
+		return true
+	case GenerationStatusReady:
+		return true
+	case GenerationStatusRendering:
+		return true
+	case GenerationStatusStalled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationInputAssetSource.
+const (
+	GenerationInputAssetSourceAvatar GenerationInputAssetSource = "avatar"
+	GenerationInputAssetSourceSpeech GenerationInputAssetSource = "speech"
+	GenerationInputAssetSourceUpload GenerationInputAssetSource = "upload"
+	GenerationInputAssetSourceUrl    GenerationInputAssetSource = "url"
+)
+
+// Valid indicates whether the value is a known member of the GenerationInputAssetSource enum.
+func (e GenerationInputAssetSource) Valid() bool {
+	switch e {
+	case GenerationInputAssetSourceAvatar:
+		return true
+	case GenerationInputAssetSourceSpeech:
+		return true
+	case GenerationInputAssetSourceUpload:
+		return true
+	case GenerationInputAssetSourceUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationInputsMode.
+const (
+	GenerationInputsModeAvatar  GenerationInputsMode = "avatar"
+	GenerationInputsModePicture GenerationInputsMode = "picture"
+)
+
+// Valid indicates whether the value is a known member of the GenerationInputsMode enum.
+func (e GenerationInputsMode) Valid() bool {
+	switch e {
+	case GenerationInputsModeAvatar:
+		return true
+	case GenerationInputsModePicture:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationMakerType.
+const (
+	GenerationMakerTypeApiKey GenerationMakerType = "apiKey"
+	GenerationMakerTypeMember GenerationMakerType = "member"
+)
+
+// Valid indicates whether the value is a known member of the GenerationMakerType enum.
+func (e GenerationMakerType) Valid() bool {
+	switch e {
+	case GenerationMakerTypeApiKey:
+		return true
+	case GenerationMakerTypeMember:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GenerationOutputStatus.
+const (
+	GenerationOutputStatusDeleted GenerationOutputStatus = "deleted"
+	GenerationOutputStatusExpired GenerationOutputStatus = "expired"
+	GenerationOutputStatusReady   GenerationOutputStatus = "ready"
+	GenerationOutputStatusUsed    GenerationOutputStatus = "used"
+)
+
+// Valid indicates whether the value is a known member of the GenerationOutputStatus enum.
+func (e GenerationOutputStatus) Valid() bool {
+	switch e {
+	case GenerationOutputStatusDeleted:
+		return true
+	case GenerationOutputStatusExpired:
+		return true
+	case GenerationOutputStatusReady:
+		return true
+	case GenerationOutputStatusUsed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PaymentRequiredResponseError.
 const (
 	ApiKeySpendCapReached                 PaymentRequiredResponseError = "api_key_spend_cap_reached"
@@ -1749,6 +1959,75 @@ func (e ListAvatarCandidatesParamsVersions) Valid() bool {
 	}
 }
 
+// Defines values for GetAvatarCopyOptionsParamsEngine.
+const (
+	GetAvatarCopyOptionsParamsEngineV1    GetAvatarCopyOptionsParamsEngine = "v1"
+	GetAvatarCopyOptionsParamsEngineV2    GetAvatarCopyOptionsParamsEngine = "v2"
+	GetAvatarCopyOptionsParamsEngineV2hd  GetAvatarCopyOptionsParamsEngine = "v2hd"
+	GetAvatarCopyOptionsParamsEngineV2pro GetAvatarCopyOptionsParamsEngine = "v2pro"
+)
+
+// Valid indicates whether the value is a known member of the GetAvatarCopyOptionsParamsEngine enum.
+func (e GetAvatarCopyOptionsParamsEngine) Valid() bool {
+	switch e {
+	case GetAvatarCopyOptionsParamsEngineV1:
+		return true
+	case GetAvatarCopyOptionsParamsEngineV2:
+		return true
+	case GetAvatarCopyOptionsParamsEngineV2hd:
+		return true
+	case GetAvatarCopyOptionsParamsEngineV2pro:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListGenerationsParamsKind.
+const (
+	ListGenerationsParamsKindClip     ListGenerationsParamsKind = "clip"
+	ListGenerationsParamsKindPortrait ListGenerationsParamsKind = "portrait"
+	ListGenerationsParamsKindVoice    ListGenerationsParamsKind = "voice"
+)
+
+// Valid indicates whether the value is a known member of the ListGenerationsParamsKind enum.
+func (e ListGenerationsParamsKind) Valid() bool {
+	switch e {
+	case ListGenerationsParamsKindClip:
+		return true
+	case ListGenerationsParamsKindPortrait:
+		return true
+	case ListGenerationsParamsKindVoice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeleteGenerationParamsOperation.
+const (
+	DeleteGenerationParamsOperationClip                DeleteGenerationParamsOperation = "clip"
+	DeleteGenerationParamsOperationPortraitEnhancement DeleteGenerationParamsOperation = "portrait_enhancement"
+	DeleteGenerationParamsOperationPortraitGeneration  DeleteGenerationParamsOperation = "portrait_generation"
+	DeleteGenerationParamsOperationVoiceDesign         DeleteGenerationParamsOperation = "voice_design"
+)
+
+// Valid indicates whether the value is a known member of the DeleteGenerationParamsOperation enum.
+func (e DeleteGenerationParamsOperation) Valid() bool {
+	switch e {
+	case DeleteGenerationParamsOperationClip:
+		return true
+	case DeleteGenerationParamsOperationPortraitEnhancement:
+		return true
+	case DeleteGenerationParamsOperationPortraitGeneration:
+		return true
+	case DeleteGenerationParamsOperationVoiceDesign:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account defines model for Account.
 type Account struct {
 	AccountId string `json:"accountId"`
@@ -1763,7 +2042,8 @@ type Account struct {
 
 	// Payouts Whether the account can be paid out (its Stripe Connect account), as
 	// last synced. Monetizing an avatar needs `verified`; payouts are set up
-	// in Creator Studio. Absent when unknown.
+	// in Creator Studio. Absent when unknown, or the caller may not see it (on
+	// an account with more than one member, only its signed-in owner does).
 	Payouts *AccountPayouts `json:"payouts,omitempty"`
 	Plan    AccountPlan     `json:"plan"`
 	Pricing AccountPricing  `json:"pricing"`
@@ -1911,7 +2191,8 @@ type AccountLinks struct {
 
 // AccountPayouts Whether the account can be paid out (its Stripe Connect account), as
 // last synced. Monetizing an avatar needs `verified`; payouts are set up
-// in Creator Studio. Absent when unknown.
+// in Creator Studio. Absent when unknown, or the caller may not see it (on
+// an account with more than one member, only its signed-in owner does).
 type AccountPayouts struct {
 	// Status not_started until a payout account exists, then its verification status.
 	Status     AccountPayoutsStatus `json:"status"`
@@ -2232,6 +2513,51 @@ type AvatarAppearanceJsonRequest struct {
 	Image AssetRefString `json:"image"`
 }
 
+// AvatarCopyOptions defines model for AvatarCopyOptions.
+type AvatarCopyOptions struct {
+	// Integrations `allowed` is for a copy into the source's own account; they never come along into another.
+	Integrations struct {
+		Allowed bool `json:"allowed"`
+		Count   int  `json:"count"`
+	} `json:"integrations"`
+	Knowledge struct {
+		Allowed bool `json:"allowed"`
+		Facts   int  `json:"facts"`
+		Files   int  `json:"files"`
+	} `json:"knowledge"`
+
+	// Relation `own`: an avatar of one of your accounts. `public`: another account's avatar its owner lets others copy.
+	Relation AvatarCopyOptionsRelation `json:"relation"`
+
+	// Targets The accounts the copy may go to (an API key's own only), each with whether it may and why not.
+	Targets []AvatarCopyTarget `json:"targets"`
+}
+
+// AvatarCopyOptionsRelation `own`: an avatar of one of your accounts. `public`: another account's avatar its owner lets others copy.
+type AvatarCopyOptionsRelation string
+
+// AvatarCopyTarget defines model for AvatarCopyTarget.
+type AvatarCopyTarget struct {
+	AccountId openapi_types.UUID `json:"accountId"`
+	Allowed   bool               `json:"allowed"`
+
+	// Kind The account's kind, e.g. `personal` or `team`.
+	Kind string `json:"kind"`
+
+	// KnowledgeAllowed Whether a copy into this account may bring the knowledge (`knowledge` on `duplicate`). False when another account's avatar's owner does not share its knowledge (the copy leaves it out), or when a plain member (not an owner or admin) copies the account's avatar into another account and the owner does not share its knowledge (asking for it then is `403 copy_out_of_team_not_allowed`).
+	KnowledgeAllowed bool   `json:"knowledgeAllowed"`
+	Name             string `json:"name"`
+
+	// Reason Why a copy may not go there, e.g. `plan_required`, `avatar_limit_reached`, `not_member`, `copy_out_of_team_not_allowed` (a plain member copying the account's avatar into another account when its owner does not let anyone copy it; owners and admins may), `feature_disabled`.
+	Reason *string `json:"reason,omitempty"`
+
+	// RequiredPlan For `plan_required` on a V2 or V2 HD source, the plan the account needs (`pro` or `growth`); null otherwise (a team without an active plan included).
+	RequiredPlan *AvatarCopyTargetRequiredPlan `json:"requiredPlan,omitempty"`
+}
+
+// AvatarCopyTargetRequiredPlan For `plan_required` on a V2 or V2 HD source, the plan the account needs (`pro` or `growth`); null otherwise (a team without an active plan included).
+type AvatarCopyTargetRequiredPlan string
+
 // AvatarCreateJsonRequest `avatar.json` plus an `assets` block. Field rules match the zip
 // manifest and are enforced by the service (400 `invalid_manifest`,
 // naming the field); only the shape is checked here.
@@ -2329,6 +2655,9 @@ type AvatarCreateResponse struct {
 	// (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 	// `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 	Engine *AvatarEngine `json:"engine,omitempty"`
+
+	// IntegrationsCopy A duplicate's copy of the source's integrations; present only when `integrations` was asked for and allowed.
+	IntegrationsCopy *AvatarIntegrationsCopy `json:"integrationsCopy,omitempty"`
 
 	// Kind `conversational` avatars have a voice and a persona and can run a full
 	// Atmanity session once built. `render_only` avatars have a portrait only:
@@ -2629,8 +2958,17 @@ type AvatarDetailVisibility string
 
 // AvatarDuplicateRequest defines model for AvatarDuplicateRequest.
 type AvatarDuplicateRequest struct {
+	// AccountId The account the copy is made in; absent is the account the call acts for. Only a signed-in user may name another of its accounts; an API key copies within its own account.
+	AccountId *openapi_types.UUID `json:"accountId,omitempty"`
+
 	// Engine The copy's engine; absent keeps the source's. Any engine, an older model included.<!-- v2pro --> `v2pro` is V2 HD's former name, read as `v2hd`.<!-- /v2pro -->
 	Engine *AvatarDuplicateRequestEngine `json:"engine,omitempty"`
+
+	// Integrations Bind the copy to the source's integrations; absent is `false`. Only for your own avatar copied into its own account.
+	Integrations *bool `json:"integrations,omitempty"`
+
+	// Knowledge Bring the knowledge (facts, questionnaire answers, knowledge files); absent is `true`. Another account's avatar brings it only when its owner shares it.
+	Knowledge *bool `json:"knowledge,omitempty"`
 
 	// Name The copy's name; absent keeps the source's.
 	Name *string `json:"name,omitempty"`
@@ -2638,6 +2976,16 @@ type AvatarDuplicateRequest struct {
 
 // AvatarDuplicateRequestEngine The copy's engine; absent keeps the source's. Any engine, an older model included.<!-- v2pro --> `v2pro` is V2 HD's former name, read as `v2hd`.<!-- /v2pro -->
 type AvatarDuplicateRequestEngine string
+
+// AvatarEarnings What an avatar has earned, in microcredits (100 = 1 credit); the current cycle is the account's billing cycle.
+type AvatarEarnings struct {
+	AllTimeMicrocredits int64 `json:"allTimeMicrocredits"`
+
+	// AllTimeSessions Sessions that earned.
+	AllTimeSessions          int64 `json:"allTimeSessions"`
+	CurrentCycleMicrocredits int64 `json:"currentCycleMicrocredits"`
+	CurrentCycleSessions     int64 `json:"currentCycleSessions"`
+}
 
 // AvatarEngine Render engine: `v1`, the original renderer, or `v2`, which serves a
 // selected candidate (see `GET /v1/avatars/{avatarId}/candidates`).<!-- v2pro -->
@@ -2654,6 +3002,18 @@ type AvatarDuplicateRequestEngine string
 // (otherwise `403 v2hd_view_only`), and are open on any plan elsewhere. Offered only where
 // `limits.v2Pro` is reported (elsewhere `503 engine_unavailable`).<!-- /v2pro -->
 type AvatarEngine string
+
+// AvatarIntegrationsCopy A duplicate's copy of the source's integrations; present only when `integrations` was asked for and allowed.
+type AvatarIntegrationsCopy struct {
+	// Count How many integrations the copy is bound to; absent when `failed`.
+	Count *int `json:"count,omitempty"`
+
+	// Status `copied`: the copy is bound to the source's integrations. `failed`: they could not be copied; the copy exists without them (bind them in Studio, or duplicate again).
+	Status AvatarIntegrationsCopyStatus `json:"status"`
+}
+
+// AvatarIntegrationsCopyStatus `copied`: the copy is bound to the source's integrations. `failed`: they could not be copied; the copy exists without them (bind them in Studio, or duplicate again).
+type AvatarIntegrationsCopyStatus string
 
 // AvatarKind `conversational` avatars have a voice and a persona and can run a full
 // Atmanity session once built. `render_only` avatars have a portrait only:
@@ -2779,15 +3139,9 @@ type AvatarMonetization struct {
 		MonetizingAvatars int `json:"monetizingAvatars"`
 	} `json:"accountCap"`
 
-	// Earnings What the avatar has earned, in microcredits (100 = 1 credit); the current cycle is the account's billing cycle.
-	Earnings struct {
-		AllTimeMicrocredits int64 `json:"allTimeMicrocredits"`
-
-		// AllTimeSessions Sessions that earned.
-		AllTimeSessions          int64 `json:"allTimeSessions"`
-		CurrentCycleMicrocredits int64 `json:"currentCycleMicrocredits"`
-		CurrentCycleSessions     int64 `json:"currentCycleSessions"`
-	} `json:"earnings"`
+	// Earnings What the avatar has earned. Null for a caller who may not see the account's earnings: on an account with
+	// more than one member, anyone but its signed-in owner. Null is not "earned nothing".
+	Earnings *AvatarEarnings `json:"earnings"`
 
 	// Eligible Whether the last 30 days meet every requirement.
 	Eligible bool `json:"eligible"`
@@ -4245,9 +4599,12 @@ type GeneratedClip struct {
 	// DurationSeconds The clip's length.
 	DurationSeconds int `json:"durationSeconds"`
 
-	// ExpiresAt When the upload stops working (7 days after it was made).
+	// ExpiresAt When the upload stops working (30 days after it was made).
 	ExpiresAt time.Time `json:"expiresAt"`
 	Height    int       `json:"height"`
+
+	// Poster A small JPEG of the clip's first frame as a data URL (`data:image/jpeg;base64,...`), at most 256 pixels on a side; absent for clips made before posters existed.
+	Poster *string `json:"poster,omitempty"`
 
 	// Unavailable True on a replay when the clip's upload has expired; it is not made again, and has no `url`.
 	Unavailable bool `json:"unavailable"`
@@ -4321,6 +4678,52 @@ type GeneratedPortraitsResponse struct {
 	Replayed bool `json:"replayed"`
 }
 
+// Generation defines model for Generation.
+type Generation struct {
+	// CreatedAt When the call started.
+	CreatedAt time.Time `json:"createdAt"`
+
+	// DeletedAt When the outputs were deleted; `null` unless `status` is `deleted`.
+	DeletedAt *time.Time `json:"deletedAt"`
+
+	// ExpiresAt When the last output stops working (a clip 30 days after it was made, a portrait or voice 7); `null` while rendering. For "Expires in 2 days" or "Kept until Dec 20".
+	ExpiresAt *time.Time `json:"expiresAt"`
+
+	// Inputs What it was made from; `null` for a call made before this was recorded.
+	Inputs *GenerationInputs `json:"inputs"`
+	Kind   GenerationKind    `json:"kind"`
+
+	// MadeBy Who made it; `null` for a call made before this was recorded, or by Atmee support acting for the account.
+	MadeBy *GenerationMaker `json:"madeBy"`
+
+	// MicrocreditsCharged What the call took from credits (the free allowance's part not included); `null` when unknown (older calls).
+	MicrocreditsCharged *int `json:"microcreditsCharged"`
+
+	// Operation Which call made it (a portrait is generated or enhanced).
+	Operation GenerationOperation `json:"operation"`
+
+	// Outputs The outputs (a clip has one; a portrait call up to two, a voice call up to four). Empty while rendering.
+	Outputs []GenerationOutput `json:"outputs"`
+
+	// Remake What making the call again (a new call, with a new `Idempotency-Key`) needs beyond `inputs`. An avatar clip uses the avatar as it is now.
+	Remake GenerationRemake `json:"remake"`
+
+	// RequestId The call's `Idempotency-Key`. For a clip, `GET /v1/generation/clips/{requestId}` reads it too.
+	RequestId openapi_types.UUID `json:"requestId"`
+
+	// Status See the table above.
+	Status GenerationStatus `json:"status"`
+}
+
+// GenerationKind defines model for Generation.Kind.
+type GenerationKind string
+
+// GenerationOperation Which call made it (a portrait is generated or enhanced).
+type GenerationOperation string
+
+// GenerationStatus See the table above.
+type GenerationStatus string
+
 // GenerationFreeAllowance The free generation a paid plan includes each billing cycle, in
 // microcredits (Starter 3 credits, Pro 10, Growth 25, Scale 50; 0 on a
 // plan without one). It pays for `POST /v1/generation/portraits`,
@@ -4343,6 +4746,127 @@ type GenerationFreeAllowance struct {
 	// UsedMicrocredits How much of it calls have used this cycle.
 	UsedMicrocredits int `json:"usedMicrocredits"`
 }
+
+// GenerationInputAsset defines model for GenerationInputAsset.
+type GenerationInputAsset struct {
+	// Source `upload`: a file the caller uploaded (not kept: upload it again to make the call again). `url`: an https link (`url` is kept only for a plain public link). `avatar`: the avatar's saved portrait. `speech`: the avatar's voice speaking the transcript.
+	Source GenerationInputAssetSource `json:"source"`
+	Url    *string                    `json:"url,omitempty"`
+}
+
+// GenerationInputAssetSource `upload`: a file the caller uploaded (not kept: upload it again to make the call again). `url`: an https link (`url` is kept only for a plain public link). `avatar`: the avatar's saved portrait. `speech`: the avatar's voice speaking the transcript.
+type GenerationInputAssetSource string
+
+// GenerationInputs The inputs a call was made from, with only its operation's fields
+// set. A clip: `mode` (`picture` or `avatar`), `prompt`, `size`, and
+// `seed` when one was chosen; from a picture also `image`, `audio` and
+// `lengthSeconds`; with an avatar `avatarId` and `transcript` (the
+// length then follows the speech). A portrait: `description`, `engine`,
+// `count`; an enhancement: `image`, `prompt`, `engine`, `avatarId`. A
+// voice: `voiceDescription`, `avatarName`, `language`, `sampleText`.
+type GenerationInputs struct {
+	Audio         *GenerationInputAsset `json:"audio,omitempty"`
+	AvatarId      *openapi_types.UUID   `json:"avatarId,omitempty"`
+	AvatarName    *string               `json:"avatarName,omitempty"`
+	Count         *int                  `json:"count,omitempty"`
+	Description   *string               `json:"description,omitempty"`
+	Engine        *string               `json:"engine,omitempty"`
+	Image         *GenerationInputAsset `json:"image,omitempty"`
+	Language      *string               `json:"language,omitempty"`
+	LengthSeconds *int                  `json:"lengthSeconds,omitempty"`
+	Mode          *GenerationInputsMode `json:"mode,omitempty"`
+	Prompt        *string               `json:"prompt,omitempty"`
+	SampleText    *string               `json:"sampleText,omitempty"`
+	Seed          *int64                `json:"seed,omitempty"`
+
+	// Size A clip's output size in pixels, one of these. Credits per clip by
+	// length; a clip pays the next length up (7 seconds pays the
+	// up-to-10-seconds price):
+	//
+	// | Size | Sizes | Up to 5 s | Up to 10 s | Up to 15 s |
+	// |---|---|---|---|---|
+	// | 480p square, 4:3, 3:4 | 480 x 480, 640 x 480, 480 x 640 | 0.1 | 0.3 | 0.5 |
+	// | 480p 16:9, 9:16 | 832 x 468, 468 x 832 | 0.3 | 0.7 | 1 |
+	// | 720p square, 4:3, 3:4 | 720 x 720, 960 x 720, 720 x 960 | 0.5 | 1 | 1.5 |
+	// | 720p 16:9, 9:16 | 1280 x 720, 720 x 1280 | 0.8 | 1.4 | 2 |
+	// | 1080p | any | coming soon | | |
+	//
+	// Default 480 x 480. The renderer works at each side rounded up to a
+	// multiple of 32 (1280 x 720 at 1280 x 736) and crops the centre to
+	// the size asked for. `GET /v1/account` `pricing.generation.clipSizes`
+	// lists the sizes served here with their prices; another size is
+	// `400 invalid_input`, naming the sizes.
+	Size             *ClipResolution `json:"size,omitempty"`
+	Transcript       *string         `json:"transcript,omitempty"`
+	VoiceDescription *string         `json:"voiceDescription,omitempty"`
+}
+
+// GenerationInputsMode defines model for GenerationInputs.Mode.
+type GenerationInputsMode string
+
+// GenerationListResponse defines model for GenerationListResponse.
+type GenerationListResponse struct {
+	Items []Generation `json:"items"`
+
+	// NextCursor Pass as `cursor` for the next page; `null` on the last page.
+	NextCursor *string `json:"nextCursor"`
+}
+
+// GenerationMaker defines model for GenerationMaker.
+type GenerationMaker struct {
+	// ApiKeyId The key's id (`apiKey`); pass it as `madeBy`.
+	ApiKeyId *openapi_types.UUID `json:"apiKeyId,omitempty"`
+
+	// AvatarUrl The member's profile photo, when they have one.
+	AvatarUrl *string `json:"avatarUrl"`
+
+	// FormerMember True when the member has left the account.
+	FormerMember *bool `json:"formerMember,omitempty"`
+
+	// Name The member's username, "Former member" once they left the account, or the key's name.
+	Name *string `json:"name"`
+
+	// Revoked True when the key has been revoked.
+	Revoked *bool               `json:"revoked,omitempty"`
+	Type    GenerationMakerType `json:"type"`
+
+	// UserId The member's user id (`member`); pass it as `madeBy`.
+	UserId *openapi_types.UUID `json:"userId,omitempty"`
+}
+
+// GenerationMakerType defines model for GenerationMaker.Type.
+type GenerationMakerType string
+
+// GenerationOutput defines model for GenerationOutput.
+type GenerationOutput struct {
+	// DurationSeconds A clip's or voice's length.
+	DurationSeconds *float32 `json:"durationSeconds,omitempty"`
+
+	// ExpiresAt When it stops working.
+	ExpiresAt time.Time `json:"expiresAt"`
+	Height    *int      `json:"height,omitempty"`
+
+	// Poster A small JPEG as a data URL (`data:image/jpeg;base64,...`), at most 256 pixels on a side: a clip's first frame or a portrait's preview. Kept after the file has gone; use it as an image `src` or a video `poster`.
+	Poster   *string `json:"poster,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+
+	// SpokenText The text a voice preview speaks.
+	SpokenText *string `json:"spokenText,omitempty"`
+
+	// Status `ready`: it can be downloaded (`url`). `used`: an avatar was made from it. `expired`: past `expiresAt`. `deleted`: deleted.
+	Status GenerationOutputStatus `json:"status"`
+
+	// UploadId The output's upload (`upload:<uploadId>`). Delete one output with `DELETE /v1/uploads/{uploadId}`.
+	UploadId openapi_types.UUID `json:"uploadId"`
+
+	// Url A fresh download link while `status` is `ready`, until `urlExpiresAt`; read the list again for a new one. It also plays in a video or audio element.
+	Url          *string    `json:"url,omitempty"`
+	UrlExpiresAt *time.Time `json:"urlExpiresAt,omitempty"`
+	Width        *int       `json:"width,omitempty"`
+}
+
+// GenerationOutputStatus `ready`: it can be downloaded (`url`). `used`: an avatar was made from it. `expired`: past `expiresAt`. `deleted`: deleted.
+type GenerationOutputStatus string
 
 // GenerationPricing The price of each generation operation, per call, charged only when at
 // least one output comes back. Portraits, enhancements and voices are paid
@@ -4388,6 +4912,46 @@ type GenerationPricing struct {
 
 	// VoicesMicrocredits One `POST /v1/generation/voices` call.
 	VoicesMicrocredits int `json:"voicesMicrocredits"`
+}
+
+// GenerationRemake What making the call again (a new call, with a new `Idempotency-Key`) needs beyond `inputs`. An avatar clip uses the avatar as it is now.
+type GenerationRemake struct {
+	// AudioUploadRequired The same for the audio.
+	AudioUploadRequired bool `json:"audioUploadRequired"`
+
+	// ImageUploadRequired The image was uploaded (or a link that was not kept), so it must be given again.
+	ImageUploadRequired bool `json:"imageUploadRequired"`
+
+	// Possible False when no inputs were recorded (older calls).
+	Possible bool `json:"possible"`
+}
+
+// GenerationSummaryResponse defines model for GenerationSummaryResponse.
+type GenerationSummaryResponse struct {
+	// ClipModes Clips by mode under the filters; `unknown` counts clips made before modes were recorded.
+	ClipModes struct {
+		Avatar  int `json:"avatar"`
+		Picture int `json:"picture"`
+		Unknown int `json:"unknown"`
+	} `json:"clipModes"`
+
+	// Counts Generations by kind under the filters.
+	Counts struct {
+		Clip     int `json:"clip"`
+		Portrait int `json:"portrait"`
+		Voice    int `json:"voice"`
+	} `json:"counts"`
+
+	// Makers Everyone who made any of the account's generations, latest first (the filters do not apply).
+	Makers []struct {
+		Generations int             `json:"generations"`
+		LastAt      time.Time       `json:"lastAt"`
+		MadeBy      GenerationMaker `json:"madeBy"`
+	} `json:"makers"`
+	Total int `json:"total"`
+
+	// UnknownGenerations Generations whose maker was not recorded (older calls).
+	UnknownGenerations int `json:"unknownGenerations"`
 }
 
 // KnowledgeAssetRef defines model for KnowledgeAssetRef.
@@ -4807,6 +5371,9 @@ type ClipRequestIdPath = openapi_types.UUID
 // GenerationIdempotencyKey defines model for GenerationIdempotencyKey.
 type GenerationIdempotencyKey = string
 
+// GenerationRequestIdPath defines model for GenerationRequestIdPath.
+type GenerationRequestIdPath = openapi_types.UUID
+
 // SpeechSessionIdPath defines model for SpeechSessionIdPath.
 type SpeechSessionIdPath = openapi_types.UUID
 
@@ -4940,6 +5507,15 @@ type ListAvatarCandidatesParams struct {
 // ListAvatarCandidatesParamsVersions defines parameters for ListAvatarCandidates.
 type ListAvatarCandidatesParamsVersions string
 
+// GetAvatarCopyOptionsParams defines parameters for GetAvatarCopyOptions.
+type GetAvatarCopyOptionsParams struct {
+	// Engine The engine the copy would be made on (`v1` or `v2`<!-- v2pro -->, or `v2hd`; `v2pro` is read as `v2hd`<!-- /v2pro -->), whose plan gate each target must pass; absent is the source's.
+	Engine *GetAvatarCopyOptionsParamsEngine `form:"engine,omitempty" json:"engine,omitempty"`
+}
+
+// GetAvatarCopyOptionsParamsEngine defines parameters for GetAvatarCopyOptions.
+type GetAvatarCopyOptionsParamsEngine string
+
 // ReplaceAvatarKnowledgeMultipartBody defines parameters for ReplaceAvatarKnowledge.
 type ReplaceAvatarKnowledgeMultipartBody struct {
 	// Descriptions JSON object, filename -> description (<= 500 chars each).
@@ -4961,6 +5537,34 @@ type ReplaceAvatarThumbnailMultipartBody struct {
 type ReplaceAvatarVoiceMultipartBody struct {
 	File openapi_types.File `json:"file"`
 }
+
+// ListGenerationsParams defines parameters for ListGenerations.
+type ListGenerationsParams struct {
+	// Kind Only generations of this kind. Absent lists every kind.
+	Kind *ListGenerationsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// Mode Only clips made one of these ways: `picture` (from an image), `avatar` (a saved avatar speaking) or `unknown` (made before modes were recorded, as `clipModes.unknown` counts them). Repeat it, or separate values with commas. Implies `kind=clip`.
+	Mode *[]string `form:"mode,omitempty" json:"mode,omitempty"`
+
+	// MadeBy Only generations made by any of these: `me` (the caller), `apiKeys` (any API key), `former` (any former member), or a member's user id or an API key id (`GET /v1/generation/summary` lists them). Repeat it, or separate values with commas.
+	MadeBy *[]string `form:"madeBy,omitempty" json:"madeBy,omitempty"`
+
+	// Status Only generations in one of these states: `rendering` (stalled included), `ready`, `expiringSoon` (ready, ending within 3 days), `expired` or `deleted`. Repeat it, or separate values with commas.
+	Status *[]string `form:"status,omitempty" json:"status,omitempty"`
+
+	// Since Only generations started at or after this time.
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Q Only generations whose prompt, script or description contains this text, ignoring case.
+	Q     *string `form:"q,omitempty" json:"q,omitempty"`
+	Limit *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListGenerationsParamsKind defines parameters for ListGenerations.
+type ListGenerationsParamsKind string
 
 // GenerateClipParams defines parameters for GenerateClip.
 type GenerateClipParams struct {
@@ -4989,6 +5593,17 @@ type GeneratePortraitsParams struct {
 	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
 }
 
+// GetGenerationSummaryParams defines parameters for GetGenerationSummary.
+type GetGenerationSummaryParams struct {
+	// MadeBy As on `GET /v1/generation`.
+	MadeBy *[]string `form:"madeBy,omitempty" json:"madeBy,omitempty"`
+
+	// Status As on `GET /v1/generation`.
+	Status *[]string  `form:"status,omitempty" json:"status,omitempty"`
+	Since  *time.Time `form:"since,omitempty" json:"since,omitempty"`
+	Q      *string    `form:"q,omitempty" json:"q,omitempty"`
+}
+
 // DesignVoiceParams defines parameters for DesignVoice.
 type DesignVoiceParams struct {
 	// IdempotencyKey A new UUID minted for this request. Reuse it only to retry the same
@@ -4997,6 +5612,15 @@ type DesignVoiceParams struct {
 	// invalid_input.
 	IdempotencyKey GenerationIdempotencyKey `json:"Idempotency-Key"`
 }
+
+// DeleteGenerationParams defines parameters for DeleteGeneration.
+type DeleteGenerationParams struct {
+	// Operation The generation's `operation`, as `GET /v1/generation` lists it. Needed only when the request id was used for more than one operation.
+	Operation *DeleteGenerationParamsOperation `form:"operation,omitempty" json:"operation,omitempty"`
+}
+
+// DeleteGenerationParamsOperation defines parameters for DeleteGeneration.
+type DeleteGenerationParamsOperation string
 
 // CreateSpeechSession422JSONResponseBody defines parameters for CreateSpeechSession.
 type CreateSpeechSession422JSONResponseBody struct {
@@ -5447,7 +6071,9 @@ type ClientInterface interface {
 	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
-	//   monetizing an avatar needs.
+	//   monetizing an avatar needs. Absent for a caller who may not see it:
+	//   on an account with more than one member, anyone but its signed-in
+	//   owner.
 	// - Readable by the same callers as `GET /v1/account/balance`.
 	//
 	// Corresponds with GET /v1/account (the `GetAccount` operationId).
@@ -5482,7 +6108,9 @@ type ClientInterface interface {
 	// /v1/avatars/{avatarId}/monetization`.
 	//
 	// Readable by an account-wide key with `avatars:read` or a signed-in user
-	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
+	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`. On an
+	// account with more than one member, only its signed-in owner reads them:
+	// another member, and any key, gets `403 insufficient_scope`.
 	//
 	// Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
 	GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5525,10 +6153,10 @@ type ClientInterface interface {
 	// revoked ones included (`active: false`). The secrets are never
 	// returned: a key is recognised by `keyPrefix` and `lastFour`.
 	//
-	// Only a signed-in user may manage keys, and only the account's owner
-	// or an admin (a member is `403 owner_or_admin_required`): an API key
-	// is answered `403 login_required`, so a leaked key can never mint
-	// more keys. The owner or an admin may grant any scope, as in Studio.
+	// Only a signed-in user may manage keys, and any member of the account
+	// may: an API key is answered `403 login_required`, so a leaked key can
+	// never mint more keys. Any scope may be granted, but only the
+	// account's owner or an admin may give a key `billing:write`.
 	//
 	// Corresponds with GET /v1/api_keys (the `ListApiKeys` operationId).
 	ListApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5546,8 +6174,9 @@ type ClientInterface interface {
 	// maximum; a value above the plan's is lowered to it. The spend cap
 	// defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 	//
-	// Only a signed-in user may create keys, and only the account's owner
-	// or an admin: an API key is answered `403 login_required`.
+	// Any signed-in user of the account may create keys; an API key is
+	// answered `403 login_required`. Giving a key `billing:write` takes the
+	// account's owner or an admin (`403 owner_or_admin_required`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5567,8 +6196,9 @@ type ClientInterface interface {
 	// maximum; a value above the plan's is lowered to it. The spend cap
 	// defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 	//
-	// Only a signed-in user may create keys, and only the account's owner
-	// or an admin: an API key is answered `403 login_required`.
+	// Any signed-in user of the account may create keys; an API key is
+	// answered `403 login_required`. Giving a key `billing:write` takes the
+	// account's owner or an admin (`403 owner_or_admin_required`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5604,8 +6234,8 @@ type ClientInterface interface {
 	// Revokes the key for good: it stops authenticating within about 30
 	// seconds (a resolved key is cached that long); sessions it started
 	// keep running. Revoking a revoked key answers `200` again with the
-	// same key. Only the account's owner or an admin may revoke; an API
-	// key is answered `403 login_required`.
+	// same key. Any member of the account may revoke; an API key is
+	// answered `403 login_required`.
 	//
 	// Corresponds with DELETE /v1/api_keys/{apiKeyId} (the `RevokeApiKey` operationId).
 	RevokeApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5618,8 +6248,10 @@ type ClientInterface interface {
 	// are applied again on every edit, also to limits not sent, so the
 	// answer can show lower limits than before: read them from it.
 	//
-	// Only the account's owner or an admin may edit a key; an API key is
-	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	// Any member of the account may edit a key, but adding `billing:write`
+	// takes the account's owner or an admin (`403 owner_or_admin_required`);
+	// an API key is answered `403 login_required`. A revoked key is `409
+	// api_key_revoked`.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5634,8 +6266,10 @@ type ClientInterface interface {
 	// are applied again on every edit, also to limits not sent, so the
 	// answer can show lower limits than before: read them from it.
 	//
-	// Only the account's owner or an admin may edit a key; an API key is
-	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	// Any member of the account may edit a key, but adding `billing:write`
+	// takes the account's owner or an admin (`403 owner_or_admin_required`);
+	// an API key is answered `403 login_required`. A revoked key is `409
+	// api_key_revoked`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5647,9 +6281,10 @@ type ClientInterface interface {
 	// Replaces the key's secret and returns the new one in `apiKey`, shown
 	// only here. The key keeps its id, name, scopes, avatar and caps; the
 	// old secret stops authenticating within about 30 seconds. A revoked
-	// key cannot be rotated (`409 api_key_revoked`). Only the account's
-	// owner or an admin may rotate; an API key is answered `403
-	// login_required`.
+	// key cannot be rotated (`409 api_key_revoked`). Any member of the
+	// account may rotate, but a key with `billing:write` takes the account's
+	// owner or an admin (`403 owner_or_admin_required`); an API key is
+	// answered `403 login_required`.
 	//
 	// Corresponds with POST /v1/api_keys/{apiKeyId}/rotate (the `RotateApiKey` operationId).
 	RotateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5688,6 +6323,10 @@ type ClientInterface interface {
 	// - **Conversations**: the room is closed.
 	// - Only sessions started through the API can be ended here (website
 	//   sessions are `404`), and an avatar-scoped key ends only its avatar's.
+	// - **Shared accounts**: whoever started a session may end it. On an
+	//   account shared by several people, ending someone else's may take the
+	//   account's owner or an admin (`403 forbidden`); an API key counts as
+	//   the user who created it, if known.
 	//
 	// Corresponds with POST /v1/avatar_sessions/{id}/end (the `EndAvatarSession` operationId).
 	EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -5758,7 +6397,9 @@ type ClientInterface interface {
 	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 	//   not fit.
 	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-	//   block.
+	//   block. A `sponsor` block takes a signed-in owner or admin of the
+	//   account, or a key whose creator, if known, is one (`403
+	//   insufficient_scope`).
 	//
 	// | Manifest field | Rule |
 	// |---|---|
@@ -5820,7 +6461,9 @@ type ClientInterface interface {
 	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 	//   not fit.
 	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-	//   block.
+	//   block. A `sponsor` block takes a signed-in owner or admin of the
+	//   account, or a key whose creator, if known, is one (`403
+	//   insufficient_scope`).
 	//
 	// | Manifest field | Rule |
 	// |---|---|
@@ -5898,7 +6541,7 @@ type ClientInterface interface {
 	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5942,7 +6585,7 @@ type ClientInterface interface {
 	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6251,6 +6894,27 @@ type ClientInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAvatarCopyOptions Get an avatar's copy options
+	//
+	// What a copy of this avatar (`POST /v1/avatars/{avatarId}/duplicate`)
+	// may bring along and where it may go: whether its knowledge may come
+	// (and how many files and facts it has) and its integrations (how
+	// many), and the accounts it may be copied into, each with why not
+	// when it may not and whether the knowledge may come along there
+	// (`knowledgeAllowed`). Owners and admins may copy the account's
+	// avatars into their other accounts; a plain member may too when the
+	// owner lets anyone copy the avatar, and then brings its knowledge
+	// only if the owner shares it. Integrations come along only into the
+	// source's own account; conversation memory never comes along. A signed-in user
+	// may ask about its own avatars and about another account's avatar
+	// its owner lets others copy; an API key about its own account's
+	// avatars, with that account as the only target. Any other avatar is `404 avatar_not_found`. Each target is
+	// judged on the engine the copy would be made on: `engine` as
+	// `duplicate` would take it, absent for the source's.
+	//
+	// Corresponds with GET /v1/avatars/{avatarId}/copy-options (the `GetAvatarCopyOptions` operationId).
+	GetAvatarCopyOptions(ctx context.Context, avatarId AvatarIdPath, params *GetAvatarCopyOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DuplicateAvatarWithBody Duplicate an avatar
 	//
 	// Creates a new avatar from this one, optionally on another engine: the
@@ -6264,7 +6928,8 @@ type ClientInterface interface {
 	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 	//   message and `previews`, the knowledge (`knowledge.facts`, the
 	//   questionnaire answers and every knowledge file with its
-	//   description), the portrait and the voice sample. A voice picked
+	//   description) unless `knowledge` is false or another account's
+	//   owner didn't share it, the portrait and the voice sample. A voice picked
 	//   from Creator Studio's premade voices is kept as that pick: its
 	//   recording is the voice sample. A portrait cropped in Creator
 	//   Studio keeps its crop record, with the uncropped original, so the
@@ -6281,9 +6946,11 @@ type ClientInterface interface {
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, statement,
-	//   integrations or graph conductor; v2 takes and versions are not
-	//   copied either, the copy captures its own.
+	//   `private`, not monetized, with no sponsor pool, statement or graph
+	//   conductor; v2 takes and versions are not copied either, the copy
+	//   captures its own. Conversation memory is never copied: the copy
+	//   starts remembering no one. Integrations come along only when
+	//   asked for (`integrations`) and only within the same account.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -6312,6 +6979,30 @@ type ClientInterface interface {
 	//   source and try again. A refused duplicate leaves no avatar behind.
 	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 	//   cannot duplicate.
+	// - **Copy to and bring along**: `accountId` names the account the
+	//   copy is made in (absent: the account the call acts for). A
+	//   signed-in owner or admin of an account may copy its avatars into
+	//   any other account where it may create avatars; a plain member may
+	//   too when the owner lets anyone copy the avatar (public or unlisted,
+	//   with copies allowed), with its knowledge only when the owner shares
+	//   it: such a copy without the knowledge goes through, while asking for
+	//   unshared knowledge, or copying any other avatar out of the account,
+	//   is `403 copy_out_of_team_not_allowed` (the target's
+	//   `knowledgeAllowed` in copy-options says which). A signed-in
+	//   user may also copy another account's public or unlisted avatar
+	//   whose owner lets others make a copy (any other avatar of another
+	//   account is `404 avatar_not_found`). An API key copies only its own account's
+	//   avatars, into its own account. The target account's own limits
+	//   and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+	//   facts, questionnaire answers and knowledge files; another
+	//   account's avatar brings them only when its owner shares them.
+	//   `integrations` (default `false`) binds the copy to the source's
+	//   integrations, only for your own avatar copied into its own
+	//   account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+	//   says whether they were `copied` (with their `count`) or `failed`.
+	//   A copy never brings another account's integrations.
+	//   `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+	//   and where.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6331,7 +7022,8 @@ type ClientInterface interface {
 	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 	//   message and `previews`, the knowledge (`knowledge.facts`, the
 	//   questionnaire answers and every knowledge file with its
-	//   description), the portrait and the voice sample. A voice picked
+	//   description) unless `knowledge` is false or another account's
+	//   owner didn't share it, the portrait and the voice sample. A voice picked
 	//   from Creator Studio's premade voices is kept as that pick: its
 	//   recording is the voice sample. A portrait cropped in Creator
 	//   Studio keeps its crop record, with the uncropped original, so the
@@ -6348,9 +7040,11 @@ type ClientInterface interface {
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, statement,
-	//   integrations or graph conductor; v2 takes and versions are not
-	//   copied either, the copy captures its own.
+	//   `private`, not monetized, with no sponsor pool, statement or graph
+	//   conductor; v2 takes and versions are not copied either, the copy
+	//   captures its own. Conversation memory is never copied: the copy
+	//   starts remembering no one. Integrations come along only when
+	//   asked for (`integrations`) and only within the same account.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -6379,6 +7073,30 @@ type ClientInterface interface {
 	//   source and try again. A refused duplicate leaves no avatar behind.
 	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 	//   cannot duplicate.
+	// - **Copy to and bring along**: `accountId` names the account the
+	//   copy is made in (absent: the account the call acts for). A
+	//   signed-in owner or admin of an account may copy its avatars into
+	//   any other account where it may create avatars; a plain member may
+	//   too when the owner lets anyone copy the avatar (public or unlisted,
+	//   with copies allowed), with its knowledge only when the owner shares
+	//   it: such a copy without the knowledge goes through, while asking for
+	//   unshared knowledge, or copying any other avatar out of the account,
+	//   is `403 copy_out_of_team_not_allowed` (the target's
+	//   `knowledgeAllowed` in copy-options says which). A signed-in
+	//   user may also copy another account's public or unlisted avatar
+	//   whose owner lets others make a copy (any other avatar of another
+	//   account is `404 avatar_not_found`). An API key copies only its own account's
+	//   avatars, into its own account. The target account's own limits
+	//   and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+	//   facts, questionnaire answers and knowledge files; another
+	//   account's avatar brings them only when its owner shares them.
+	//   `integrations` (default `false`) binds the copy to the source's
+	//   integrations, only for your own avatar copied into its own
+	//   account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+	//   says whether they were `copied` (with their `count`) or `failed`.
+	//   A copy never brings another account's integrations.
+	//   `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+	//   and where.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6446,6 +7164,11 @@ type ClientInterface interface {
 	// account's cap on monetized avatars, and what the avatar earned, in
 	// microcredits (100 = 1 credit). Requires `avatars:read`.
 	//
+	// Earnings are the owner's, as on `GET /v1/account/earnings`: on an
+	// account with more than one member, `earnings` is null for anyone but
+	// its signed-in owner (another member, and any key). Everything else is
+	// every reader's.
+	//
 	// Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
 	GetAvatarMonetization(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -6498,8 +7221,9 @@ type ClientInterface interface {
 	// GetAvatarSponsor Get the sponsor pool
 	//
 	// Returns the avatar's sponsor pool balance and settings. Readable by an
-	// API key with `avatars:read` or a signed-in user of the account. Changing
-	// the pool takes an API key with `billing:write` or a signed-in user.
+	// API key with `avatars:read` or a signed-in user of the account. The sponsor
+	// routes that change it take a signed-in owner or admin of the account, or
+	// an API key with `billing:write` whose creator, if known, is one.
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 	GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -6507,7 +7231,9 @@ type ClientInterface interface {
 	// UpdateAvatarSponsorWithBody Update sponsor settings
 	//
 	// Changes who may spend the avatar's sponsor pool, and when. The request
-	// applies all of its fields or none.
+	// applies all of its fields or none. Takes a signed-in owner or admin of
+	// the account, or an API key with `billing:write` whose creator, if known,
+	// is one (`403 insufficient_scope`).
 	//
 	// - `anonymousAccess: true` lets visitors without an account spend the
 	//   pool. The avatar must be funded first (`409
@@ -6526,7 +7252,9 @@ type ClientInterface interface {
 	// UpdateAvatarSponsor Update sponsor settings
 	//
 	// Changes who may spend the avatar's sponsor pool, and when. The request
-	// applies all of its fields or none.
+	// applies all of its fields or none. Takes a signed-in owner or admin of
+	// the account, or an API key with `billing:write` whose creator, if known,
+	// is one (`403 insufficient_scope`).
 	//
 	// - `anonymousAccess: true` lets visitors without an account spend the
 	//   pool. The avatar must be funded first (`409
@@ -6546,7 +7274,9 @@ type ClientInterface interface {
 	//
 	// Moves credits from the account into the avatar's sponsor pool. Send an
 	// `Idempotency-Key` to retry safely: the same key replays the first result
-	// instead of granting twice.
+	// instead of granting twice. Takes a signed-in owner or admin of the
+	// account, or an API key with `billing:write` whose creator, if known, is
+	// one (`403 insufficient_scope`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6557,7 +7287,9 @@ type ClientInterface interface {
 	//
 	// Moves credits from the account into the avatar's sponsor pool. Send an
 	// `Idempotency-Key` to retry safely: the same key replays the first result
-	// instead of granting twice.
+	// instead of granting twice. Takes a signed-in owner or admin of the
+	// account, or an API key with `billing:write` whose creator, if known, is
+	// one (`403 insufficient_scope`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6566,7 +7298,10 @@ type ClientInterface interface {
 
 	// WithdrawAvatarSponsorWithBody Withdraw sponsor credits
 	//
-	// Returns the sponsor pool's unreserved credits to the account.
+	// Returns the sponsor pool's unreserved credits to the account. Takes a
+	// signed-in owner or admin of the account, or an API key with
+	// `billing:write` whose creator, if known, is one (`403
+	// insufficient_scope`).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -6575,7 +7310,10 @@ type ClientInterface interface {
 
 	// WithdrawAvatarSponsor Withdraw sponsor credits
 	//
-	// Returns the sponsor pool's unreserved credits to the account.
+	// Returns the sponsor pool's unreserved credits to the account. Takes a
+	// signed-in owner or admin of the account, or an API key with
+	// `billing:write` whose creator, if known, is one (`403
+	// insufficient_scope`).
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -6690,6 +7428,43 @@ type ClientInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListGenerations List generations
+	//
+	// The account's generations, newest first: every clip, portrait and
+	// voice call that finished (charged), and every one still running, so
+	// a clip shows here as `rendering` as soon as its `POST` starts. A
+	// call that was flagged, refused or failed charged nothing and is not
+	// listed. Calls made before this list existed show `madeBy: null` and
+	// `inputs: null`.
+	//
+	// Each item says who made it (`madeBy`: a member of the account or an
+	// API key), what it was made from (`inputs`, enough to make it again;
+	// `remake` says what must be given again), what it charged, and its
+	// outputs. A `ready` output has a fresh download `url` on every read
+	// (a link on this API's host or a Storage link, depending on the
+	// server, saving the file as `atmee-clip-xxxxxxxx.mp4`). A clip's
+	// output carries a small JPEG `poster` of its first frame, kept after
+	// the file has gone, so an expired clip still shows a picture.
+	//
+	// | `status` | Meaning |
+	// |---|---|
+	// | `rendering` | The call is running. |
+	// | `ready` | At least one output can be downloaded (`outputs[].url`). |
+	// | `expired` | The outputs were made but can no longer be downloaded: past `expiresAt` (a clip is kept 30 days, a portrait or voice 7), or used by an avatar. |
+	// | `deleted` | The outputs were deleted (`DELETE /v1/generation/{requestId}` or `DELETE /v1/uploads/{uploadId}`). |
+	// | `stalled` | The call stopped without finishing; retry its `POST` with the same `Idempotency-Key` and inputs. |
+	//
+	// Page with `cursor`: pass the `nextCursor` of the previous page, with
+	// the same filters; `nextCursor` is `null` on the last page.
+	//
+	// Any member of the account sees every generation of the account. An
+	// API key scoped to an avatar sees only the generations made by keys
+	// of that avatar. Requires `generation:write`, `avatars:read` or
+	// `avatars:write`. Reading charges nothing.
+	//
+	// Corresponds with GET /v1/generation (the `ListGenerations` operationId).
+	ListGenerations(ctx context.Context, params *ListGenerationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GenerateClipWithBody Generate a clip
 	//
 	// To make a saved avatar speak, send `avatarId` and `transcript` together.
@@ -6724,7 +7499,7 @@ type ClientInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	// - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 	//   `url` to download it that works until `urlExpiresAt`; read the clip
 	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
@@ -6795,7 +7570,7 @@ type ClientInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	// - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 	//   `url` to download it that works until `urlExpiresAt`; read the clip
 	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
@@ -6844,7 +7619,7 @@ type ClientInterface interface {
 	// |---|---|
 	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
 	// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
-	// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `expired` | The clip was made and charged, but its upload has expired (30 days after it was made) or was deleted: `clip.unavailable` is true and there is no `url`. It is not made again. |
 	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 	//
 	// `404 clip_not_found` means this account has no clip under the id: the
@@ -6961,6 +7736,20 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraits(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetGenerationSummary Summarize generations
+	//
+	// Counts the account's generations by kind and its clips by mode
+	// (`picture` or `avatar`; `unknown` for clips made before modes were
+	// recorded), under the same `madeBy`, `status`, `since` and `q` filters as
+	// `GET /v1/generation`, for filter chips such as "Clips · 14". `makers`
+	// lists everyone who made any of the account's generations (whatever
+	// the filters), latest first: members, former members (named "Former
+	// member") and API keys, each with its user id or key id for
+	// `madeBy`. Visibility and scopes are those of `GET /v1/generation`.
+	//
+	// Corresponds with GET /v1/generation/summary (the `GetGenerationSummary` operationId).
+	GetGenerationSummary(ctx context.Context, params *GetGenerationSummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DesignVoiceWithBody Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
@@ -7004,6 +7793,24 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
 	DesignVoice(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteGeneration Delete a generation
+	//
+	// Deletes a generation's outputs: their files go at once, their links
+	// stop working, and `GET /v1/generation` shows the generation as
+	// `deleted` (its inputs and poster stay, so it can be made again).
+	// Any member of the account may delete any of its generations; an API
+	// key scoped to an avatar only those of its avatar. Deleting again
+	// answers `204` too. A generation still rendering cannot be deleted
+	// yet (`409 generation_rendering`). Requires `generation:write` or
+	// `avatars:write`. Nothing is refunded.
+	//
+	// A request id is unique per operation. If the same id was used for two
+	// (say a clip and a voice), pass `operation` (the list's `operation`),
+	// or the delete answers `409 generation_ambiguous` and deletes nothing.
+	//
+	// Corresponds with DELETE /v1/generation/{requestId} (the `DeleteGeneration` operationId).
+	DeleteGeneration(ctx context.Context, requestId GenerationRequestIdPath, params *DeleteGenerationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartEmbedSessionWithBody Start an embed avatar session (API-key authenticated, LiveKit only)
 	//
@@ -7135,7 +7942,8 @@ type ClientInterface interface {
 	//   avatar-scoped key must name its avatar), or the owner's signed-in user
 	//   token where the deployment accepts one (`X-Account-Id` picks among
 	//   several accounts). There are no anonymous speech sessions. Read and
-	//   end a session with either credential of its account.
+	//   end a session with either credential of its account (on a shared
+	//   account, ending someone else's may be refused: see the end route).
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7170,7 +7978,8 @@ type ClientInterface interface {
 	//   avatar-scoped key must name its avatar), or the owner's signed-in user
 	//   token where the deployment accepts one (`X-Account-Id` picks among
 	//   several accounts). There are no anonymous speech sessions. Read and
-	//   end a session with either credential of its account.
+	//   end a session with either credential of its account (on a shared
+	//   account, ending someone else's may be refused: see the end route).
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -7202,6 +8011,10 @@ type ClientInterface interface {
 	//
 	// Idempotent: a repeat keeps the first request, and ending a settled
 	// session answers `alreadyEnded: true`.
+	//
+	// Whoever started a session may end it. On an account shared by several
+	// people, ending someone else's may take the account's owner or an admin
+	// (`403 forbidden`); an API key counts as the user who created it, if known.
 	//
 	// Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 	EndSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7339,7 +8152,9 @@ type ClientInterface interface {
 //     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
-//     monetizing an avatar needs.
+//     monetizing an avatar needs. Absent for a caller who may not see it:
+//     on an account with more than one member, anyone but its signed-in
+//     owner.
 //   - Readable by the same callers as `GET /v1/account/balance`.
 //
 // Corresponds with GET /v1/account (the `GetAccount` operationId).
@@ -7394,7 +8209,9 @@ func (c *Client) GetAccountBalance(ctx context.Context, reqEditors ...RequestEdi
 // /v1/avatars/{avatarId}/monetization`.
 //
 // Readable by an account-wide key with `avatars:read` or a signed-in user
-// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
+// of the account; an avatar-scoped key gets `403 avatar_not_allowed`. On an
+// account with more than one member, only its signed-in owner reads them:
+// another member, and any key, gets `403 insufficient_scope`.
 //
 // Corresponds with GET /v1/account/earnings (the `GetAccountEarnings` operationId).
 func (c *Client) GetAccountEarnings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7467,10 +8284,10 @@ func (c *Client) RedeemAccountCode(ctx context.Context, body RedeemAccountCodeJS
 // revoked ones included (`active: false`). The secrets are never
 // returned: a key is recognised by `keyPrefix` and `lastFour`.
 //
-// Only a signed-in user may manage keys, and only the account's owner
-// or an admin (a member is `403 owner_or_admin_required`): an API key
-// is answered `403 login_required`, so a leaked key can never mint
-// more keys. The owner or an admin may grant any scope, as in Studio.
+// Only a signed-in user may manage keys, and any member of the account
+// may: an API key is answered `403 login_required`, so a leaked key can
+// never mint more keys. Any scope may be granted, but only the
+// account's owner or an admin may give a key `billing:write`.
 //
 // Corresponds with GET /v1/api_keys (the `ListApiKeys` operationId).
 func (c *Client) ListApiKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7498,8 +8315,9 @@ func (c *Client) ListApiKeys(ctx context.Context, reqEditors ...RequestEditorFn)
 // maximum; a value above the plan's is lowered to it. The spend cap
 // defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 //
-// Only a signed-in user may create keys, and only the account's owner
-// or an admin: an API key is answered `403 login_required`.
+// Any signed-in user of the account may create keys; an API key is
+// answered `403 login_required`. Giving a key `billing:write` takes the
+// account's owner or an admin (`403 owner_or_admin_required`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -7529,8 +8347,9 @@ func (c *Client) CreateApiKeyWithBody(ctx context.Context, contentType string, b
 // maximum; a value above the plan's is lowered to it. The spend cap
 // defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 //
-// Only a signed-in user may create keys, and only the account's owner
-// or an admin: an API key is answered `403 login_required`.
+// Any signed-in user of the account may create keys; an API key is
+// answered `403 login_required`. Giving a key `billing:write` takes the
+// account's owner or an admin (`403 owner_or_admin_required`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7586,8 +8405,8 @@ func (c *Client) GetCurrentApiKey(ctx context.Context, reqEditors ...RequestEdit
 // Revokes the key for good: it stops authenticating within about 30
 // seconds (a resolved key is cached that long); sessions it started
 // keep running. Revoking a revoked key answers `200` again with the
-// same key. Only the account's owner or an admin may revoke; an API
-// key is answered `403 login_required`.
+// same key. Any member of the account may revoke; an API key is
+// answered `403 login_required`.
 //
 // Corresponds with DELETE /v1/api_keys/{apiKeyId} (the `RevokeApiKey` operationId).
 func (c *Client) RevokeApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7610,8 +8429,10 @@ func (c *Client) RevokeApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEdi
 // are applied again on every edit, also to limits not sent, so the
 // answer can show lower limits than before: read them from it.
 //
-// Only the account's owner or an admin may edit a key; an API key is
-// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+// Any member of the account may edit a key, but adding `billing:write`
+// takes the account's owner or an admin (`403 owner_or_admin_required`);
+// an API key is answered `403 login_required`. A revoked key is `409
+// api_key_revoked`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7636,8 +8457,10 @@ func (c *Client) UpdateApiKeyWithBody(ctx context.Context, apiKeyId ApiKeyIdPath
 // are applied again on every edit, also to limits not sent, so the
 // answer can show lower limits than before: read them from it.
 //
-// Only the account's owner or an admin may edit a key; an API key is
-// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+// Any member of the account may edit a key, but adding `billing:write`
+// takes the account's owner or an admin (`403 owner_or_admin_required`);
+// an API key is answered `403 login_required`. A revoked key is `409
+// api_key_revoked`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7659,9 +8482,10 @@ func (c *Client) UpdateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, body U
 // Replaces the key's secret and returns the new one in `apiKey`, shown
 // only here. The key keeps its id, name, scopes, avatar and caps; the
 // old secret stops authenticating within about 30 seconds. A revoked
-// key cannot be rotated (`409 api_key_revoked`). Only the account's
-// owner or an admin may rotate; an API key is answered `403
-// login_required`.
+// key cannot be rotated (`409 api_key_revoked`). Any member of the
+// account may rotate, but a key with `billing:write` takes the account's
+// owner or an admin (`403 owner_or_admin_required`); an API key is
+// answered `403 login_required`.
 //
 // Corresponds with POST /v1/api_keys/{apiKeyId}/rotate (the `RotateApiKey` operationId).
 func (c *Client) RotateApiKey(ctx context.Context, apiKeyId ApiKeyIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7720,6 +8544,10 @@ func (c *Client) GetAvatarSession(ctx context.Context, id AvatarSessionIdPath, r
 //   - **Conversations**: the room is closed.
 //   - Only sessions started through the API can be ended here (website
 //     sessions are `404`), and an avatar-scoped key ends only its avatar's.
+//   - **Shared accounts**: whoever started a session may end it. On an
+//     account shared by several people, ending someone else's may take the
+//     account's owner or an admin (`403 forbidden`); an API key counts as
+//     the user who created it, if known.
 //
 // Corresponds with POST /v1/avatar_sessions/{id}/end (the `EndAvatarSession` operationId).
 func (c *Client) EndAvatarSession(ctx context.Context, id AvatarSessionIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -7810,7 +8638,9 @@ func (c *Client) ListAvatars(ctx context.Context, params *ListAvatarsParams, req
 //     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 //     not fit.
 //   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-//     block.
+//     block. A `sponsor` block takes a signed-in owner or admin of the
+//     account, or a key whose creator, if known, is one (`403
+//     insufficient_scope`).
 //
 // | Manifest field | Rule |
 // |---|---|
@@ -7882,7 +8712,9 @@ func (c *Client) CreateAvatarWithBody(ctx context.Context, contentType string, b
 //     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 //     not fit.
 //   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-//     block.
+//     block. A `sponsor` block takes a signed-in owner or admin of the
+//     account, or a key whose creator, if known, is one (`403
+//     insufficient_scope`).
 //
 // | Manifest field | Rule |
 // |---|---|
@@ -7990,7 +8822,7 @@ func (c *Client) GetAvatar(ctx context.Context, avatarId AvatarIdPath, reqEditor
 // | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 // | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 // | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 //
 // Takes any type of body and a specified content type.
 //
@@ -8044,7 +8876,7 @@ func (c *Client) UpdateAvatarWithBody(ctx context.Context, avatarId AvatarIdPath
 // | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 // | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 // | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8481,6 +9313,37 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
+// GetAvatarCopyOptions Get an avatar's copy options
+//
+// What a copy of this avatar (`POST /v1/avatars/{avatarId}/duplicate`)
+// may bring along and where it may go: whether its knowledge may come
+// (and how many files and facts it has) and its integrations (how
+// many), and the accounts it may be copied into, each with why not
+// when it may not and whether the knowledge may come along there
+// (`knowledgeAllowed`). Owners and admins may copy the account's
+// avatars into their other accounts; a plain member may too when the
+// owner lets anyone copy the avatar, and then brings its knowledge
+// only if the owner shares it. Integrations come along only into the
+// source's own account; conversation memory never comes along. A signed-in user
+// may ask about its own avatars and about another account's avatar
+// its owner lets others copy; an API key about its own account's
+// avatars, with that account as the only target. Any other avatar is `404 avatar_not_found`. Each target is
+// judged on the engine the copy would be made on: `engine` as
+// `duplicate` would take it, absent for the source's.
+//
+// Corresponds with GET /v1/avatars/{avatarId}/copy-options (the `GetAvatarCopyOptions` operationId).
+func (c *Client) GetAvatarCopyOptions(ctx context.Context, avatarId AvatarIdPath, params *GetAvatarCopyOptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAvatarCopyOptionsRequest(c.Server, avatarId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DuplicateAvatarWithBody Duplicate an avatar
 //
 // Creates a new avatar from this one, optionally on another engine: the
@@ -8494,7 +9357,8 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 //     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 //     message and `previews`, the knowledge (`knowledge.facts`, the
 //     questionnaire answers and every knowledge file with its
-//     description), the portrait and the voice sample. A voice picked
+//     description) unless `knowledge` is false or another account's
+//     owner didn't share it, the portrait and the voice sample. A voice picked
 //     from Creator Studio's premade voices is kept as that pick: its
 //     recording is the voice sample. A portrait cropped in Creator
 //     Studio keeps its crop record, with the uncropped original, so the
@@ -8511,9 +9375,11 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, statement,
-//     integrations or graph conductor; v2 takes and versions are not
-//     copied either, the copy captures its own.
+//     `private`, not monetized, with no sponsor pool, statement or graph
+//     conductor; v2 takes and versions are not copied either, the copy
+//     captures its own. Conversation memory is never copied: the copy
+//     starts remembering no one. Integrations come along only when
+//     asked for (`integrations`) and only within the same account.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -8542,6 +9408,30 @@ func (c *Client) SetAvatarConductor(ctx context.Context, avatarId AvatarIdPath, 
 //     source and try again. A refused duplicate leaves no avatar behind.
 //   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 //     cannot duplicate.
+//   - **Copy to and bring along**: `accountId` names the account the
+//     copy is made in (absent: the account the call acts for). A
+//     signed-in owner or admin of an account may copy its avatars into
+//     any other account where it may create avatars; a plain member may
+//     too when the owner lets anyone copy the avatar (public or unlisted,
+//     with copies allowed), with its knowledge only when the owner shares
+//     it: such a copy without the knowledge goes through, while asking for
+//     unshared knowledge, or copying any other avatar out of the account,
+//     is `403 copy_out_of_team_not_allowed` (the target's
+//     `knowledgeAllowed` in copy-options says which). A signed-in
+//     user may also copy another account's public or unlisted avatar
+//     whose owner lets others make a copy (any other avatar of another
+//     account is `404 avatar_not_found`). An API key copies only its own account's
+//     avatars, into its own account. The target account's own limits
+//     and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+//     facts, questionnaire answers and knowledge files; another
+//     account's avatar brings them only when its owner shares them.
+//     `integrations` (default `false`) binds the copy to the source's
+//     integrations, only for your own avatar copied into its own
+//     account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+//     says whether they were `copied` (with their `count`) or `failed`.
+//     A copy never brings another account's integrations.
+//     `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+//     and where.
 //
 // Takes any type of body and a specified content type.
 //
@@ -8571,7 +9461,8 @@ func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdP
 //     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 //     message and `previews`, the knowledge (`knowledge.facts`, the
 //     questionnaire answers and every knowledge file with its
-//     description), the portrait and the voice sample. A voice picked
+//     description) unless `knowledge` is false or another account's
+//     owner didn't share it, the portrait and the voice sample. A voice picked
 //     from Creator Studio's premade voices is kept as that pick: its
 //     recording is the voice sample. A portrait cropped in Creator
 //     Studio keeps its crop record, with the uncropped original, so the
@@ -8588,9 +9479,11 @@ func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdP
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, statement,
-//     integrations or graph conductor; v2 takes and versions are not
-//     copied either, the copy captures its own.
+//     `private`, not monetized, with no sponsor pool, statement or graph
+//     conductor; v2 takes and versions are not copied either, the copy
+//     captures its own. Conversation memory is never copied: the copy
+//     starts remembering no one. Integrations come along only when
+//     asked for (`integrations`) and only within the same account.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -8619,6 +9512,30 @@ func (c *Client) DuplicateAvatarWithBody(ctx context.Context, avatarId AvatarIdP
 //     source and try again. A refused duplicate leaves no avatar behind.
 //   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 //     cannot duplicate.
+//   - **Copy to and bring along**: `accountId` names the account the
+//     copy is made in (absent: the account the call acts for). A
+//     signed-in owner or admin of an account may copy its avatars into
+//     any other account where it may create avatars; a plain member may
+//     too when the owner lets anyone copy the avatar (public or unlisted,
+//     with copies allowed), with its knowledge only when the owner shares
+//     it: such a copy without the knowledge goes through, while asking for
+//     unshared knowledge, or copying any other avatar out of the account,
+//     is `403 copy_out_of_team_not_allowed` (the target's
+//     `knowledgeAllowed` in copy-options says which). A signed-in
+//     user may also copy another account's public or unlisted avatar
+//     whose owner lets others make a copy (any other avatar of another
+//     account is `404 avatar_not_found`). An API key copies only its own account's
+//     avatars, into its own account. The target account's own limits
+//     and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+//     facts, questionnaire answers and knowledge files; another
+//     account's avatar brings them only when its owner shares them.
+//     `integrations` (default `false`) binds the copy to the source's
+//     integrations, only for your own avatar copied into its own
+//     account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+//     says whether they were `copied` (with their `count`) or `failed`.
+//     A copy never brings another account's integrations.
+//     `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+//     and where.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8726,6 +9643,11 @@ func (c *Client) ReplaceAvatarKnowledge(ctx context.Context, avatarId AvatarIdPa
 // account's cap on monetized avatars, and what the avatar earned, in
 // microcredits (100 = 1 credit). Requires `avatars:read`.
 //
+// Earnings are the owner's, as on `GET /v1/account/earnings`: on an
+// account with more than one member, `earnings` is null for anyone but
+// its signed-in owner (another member, and any key). Everything else is
+// every reader's.
+//
 // Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
 func (c *Client) GetAvatarMonetization(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAvatarMonetizationRequest(c.Server, avatarId)
@@ -8808,8 +9730,9 @@ func (c *Client) SelectAvatarCandidate(ctx context.Context, avatarId AvatarIdPat
 // GetAvatarSponsor Get the sponsor pool
 //
 // Returns the avatar's sponsor pool balance and settings. Readable by an
-// API key with `avatars:read` or a signed-in user of the account. Changing
-// the pool takes an API key with `billing:write` or a signed-in user.
+// API key with `avatars:read` or a signed-in user of the account. The sponsor
+// routes that change it take a signed-in owner or admin of the account, or
+// an API key with `billing:write` whose creator, if known, is one.
 //
 // Corresponds with GET /v1/avatars/{avatarId}/sponsor (the `GetAvatarSponsor` operationId).
 func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -8827,7 +9750,9 @@ func (c *Client) GetAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, re
 // UpdateAvatarSponsorWithBody Update sponsor settings
 //
 // Changes who may spend the avatar's sponsor pool, and when. The request
-// applies all of its fields or none.
+// applies all of its fields or none. Takes a signed-in owner or admin of
+// the account, or an API key with `billing:write` whose creator, if known,
+// is one (`403 insufficient_scope`).
 //
 //   - `anonymousAccess: true` lets visitors without an account spend the
 //     pool. The avatar must be funded first (`409
@@ -8856,7 +9781,9 @@ func (c *Client) UpdateAvatarSponsorWithBody(ctx context.Context, avatarId Avata
 // UpdateAvatarSponsor Update sponsor settings
 //
 // Changes who may spend the avatar's sponsor pool, and when. The request
-// applies all of its fields or none.
+// applies all of its fields or none. Takes a signed-in owner or admin of
+// the account, or an API key with `billing:write` whose creator, if known,
+// is one (`403 insufficient_scope`).
 //
 //   - `anonymousAccess: true` lets visitors without an account spend the
 //     pool. The avatar must be funded first (`409
@@ -8886,7 +9813,9 @@ func (c *Client) UpdateAvatarSponsor(ctx context.Context, avatarId AvatarIdPath,
 //
 // Moves credits from the account into the avatar's sponsor pool. Send an
 // `Idempotency-Key` to retry safely: the same key replays the first result
-// instead of granting twice.
+// instead of granting twice. Takes a signed-in owner or admin of the
+// account, or an API key with `billing:write` whose creator, if known, is
+// one (`403 insufficient_scope`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -8907,7 +9836,9 @@ func (c *Client) GrantAvatarSponsorWithBody(ctx context.Context, avatarId Avatar
 //
 // Moves credits from the account into the avatar's sponsor pool. Send an
 // `Idempotency-Key` to retry safely: the same key replays the first result
-// instead of granting twice.
+// instead of granting twice. Takes a signed-in owner or admin of the
+// account, or an API key with `billing:write` whose creator, if known, is
+// one (`403 insufficient_scope`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8926,7 +9857,10 @@ func (c *Client) GrantAvatarSponsor(ctx context.Context, avatarId AvatarIdPath, 
 
 // WithdrawAvatarSponsorWithBody Withdraw sponsor credits
 //
-// Returns the sponsor pool's unreserved credits to the account.
+// Returns the sponsor pool's unreserved credits to the account. Takes a
+// signed-in owner or admin of the account, or an API key with
+// `billing:write` whose creator, if known, is one (`403
+// insufficient_scope`).
 //
 // Takes any type of body and a specified content type.
 //
@@ -8945,7 +9879,10 @@ func (c *Client) WithdrawAvatarSponsorWithBody(ctx context.Context, avatarId Ava
 
 // WithdrawAvatarSponsor Withdraw sponsor credits
 //
-// Returns the sponsor pool's unreserved credits to the account.
+// Returns the sponsor pool's unreserved credits to the account. Takes a
+// signed-in owner or admin of the account, or an API key with
+// `billing:write` whose creator, if known, is one (`403
+// insufficient_scope`).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9140,6 +10077,53 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 	return c.Client.Do(req)
 }
 
+// ListGenerations List generations
+//
+// The account's generations, newest first: every clip, portrait and
+// voice call that finished (charged), and every one still running, so
+// a clip shows here as `rendering` as soon as its `POST` starts. A
+// call that was flagged, refused or failed charged nothing and is not
+// listed. Calls made before this list existed show `madeBy: null` and
+// `inputs: null`.
+//
+// Each item says who made it (`madeBy`: a member of the account or an
+// API key), what it was made from (`inputs`, enough to make it again;
+// `remake` says what must be given again), what it charged, and its
+// outputs. A `ready` output has a fresh download `url` on every read
+// (a link on this API's host or a Storage link, depending on the
+// server, saving the file as `atmee-clip-xxxxxxxx.mp4`). A clip's
+// output carries a small JPEG `poster` of its first frame, kept after
+// the file has gone, so an expired clip still shows a picture.
+//
+// | `status` | Meaning |
+// |---|---|
+// | `rendering` | The call is running. |
+// | `ready` | At least one output can be downloaded (`outputs[].url`). |
+// | `expired` | The outputs were made but can no longer be downloaded: past `expiresAt` (a clip is kept 30 days, a portrait or voice 7), or used by an avatar. |
+// | `deleted` | The outputs were deleted (`DELETE /v1/generation/{requestId}` or `DELETE /v1/uploads/{uploadId}`). |
+// | `stalled` | The call stopped without finishing; retry its `POST` with the same `Idempotency-Key` and inputs. |
+//
+// Page with `cursor`: pass the `nextCursor` of the previous page, with
+// the same filters; `nextCursor` is `null` on the last page.
+//
+// Any member of the account sees every generation of the account. An
+// API key scoped to an avatar sees only the generations made by keys
+// of that avatar. Requires `generation:write`, `avatars:read` or
+// `avatars:write`. Reading charges nothing.
+//
+// Corresponds with GET /v1/generation (the `ListGenerations` operationId).
+func (c *Client) ListGenerations(ctx context.Context, params *ListGenerationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListGenerationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GenerateClipWithBody Generate a clip
 //
 // To make a saved avatar speak, send `avatarId` and `transcript` together.
@@ -9174,7 +10158,7 @@ func (c *Client) ReplaceAvatarVoice(ctx context.Context, avatarId AvatarIdPath, 
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//   - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 //     `url` to download it that works until `urlExpiresAt`; read the clip
 //     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
@@ -9255,7 +10239,7 @@ func (c *Client) GenerateClipWithBody(ctx context.Context, params *GenerateClipP
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//   - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 //     `url` to download it that works until `urlExpiresAt`; read the clip
 //     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
@@ -9314,7 +10298,7 @@ func (c *Client) GenerateClip(ctx context.Context, params *GenerateClipParams, b
 // |---|---|
 // | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
 // | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
-// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `expired` | The clip was made and charged, but its upload has expired (30 days after it was made) or was deleted: `clip.unavailable` is true and there is no `url`. It is not made again. |
 // | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 //
 // `404 clip_not_found` means this account has no clip under the id: the
@@ -9481,6 +10465,30 @@ func (c *Client) GeneratePortraits(ctx context.Context, params *GeneratePortrait
 	return c.Client.Do(req)
 }
 
+// GetGenerationSummary Summarize generations
+//
+// Counts the account's generations by kind and its clips by mode
+// (`picture` or `avatar`; `unknown` for clips made before modes were
+// recorded), under the same `madeBy`, `status`, `since` and `q` filters as
+// `GET /v1/generation`, for filter chips such as "Clips · 14". `makers`
+// lists everyone who made any of the account's generations (whatever
+// the filters), latest first: members, former members (named "Former
+// member") and API keys, each with its user id or key id for
+// `madeBy`. Visibility and scopes are those of `GET /v1/generation`.
+//
+// Corresponds with GET /v1/generation/summary (the `GetGenerationSummary` operationId).
+func (c *Client) GetGenerationSummary(ctx context.Context, params *GetGenerationSummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetGenerationSummaryRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // DesignVoiceWithBody Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
@@ -9535,6 +10543,34 @@ func (c *Client) DesignVoiceWithBody(ctx context.Context, params *DesignVoicePar
 // Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
 func (c *Client) DesignVoice(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDesignVoiceRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteGeneration Delete a generation
+//
+// Deletes a generation's outputs: their files go at once, their links
+// stop working, and `GET /v1/generation` shows the generation as
+// `deleted` (its inputs and poster stay, so it can be made again).
+// Any member of the account may delete any of its generations; an API
+// key scoped to an avatar only those of its avatar. Deleting again
+// answers `204` too. A generation still rendering cannot be deleted
+// yet (`409 generation_rendering`). Requires `generation:write` or
+// `avatars:write`. Nothing is refunded.
+//
+// A request id is unique per operation. If the same id was used for two
+// (say a clip and a voice), pass `operation` (the list's `operation`),
+// or the delete answers `409 generation_ambiguous` and deletes nothing.
+//
+// Corresponds with DELETE /v1/generation/{requestId} (the `DeleteGeneration` operationId).
+func (c *Client) DeleteGeneration(ctx context.Context, requestId GenerationRequestIdPath, params *DeleteGenerationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteGenerationRequest(c.Server, requestId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9693,7 +10729,8 @@ func (c *Client) StartEmbedSession(ctx context.Context, body StartEmbedSessionJS
 //     avatar-scoped key must name its avatar), or the owner's signed-in user
 //     token where the deployment accepts one (`X-Account-Id` picks among
 //     several accounts). There are no anonymous speech sessions. Read and
-//     end a session with either credential of its account.
+//     end a session with either credential of its account (on a shared
+//     account, ending someone else's may be refused: see the end route).
 //
 // Takes any type of body and a specified content type.
 //
@@ -9738,7 +10775,8 @@ func (c *Client) CreateSpeechSessionWithBody(ctx context.Context, contentType st
 //     avatar-scoped key must name its avatar), or the owner's signed-in user
 //     token where the deployment accepts one (`X-Account-Id` picks among
 //     several accounts). There are no anonymous speech sessions. Read and
-//     end a session with either credential of its account.
+//     end a session with either credential of its account (on a shared
+//     account, ending someone else's may be refused: see the end route).
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9790,6 +10828,10 @@ func (c *Client) GetSpeechSession(ctx context.Context, sessionId SpeechSessionPa
 //
 // Idempotent: a repeat keeps the first request, and ending a settled
 // session answers `alreadyEnded: true`.
+//
+// Whoever started a session may end it. On an account shared by several
+// people, ending someone else's may take the account's owner or an admin
+// (`403 forbidden`); an API key counts as the user who created it, if known.
 //
 // Corresponds with POST /v1/speech_sessions/{session_id}/end (the `EndSpeechSession` operationId).
 func (c *Client) EndSpeechSession(ctx context.Context, sessionId SpeechSessionPathId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11048,6 +12090,67 @@ func NewSetAvatarConductorRequestWithBody(server string, avatarId AvatarIdPath, 
 	return req, nil
 }
 
+// NewGetAvatarCopyOptionsRequest constructs an http.Request for the GetAvatarCopyOptions method
+func NewGetAvatarCopyOptionsRequest(server string, avatarId AvatarIdPath, params *GetAvatarCopyOptionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "avatarId", avatarId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/avatars/%s/copy-options", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Engine != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "engine", *params.Engine, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDuplicateAvatarRequest calls the generic DuplicateAvatar builder with application/json body
 func NewDuplicateAvatarRequest(server string, avatarId AvatarIdPath, body DuplicateAvatarJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11650,6 +12753,144 @@ func NewReplaceAvatarVoiceRequestWithBody(server string, avatarId AvatarIdPath, 
 	return req, nil
 }
 
+// NewListGenerationsRequest constructs an http.Request for the ListGenerations method
+func NewListGenerationsRequest(server string, params *ListGenerationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Mode != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mode", *params.Mode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.MadeBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "madeBy", *params.MadeBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGenerateClipRequest calls the generic GenerateClip builder with application/json body
 func NewGenerateClipRequest(server string, params *GenerateClipParams, body GenerateClipJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11843,6 +13084,96 @@ func NewGeneratePortraitsRequestWithBody(server string, params *GeneratePortrait
 	return req, nil
 }
 
+// NewGetGenerationSummaryRequest constructs an http.Request for the GetGenerationSummary method
+func NewGetGenerationSummaryRequest(server string, params *GetGenerationSummaryParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/summary")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.MadeBy != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "madeBy", *params.MadeBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", *params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewDesignVoiceRequest calls the generic DesignVoice builder with application/json body
 func NewDesignVoiceRequest(server string, params *DesignVoiceParams, body DesignVoiceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -11891,6 +13222,67 @@ func NewDesignVoiceRequestWithBody(server string, params *DesignVoiceParams, con
 
 		req.Header.Set("Idempotency-Key", headerParam0)
 
+	}
+
+	return req, nil
+}
+
+// NewDeleteGenerationRequest constructs an http.Request for the DeleteGeneration method
+func NewDeleteGenerationRequest(server string, requestId GenerationRequestIdPath, params *DeleteGenerationParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "requestId", requestId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/generation/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Operation != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "operation", *params.Operation, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
 	}
 
 	return req, nil
@@ -12185,7 +13577,9 @@ type ClientWithResponsesInterface interface {
 	//   and need no `v2Access`.
 	//   `captureQuota` counts v2 captures queued or running against the cap.
 	// - **Payouts**: `payouts` says whether the account can be paid out, which
-	//   monetizing an avatar needs.
+	//   monetizing an avatar needs. Absent for a caller who may not see it:
+	//   on an account with more than one member, anyone but its signed-in
+	//   owner.
 	// - Readable by the same callers as `GET /v1/account/balance`.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -12224,7 +13618,9 @@ type ClientWithResponsesInterface interface {
 	// /v1/avatars/{avatarId}/monetization`.
 	//
 	// Readable by an account-wide key with `avatars:read` or a signed-in user
-	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
+	// of the account; an avatar-scoped key gets `403 avatar_not_allowed`. On an
+	// account with more than one member, only its signed-in owner reads them:
+	// another member, and any key, gets `403 insufficient_scope`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12269,10 +13665,10 @@ type ClientWithResponsesInterface interface {
 	// revoked ones included (`active: false`). The secrets are never
 	// returned: a key is recognised by `keyPrefix` and `lastFour`.
 	//
-	// Only a signed-in user may manage keys, and only the account's owner
-	// or an admin (a member is `403 owner_or_admin_required`): an API key
-	// is answered `403 login_required`, so a leaked key can never mint
-	// more keys. The owner or an admin may grant any scope, as in Studio.
+	// Only a signed-in user may manage keys, and any member of the account
+	// may: an API key is answered `403 login_required`, so a leaked key can
+	// never mint more keys. Any scope may be granted, but only the
+	// account's owner or an admin may give a key `billing:write`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12292,8 +13688,9 @@ type ClientWithResponsesInterface interface {
 	// maximum; a value above the plan's is lowered to it. The spend cap
 	// defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 	//
-	// Only a signed-in user may create keys, and only the account's owner
-	// or an admin: an API key is answered `403 login_required`.
+	// Any signed-in user of the account may create keys; an API key is
+	// answered `403 login_required`. Giving a key `billing:write` takes the
+	// account's owner or an admin (`403 owner_or_admin_required`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12313,8 +13710,9 @@ type ClientWithResponsesInterface interface {
 	// maximum; a value above the plan's is lowered to it. The spend cap
 	// defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 	//
-	// Only a signed-in user may create keys, and only the account's owner
-	// or an admin: an API key is answered `403 login_required`.
+	// Any signed-in user of the account may create keys; an API key is
+	// answered `403 login_required`. Giving a key `billing:write` takes the
+	// account's owner or an admin (`403 owner_or_admin_required`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12352,8 +13750,8 @@ type ClientWithResponsesInterface interface {
 	// Revokes the key for good: it stops authenticating within about 30
 	// seconds (a resolved key is cached that long); sessions it started
 	// keep running. Revoking a revoked key answers `200` again with the
-	// same key. Only the account's owner or an admin may revoke; an API
-	// key is answered `403 login_required`.
+	// same key. Any member of the account may revoke; an API key is
+	// answered `403 login_required`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12368,8 +13766,10 @@ type ClientWithResponsesInterface interface {
 	// are applied again on every edit, also to limits not sent, so the
 	// answer can show lower limits than before: read them from it.
 	//
-	// Only the account's owner or an admin may edit a key; an API key is
-	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	// Any member of the account may edit a key, but adding `billing:write`
+	// takes the account's owner or an admin (`403 owner_or_admin_required`);
+	// an API key is answered `403 login_required`. A revoked key is `409
+	// api_key_revoked`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12384,8 +13784,10 @@ type ClientWithResponsesInterface interface {
 	// are applied again on every edit, also to limits not sent, so the
 	// answer can show lower limits than before: read them from it.
 	//
-	// Only the account's owner or an admin may edit a key; an API key is
-	// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+	// Any member of the account may edit a key, but adding `billing:write`
+	// takes the account's owner or an admin (`403 owner_or_admin_required`);
+	// an API key is answered `403 login_required`. A revoked key is `409
+	// api_key_revoked`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12397,9 +13799,10 @@ type ClientWithResponsesInterface interface {
 	// Replaces the key's secret and returns the new one in `apiKey`, shown
 	// only here. The key keeps its id, name, scopes, avatar and caps; the
 	// old secret stops authenticating within about 30 seconds. A revoked
-	// key cannot be rotated (`409 api_key_revoked`). Only the account's
-	// owner or an admin may rotate; an API key is answered `403
-	// login_required`.
+	// key cannot be rotated (`409 api_key_revoked`). Any member of the
+	// account may rotate, but a key with `billing:write` takes the account's
+	// owner or an admin (`403 owner_or_admin_required`); an API key is
+	// answered `403 login_required`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12442,6 +13845,10 @@ type ClientWithResponsesInterface interface {
 	// - **Conversations**: the room is closed.
 	// - Only sessions started through the API can be ended here (website
 	//   sessions are `404`), and an avatar-scoped key ends only its avatar's.
+	// - **Shared accounts**: whoever started a session may end it. On an
+	//   account shared by several people, ending someone else's may take the
+	//   account's owner or an admin (`403 forbidden`); an API key counts as
+	//   the user who created it, if known.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12516,7 +13923,9 @@ type ClientWithResponsesInterface interface {
 	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 	//   not fit.
 	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-	//   block.
+	//   block. A `sponsor` block takes a signed-in owner or admin of the
+	//   account, or a key whose creator, if known, is one (`403
+	//   insufficient_scope`).
 	//
 	// | Manifest field | Rule |
 	// |---|---|
@@ -12578,7 +13987,9 @@ type ClientWithResponsesInterface interface {
 	//   `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 	//   not fit.
 	// - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-	//   block.
+	//   block. A `sponsor` block takes a signed-in owner or admin of the
+	//   account, or a key whose creator, if known, is one (`403
+	//   insufficient_scope`).
 	//
 	// | Manifest field | Rule |
 	// |---|---|
@@ -12660,7 +14071,7 @@ type ClientWithResponsesInterface interface {
 	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12704,7 +14115,7 @@ type ClientWithResponsesInterface interface {
 	// | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 	// | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 	// | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+	// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13021,6 +14432,29 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/conductor (the `SetAvatarConductor` operationId).
 	SetAvatarConductorWithResponse(ctx context.Context, avatarId AvatarIdPath, body SetAvatarConductorJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAvatarConductorResponse, error)
 
+	// GetAvatarCopyOptionsWithResponse Get an avatar's copy options
+	//
+	// What a copy of this avatar (`POST /v1/avatars/{avatarId}/duplicate`)
+	// may bring along and where it may go: whether its knowledge may come
+	// (and how many files and facts it has) and its integrations (how
+	// many), and the accounts it may be copied into, each with why not
+	// when it may not and whether the knowledge may come along there
+	// (`knowledgeAllowed`). Owners and admins may copy the account's
+	// avatars into their other accounts; a plain member may too when the
+	// owner lets anyone copy the avatar, and then brings its knowledge
+	// only if the owner shares it. Integrations come along only into the
+	// source's own account; conversation memory never comes along. A signed-in user
+	// may ask about its own avatars and about another account's avatar
+	// its owner lets others copy; an API key about its own account's
+	// avatars, with that account as the only target. Any other avatar is `404 avatar_not_found`. Each target is
+	// judged on the engine the copy would be made on: `engine` as
+	// `duplicate` would take it, absent for the source's.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/avatars/{avatarId}/copy-options (the `GetAvatarCopyOptions` operationId).
+	GetAvatarCopyOptionsWithResponse(ctx context.Context, avatarId AvatarIdPath, params *GetAvatarCopyOptionsParams, reqEditors ...RequestEditorFn) (*GetAvatarCopyOptionsResponse, error)
+
 	// DuplicateAvatarWithBodyWithResponse Duplicate an avatar
 	//
 	// Creates a new avatar from this one, optionally on another engine: the
@@ -13034,7 +14468,8 @@ type ClientWithResponsesInterface interface {
 	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 	//   message and `previews`, the knowledge (`knowledge.facts`, the
 	//   questionnaire answers and every knowledge file with its
-	//   description), the portrait and the voice sample. A voice picked
+	//   description) unless `knowledge` is false or another account's
+	//   owner didn't share it, the portrait and the voice sample. A voice picked
 	//   from Creator Studio's premade voices is kept as that pick: its
 	//   recording is the voice sample. A portrait cropped in Creator
 	//   Studio keeps its crop record, with the uncropped original, so the
@@ -13051,9 +14486,11 @@ type ClientWithResponsesInterface interface {
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, statement,
-	//   integrations or graph conductor; v2 takes and versions are not
-	//   copied either, the copy captures its own.
+	//   `private`, not monetized, with no sponsor pool, statement or graph
+	//   conductor; v2 takes and versions are not copied either, the copy
+	//   captures its own. Conversation memory is never copied: the copy
+	//   starts remembering no one. Integrations come along only when
+	//   asked for (`integrations`) and only within the same account.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -13082,6 +14519,30 @@ type ClientWithResponsesInterface interface {
 	//   source and try again. A refused duplicate leaves no avatar behind.
 	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 	//   cannot duplicate.
+	// - **Copy to and bring along**: `accountId` names the account the
+	//   copy is made in (absent: the account the call acts for). A
+	//   signed-in owner or admin of an account may copy its avatars into
+	//   any other account where it may create avatars; a plain member may
+	//   too when the owner lets anyone copy the avatar (public or unlisted,
+	//   with copies allowed), with its knowledge only when the owner shares
+	//   it: such a copy without the knowledge goes through, while asking for
+	//   unshared knowledge, or copying any other avatar out of the account,
+	//   is `403 copy_out_of_team_not_allowed` (the target's
+	//   `knowledgeAllowed` in copy-options says which). A signed-in
+	//   user may also copy another account's public or unlisted avatar
+	//   whose owner lets others make a copy (any other avatar of another
+	//   account is `404 avatar_not_found`). An API key copies only its own account's
+	//   avatars, into its own account. The target account's own limits
+	//   and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+	//   facts, questionnaire answers and knowledge files; another
+	//   account's avatar brings them only when its owner shares them.
+	//   `integrations` (default `false`) binds the copy to the source's
+	//   integrations, only for your own avatar copied into its own
+	//   account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+	//   says whether they were `copied` (with their `count`) or `failed`.
+	//   A copy never brings another account's integrations.
+	//   `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+	//   and where.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13101,7 +14562,8 @@ type ClientWithResponsesInterface interface {
 	//   `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 	//   message and `previews`, the knowledge (`knowledge.facts`, the
 	//   questionnaire answers and every knowledge file with its
-	//   description), the portrait and the voice sample. A voice picked
+	//   description) unless `knowledge` is false or another account's
+	//   owner didn't share it, the portrait and the voice sample. A voice picked
 	//   from Creator Studio's premade voices is kept as that pick: its
 	//   recording is the voice sample. A portrait cropped in Creator
 	//   Studio keeps its crop record, with the uncropped original, so the
@@ -13118,9 +14580,11 @@ type ClientWithResponsesInterface interface {
 	//   thumbnail gone from storage, is left out without failing the
 	//   duplicate.
 	// - **Not copied**: anything about publishing or money. The copy is
-	//   `private`, not monetized, with no sponsor pool, statement,
-	//   integrations or graph conductor; v2 takes and versions are not
-	//   copied either, the copy captures its own.
+	//   `private`, not monetized, with no sponsor pool, statement or graph
+	//   conductor; v2 takes and versions are not copied either, the copy
+	//   captures its own. Conversation memory is never copied: the copy
+	//   starts remembering no one. Integrations come along only when
+	//   asked for (`integrations`) and only within the same account.
 	// - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 	//   absent keeps the source's. Any engine may be asked for, an older
 	//   model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -13149,6 +14613,30 @@ type ClientWithResponsesInterface interface {
 	//   source and try again. A refused duplicate leaves no avatar behind.
 	// - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 	//   cannot duplicate.
+	// - **Copy to and bring along**: `accountId` names the account the
+	//   copy is made in (absent: the account the call acts for). A
+	//   signed-in owner or admin of an account may copy its avatars into
+	//   any other account where it may create avatars; a plain member may
+	//   too when the owner lets anyone copy the avatar (public or unlisted,
+	//   with copies allowed), with its knowledge only when the owner shares
+	//   it: such a copy without the knowledge goes through, while asking for
+	//   unshared knowledge, or copying any other avatar out of the account,
+	//   is `403 copy_out_of_team_not_allowed` (the target's
+	//   `knowledgeAllowed` in copy-options says which). A signed-in
+	//   user may also copy another account's public or unlisted avatar
+	//   whose owner lets others make a copy (any other avatar of another
+	//   account is `404 avatar_not_found`). An API key copies only its own account's
+	//   avatars, into its own account. The target account's own limits
+	//   and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+	//   facts, questionnaire answers and knowledge files; another
+	//   account's avatar brings them only when its owner shares them.
+	//   `integrations` (default `false`) binds the copy to the source's
+	//   integrations, only for your own avatar copied into its own
+	//   account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+	//   says whether they were `copied` (with their `count`) or `failed`.
+	//   A copy never brings another account's integrations.
+	//   `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+	//   and where.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13218,6 +14706,11 @@ type ClientWithResponsesInterface interface {
 	// account's cap on monetized avatars, and what the avatar earned, in
 	// microcredits (100 = 1 credit). Requires `avatars:read`.
 	//
+	// Earnings are the owner's, as on `GET /v1/account/earnings`: on an
+	// account with more than one member, `earnings` is null for anyone but
+	// its signed-in owner (another member, and any key). Everything else is
+	// every reader's.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
@@ -13272,8 +14765,9 @@ type ClientWithResponsesInterface interface {
 	// GetAvatarSponsorWithResponse Get the sponsor pool
 	//
 	// Returns the avatar's sponsor pool balance and settings. Readable by an
-	// API key with `avatars:read` or a signed-in user of the account. Changing
-	// the pool takes an API key with `billing:write` or a signed-in user.
+	// API key with `avatars:read` or a signed-in user of the account. The sponsor
+	// routes that change it take a signed-in owner or admin of the account, or
+	// an API key with `billing:write` whose creator, if known, is one.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -13283,7 +14777,9 @@ type ClientWithResponsesInterface interface {
 	// UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 	//
 	// Changes who may spend the avatar's sponsor pool, and when. The request
-	// applies all of its fields or none.
+	// applies all of its fields or none. Takes a signed-in owner or admin of
+	// the account, or an API key with `billing:write` whose creator, if known,
+	// is one (`403 insufficient_scope`).
 	//
 	// - `anonymousAccess: true` lets visitors without an account spend the
 	//   pool. The avatar must be funded first (`409
@@ -13302,7 +14798,9 @@ type ClientWithResponsesInterface interface {
 	// UpdateAvatarSponsorWithResponse Update sponsor settings
 	//
 	// Changes who may spend the avatar's sponsor pool, and when. The request
-	// applies all of its fields or none.
+	// applies all of its fields or none. Takes a signed-in owner or admin of
+	// the account, or an API key with `billing:write` whose creator, if known,
+	// is one (`403 insufficient_scope`).
 	//
 	// - `anonymousAccess: true` lets visitors without an account spend the
 	//   pool. The avatar must be funded first (`409
@@ -13322,7 +14820,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Moves credits from the account into the avatar's sponsor pool. Send an
 	// `Idempotency-Key` to retry safely: the same key replays the first result
-	// instead of granting twice.
+	// instead of granting twice. Takes a signed-in owner or admin of the
+	// account, or an API key with `billing:write` whose creator, if known, is
+	// one (`403 insufficient_scope`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13333,7 +14833,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Moves credits from the account into the avatar's sponsor pool. Send an
 	// `Idempotency-Key` to retry safely: the same key replays the first result
-	// instead of granting twice.
+	// instead of granting twice. Takes a signed-in owner or admin of the
+	// account, or an API key with `billing:write` whose creator, if known, is
+	// one (`403 insufficient_scope`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13342,7 +14844,10 @@ type ClientWithResponsesInterface interface {
 
 	// WithdrawAvatarSponsorWithBodyWithResponse Withdraw sponsor credits
 	//
-	// Returns the sponsor pool's unreserved credits to the account.
+	// Returns the sponsor pool's unreserved credits to the account. Takes a
+	// signed-in owner or admin of the account, or an API key with
+	// `billing:write` whose creator, if known, is one (`403
+	// insufficient_scope`).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13351,7 +14856,10 @@ type ClientWithResponsesInterface interface {
 
 	// WithdrawAvatarSponsorWithResponse Withdraw sponsor credits
 	//
-	// Returns the sponsor pool's unreserved credits to the account.
+	// Returns the sponsor pool's unreserved credits to the account. Takes a
+	// signed-in owner or admin of the account, or an API key with
+	// `billing:write` whose creator, if known, is one (`403
+	// insufficient_scope`).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13472,6 +14980,45 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/avatars/{avatarId}/voice (the `ReplaceAvatarVoice` operationId).
 	ReplaceAvatarVoiceWithResponse(ctx context.Context, avatarId AvatarIdPath, body ReplaceAvatarVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAvatarVoiceResponse, error)
 
+	// ListGenerationsWithResponse List generations
+	//
+	// The account's generations, newest first: every clip, portrait and
+	// voice call that finished (charged), and every one still running, so
+	// a clip shows here as `rendering` as soon as its `POST` starts. A
+	// call that was flagged, refused or failed charged nothing and is not
+	// listed. Calls made before this list existed show `madeBy: null` and
+	// `inputs: null`.
+	//
+	// Each item says who made it (`madeBy`: a member of the account or an
+	// API key), what it was made from (`inputs`, enough to make it again;
+	// `remake` says what must be given again), what it charged, and its
+	// outputs. A `ready` output has a fresh download `url` on every read
+	// (a link on this API's host or a Storage link, depending on the
+	// server, saving the file as `atmee-clip-xxxxxxxx.mp4`). A clip's
+	// output carries a small JPEG `poster` of its first frame, kept after
+	// the file has gone, so an expired clip still shows a picture.
+	//
+	// | `status` | Meaning |
+	// |---|---|
+	// | `rendering` | The call is running. |
+	// | `ready` | At least one output can be downloaded (`outputs[].url`). |
+	// | `expired` | The outputs were made but can no longer be downloaded: past `expiresAt` (a clip is kept 30 days, a portrait or voice 7), or used by an avatar. |
+	// | `deleted` | The outputs were deleted (`DELETE /v1/generation/{requestId}` or `DELETE /v1/uploads/{uploadId}`). |
+	// | `stalled` | The call stopped without finishing; retry its `POST` with the same `Idempotency-Key` and inputs. |
+	//
+	// Page with `cursor`: pass the `nextCursor` of the previous page, with
+	// the same filters; `nextCursor` is `null` on the last page.
+	//
+	// Any member of the account sees every generation of the account. An
+	// API key scoped to an avatar sees only the generations made by keys
+	// of that avatar. Requires `generation:write`, `avatars:read` or
+	// `avatars:write`. Reading charges nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/generation (the `ListGenerations` operationId).
+	ListGenerationsWithResponse(ctx context.Context, params *ListGenerationsParams, reqEditors ...RequestEditorFn) (*ListGenerationsResponse, error)
+
 	// GenerateClipWithBodyWithResponse Generate a clip
 	//
 	// To make a saved avatar speak, send `avatarId` and `transcript` together.
@@ -13506,7 +15053,7 @@ type ClientWithResponsesInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	// - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 	//   `url` to download it that works until `urlExpiresAt`; read the clip
 	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
@@ -13577,7 +15124,7 @@ type ClientWithResponsesInterface interface {
 	//   output size, one of the sizes in `ClipResolution` (listed with
 	//   their prices in `pricing.generation.clipSizes` on
 	//   `GET /v1/account`). 1080p sizes are coming soon.
-	// - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+	// - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 	//   `url` to download it that works until `urlExpiresAt`; read the clip
 	//   (`GET /v1/generation/clips/{requestId}`) for a new one.
 	// - **Billing**: a price per clip set by its size and its length tier:
@@ -13626,7 +15173,7 @@ type ClientWithResponsesInterface interface {
 	// |---|---|
 	// | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
 	// | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
-	// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+	// | `expired` | The clip was made and charged, but its upload has expired (30 days after it was made) or was deleted: `clip.unavailable` is true and there is no `url`. It is not made again. |
 	// | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 	//
 	// `404 clip_not_found` means this account has no clip under the id: the
@@ -13745,6 +15292,22 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/generation/portraits (the `GeneratePortraits` operationId).
 	GeneratePortraitsWithResponse(ctx context.Context, params *GeneratePortraitsParams, body GeneratePortraitsJSONRequestBody, reqEditors ...RequestEditorFn) (*GeneratePortraitsResponse, error)
 
+	// GetGenerationSummaryWithResponse Summarize generations
+	//
+	// Counts the account's generations by kind and its clips by mode
+	// (`picture` or `avatar`; `unknown` for clips made before modes were
+	// recorded), under the same `madeBy`, `status`, `since` and `q` filters as
+	// `GET /v1/generation`, for filter chips such as "Clips · 14". `makers`
+	// lists everyone who made any of the account's generations (whatever
+	// the filters), latest first: members, former members (named "Former
+	// member") and API keys, each with its user id or key id for
+	// `madeBy`. Visibility and scopes are those of `GET /v1/generation`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/generation/summary (the `GetGenerationSummary` operationId).
+	GetGenerationSummaryWithResponse(ctx context.Context, params *GetGenerationSummaryParams, reqEditors ...RequestEditorFn) (*GetGenerationSummaryResponse, error)
+
 	// DesignVoiceWithBodyWithResponse Design a voice
 	//
 	// Designs voice previews from a description of how the voice should sound.
@@ -13788,6 +15351,26 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/generation/voices (the `DesignVoice` operationId).
 	DesignVoiceWithResponse(ctx context.Context, params *DesignVoiceParams, body DesignVoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*DesignVoiceResponse, error)
+
+	// DeleteGenerationWithResponse Delete a generation
+	//
+	// Deletes a generation's outputs: their files go at once, their links
+	// stop working, and `GET /v1/generation` shows the generation as
+	// `deleted` (its inputs and poster stay, so it can be made again).
+	// Any member of the account may delete any of its generations; an API
+	// key scoped to an avatar only those of its avatar. Deleting again
+	// answers `204` too. A generation still rendering cannot be deleted
+	// yet (`409 generation_rendering`). Requires `generation:write` or
+	// `avatars:write`. Nothing is refunded.
+	//
+	// A request id is unique per operation. If the same id was used for two
+	// (say a clip and a voice), pass `operation` (the list's `operation`),
+	// or the delete answers `409 generation_ambiguous` and deletes nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v1/generation/{requestId} (the `DeleteGeneration` operationId).
+	DeleteGenerationWithResponse(ctx context.Context, requestId GenerationRequestIdPath, params *DeleteGenerationParams, reqEditors ...RequestEditorFn) (*DeleteGenerationResponse, error)
 
 	// StartEmbedSessionWithBodyWithResponse Start an embed avatar session (API-key authenticated, LiveKit only)
 	//
@@ -13919,7 +15502,8 @@ type ClientWithResponsesInterface interface {
 	//   avatar-scoped key must name its avatar), or the owner's signed-in user
 	//   token where the deployment accepts one (`X-Account-Id` picks among
 	//   several accounts). There are no anonymous speech sessions. Read and
-	//   end a session with either credential of its account.
+	//   end a session with either credential of its account (on a shared
+	//   account, ending someone else's may be refused: see the end route).
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13954,7 +15538,8 @@ type ClientWithResponsesInterface interface {
 	//   avatar-scoped key must name its avatar), or the owner's signed-in user
 	//   token where the deployment accepts one (`X-Account-Id` picks among
 	//   several accounts). There are no anonymous speech sessions. Read and
-	//   end a session with either credential of its account.
+	//   end a session with either credential of its account (on a shared
+	//   account, ending someone else's may be refused: see the end route).
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13988,6 +15573,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// Idempotent: a repeat keeps the first request, and ending a settled
 	// session answers `alreadyEnded: true`.
+	//
+	// Whoever started a session may end it. On an account shared by several
+	// people, ending someone else's may take the account's owner or an admin
+	// (`403 forbidden`); an API key counts as the user who created it, if known.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -15621,6 +17210,68 @@ func (r SetAvatarConductorResponse) ContentType() string {
 	return ""
 }
 
+type GetAvatarCopyOptionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AvatarCopyOptions
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAvatarCopyOptionsResponse) GetJSON200() *AvatarCopyOptions {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetAvatarCopyOptionsResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetAvatarCopyOptionsResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetAvatarCopyOptionsResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAvatarCopyOptionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAvatarCopyOptionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAvatarCopyOptionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAvatarCopyOptionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // DuplicateAvatarResponse202Headers the declared response headers of an HTTP 202 response for DuplicateAvatar
 type DuplicateAvatarResponse202Headers struct {
 	XRateLimitLimit     *int
@@ -16331,6 +17982,75 @@ func (r ReplaceAvatarVoiceResponse) ContentType() string {
 	return ""
 }
 
+type ListGenerationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GenerationListResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListGenerationsResponse) GetJSON200() *GenerationListResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ListGenerationsResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r ListGenerationsResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ListGenerationsResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r ListGenerationsResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r ListGenerationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListGenerationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListGenerationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListGenerationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GenerateClipResponse409Headers the declared response headers of an HTTP 409 response for GenerateClip
 type GenerateClipResponse409Headers struct {
 	Location   *string
@@ -16736,6 +18456,75 @@ func (r GeneratePortraitsResponse) ContentType() string {
 	return ""
 }
 
+type GetGenerationSummaryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GenerationSummaryResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *AccountAmbiguous
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetGenerationSummaryResponse) GetJSON200() *GenerationSummaryResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r GetGenerationSummaryResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r GetGenerationSummaryResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r GetGenerationSummaryResponse) GetJSON409() *AccountAmbiguous {
+	return r.JSON409
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r GetGenerationSummaryResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r GetGenerationSummaryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetGenerationSummaryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetGenerationSummaryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetGenerationSummaryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // DesignVoiceResponse409Headers the declared response headers of an HTTP 409 response for DesignVoice
 type DesignVoiceResponse409Headers struct {
 	Location   *string
@@ -16835,6 +18624,75 @@ func (r DesignVoiceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DesignVoiceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteGenerationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ApiErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ApiErrorResponse
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *ApiErrorResponse
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *ApiErrorResponse
+	// JSON503 the response for an HTTP 503 `application/json` response
+	JSON503 *GenerationUnavailable
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r DeleteGenerationResponse) GetJSON400() *ApiErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r DeleteGenerationResponse) GetJSON403() *ApiErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteGenerationResponse) GetJSON404() *ApiErrorResponse {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteGenerationResponse) GetJSON409() *ApiErrorResponse {
+	return r.JSON409
+}
+
+// GetJSON503 returns the response for an HTTP 503 `application/json` response
+func (r DeleteGenerationResponse) GetJSON503() *GenerationUnavailable {
+	return r.JSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteGenerationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteGenerationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteGenerationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteGenerationResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17320,7 +19178,9 @@ func (r GetUploadResponse) ContentType() string {
 //     and need no `v2Access`.
 //     `captureQuota` counts v2 captures queued or running against the cap.
 //   - **Payouts**: `payouts` says whether the account can be paid out, which
-//     monetizing an avatar needs.
+//     monetizing an avatar needs. Absent for a caller who may not see it:
+//     on an account with more than one member, anyone but its signed-in
+//     owner.
 //   - Readable by the same callers as `GET /v1/account/balance`.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -17371,7 +19231,9 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 // /v1/avatars/{avatarId}/monetization`.
 //
 // Readable by an account-wide key with `avatars:read` or a signed-in user
-// of the account; an avatar-scoped key gets `403 avatar_not_allowed`.
+// of the account; an avatar-scoped key gets `403 avatar_not_allowed`. On an
+// account with more than one member, only its signed-in owner reads them:
+// another member, and any key, gets `403 insufficient_scope`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17434,10 +19296,10 @@ func (c *ClientWithResponses) RedeemAccountCodeWithResponse(ctx context.Context,
 // revoked ones included (`active: false`). The secrets are never
 // returned: a key is recognised by `keyPrefix` and `lastFour`.
 //
-// Only a signed-in user may manage keys, and only the account's owner
-// or an admin (a member is `403 owner_or_admin_required`): an API key
-// is answered `403 login_required`, so a leaked key can never mint
-// more keys. The owner or an admin may grant any scope, as in Studio.
+// Only a signed-in user may manage keys, and any member of the account
+// may: an API key is answered `403 login_required`, so a leaked key can
+// never mint more keys. Any scope may be granted, but only the
+// account's owner or an admin may give a key `billing:write`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17463,8 +19325,9 @@ func (c *ClientWithResponses) ListApiKeysWithResponse(ctx context.Context, reqEd
 // maximum; a value above the plan's is lowered to it. The spend cap
 // defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 //
-// Only a signed-in user may create keys, and only the account's owner
-// or an admin: an API key is answered `403 login_required`.
+// Any signed-in user of the account may create keys; an API key is
+// answered `403 login_required`. Giving a key `billing:write` takes the
+// account's owner or an admin (`403 owner_or_admin_required`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17490,8 +19353,9 @@ func (c *ClientWithResponses) CreateApiKeyWithBodyWithResponse(ctx context.Conte
 // maximum; a value above the plan's is lowered to it. The spend cap
 // defaults to 500 credits (50,000 microcredits) per `spendCapWindow`.
 //
-// Only a signed-in user may create keys, and only the account's owner
-// or an admin: an API key is answered `403 login_required`.
+// Any signed-in user of the account may create keys; an API key is
+// answered `403 login_required`. Giving a key `billing:write` takes the
+// account's owner or an admin (`403 owner_or_admin_required`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17541,8 +19405,8 @@ func (c *ClientWithResponses) GetCurrentApiKeyWithResponse(ctx context.Context, 
 // Revokes the key for good: it stops authenticating within about 30
 // seconds (a resolved key is cached that long); sessions it started
 // keep running. Revoking a revoked key answers `200` again with the
-// same key. Only the account's owner or an admin may revoke; an API
-// key is answered `403 login_required`.
+// same key. Any member of the account may revoke; an API key is
+// answered `403 login_required`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17563,8 +19427,10 @@ func (c *ClientWithResponses) RevokeApiKeyWithResponse(ctx context.Context, apiK
 // are applied again on every edit, also to limits not sent, so the
 // answer can show lower limits than before: read them from it.
 //
-// Only the account's owner or an admin may edit a key; an API key is
-// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+// Any member of the account may edit a key, but adding `billing:write`
+// takes the account's owner or an admin (`403 owner_or_admin_required`);
+// an API key is answered `403 login_required`. A revoked key is `409
+// api_key_revoked`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17585,8 +19451,10 @@ func (c *ClientWithResponses) UpdateApiKeyWithBodyWithResponse(ctx context.Conte
 // are applied again on every edit, also to limits not sent, so the
 // answer can show lower limits than before: read them from it.
 //
-// Only the account's owner or an admin may edit a key; an API key is
-// answered `403 login_required`. A revoked key is `409 api_key_revoked`.
+// Any member of the account may edit a key, but adding `billing:write`
+// takes the account's owner or an admin (`403 owner_or_admin_required`);
+// an API key is answered `403 login_required`. A revoked key is `409
+// api_key_revoked`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17604,9 +19472,10 @@ func (c *ClientWithResponses) UpdateApiKeyWithResponse(ctx context.Context, apiK
 // Replaces the key's secret and returns the new one in `apiKey`, shown
 // only here. The key keeps its id, name, scopes, avatar and caps; the
 // old secret stops authenticating within about 30 seconds. A revoked
-// key cannot be rotated (`409 api_key_revoked`). Only the account's
-// owner or an admin may rotate; an API key is answered `403
-// login_required`.
+// key cannot be rotated (`409 api_key_revoked`). Any member of the
+// account may rotate, but a key with `billing:write` takes the account's
+// owner or an admin (`403 owner_or_admin_required`); an API key is
+// answered `403 login_required`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17661,6 +19530,10 @@ func (c *ClientWithResponses) GetAvatarSessionWithResponse(ctx context.Context, 
 //   - **Conversations**: the room is closed.
 //   - Only sessions started through the API can be ended here (website
 //     sessions are `404`), and an avatar-scoped key ends only its avatar's.
+//   - **Shared accounts**: whoever started a session may end it. On an
+//     account shared by several people, ending someone else's may take the
+//     account's owner or an admin (`403 forbidden`); an API key counts as
+//     the user who created it, if known.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -17747,7 +19620,9 @@ func (c *ClientWithResponses) ListAvatarsWithResponse(ctx context.Context, param
 //     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 //     not fit.
 //   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-//     block.
+//     block. A `sponsor` block takes a signed-in owner or admin of the
+//     account, or a key whose creator, if known, is one (`403
+//     insufficient_scope`).
 //
 // | Manifest field | Rule |
 // |---|---|
@@ -17815,7 +19690,9 @@ func (c *ClientWithResponses) CreateAvatarWithBodyWithResponse(ctx context.Conte
 //     `X-RateLimit-Remaining`, and `429 rate_limited` when the captures do
 //     not fit.
 //   - **Scopes**: `avatars:write`, plus `billing:write` with a `sponsor`
-//     block.
+//     block. A `sponsor` block takes a signed-in owner or admin of the
+//     account, or a key whose creator, if known, is one (`403
+//     insufficient_scope`).
 //
 // | Manifest field | Rule |
 // |---|---|
@@ -17915,7 +19792,7 @@ func (c *ClientWithResponses) GetAvatarWithResponse(ctx context.Context, avatarI
 // | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 // | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 // | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -17965,7 +19842,7 @@ func (c *ClientWithResponses) UpdateAvatarWithBodyWithResponse(ctx context.Conte
 // | `title`, `subtitle`, `description` | Share card text, at most 100, 200 and 280 characters; `""` clears it. |
 // | `tags`, `socialLinks` | Whole sets; `[]` clears them. At most 5 tags, each with a letter or digit. Each platform's link at most once, an https URL of at most 500 characters. |
 // | `statementType` | Who the avatar depicts; `""` resets it. It cannot change while the avatar is monetized (`409 avatar_is_earning`), and changing it clears `verified`. |
-// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account. Off always works. |
+// | `monetization` | `enabled` turns monetization on or off. On needs a verified avatar or the fictional statement, verified payouts, the 30-day eligibility and room under the plan's cap (each a `409`), and `confirmSponsorWithdrawal: true` when the sponsor pool holds credits, which turning it on withdraws to the account: where the account has more than one member, only its owner or an admin, signed in or through a key with `billing:write` (whose creator, if recorded, still is one), may do that (`403 insufficient_scope`). Off always works. |
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18359,6 +20236,35 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 	return ParseSetAvatarConductorResponse(rsp)
 }
 
+// GetAvatarCopyOptionsWithResponse Get an avatar's copy options
+//
+// What a copy of this avatar (`POST /v1/avatars/{avatarId}/duplicate`)
+// may bring along and where it may go: whether its knowledge may come
+// (and how many files and facts it has) and its integrations (how
+// many), and the accounts it may be copied into, each with why not
+// when it may not and whether the knowledge may come along there
+// (`knowledgeAllowed`). Owners and admins may copy the account's
+// avatars into their other accounts; a plain member may too when the
+// owner lets anyone copy the avatar, and then brings its knowledge
+// only if the owner shares it. Integrations come along only into the
+// source's own account; conversation memory never comes along. A signed-in user
+// may ask about its own avatars and about another account's avatar
+// its owner lets others copy; an API key about its own account's
+// avatars, with that account as the only target. Any other avatar is `404 avatar_not_found`. Each target is
+// judged on the engine the copy would be made on: `engine` as
+// `duplicate` would take it, absent for the source's.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/avatars/{avatarId}/copy-options (the `GetAvatarCopyOptions` operationId).
+func (c *ClientWithResponses) GetAvatarCopyOptionsWithResponse(ctx context.Context, avatarId AvatarIdPath, params *GetAvatarCopyOptionsParams, reqEditors ...RequestEditorFn) (*GetAvatarCopyOptionsResponse, error) {
+	rsp, err := c.GetAvatarCopyOptions(ctx, avatarId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAvatarCopyOptionsResponse(rsp)
+}
+
 // DuplicateAvatarWithBodyWithResponse Duplicate an avatar
 //
 // Creates a new avatar from this one, optionally on another engine: the
@@ -18372,7 +20278,8 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 //     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 //     message and `previews`, the knowledge (`knowledge.facts`, the
 //     questionnaire answers and every knowledge file with its
-//     description), the portrait and the voice sample. A voice picked
+//     description) unless `knowledge` is false or another account's
+//     owner didn't share it, the portrait and the voice sample. A voice picked
 //     from Creator Studio's premade voices is kept as that pick: its
 //     recording is the voice sample. A portrait cropped in Creator
 //     Studio keeps its crop record, with the uncropped original, so the
@@ -18389,9 +20296,11 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, statement,
-//     integrations or graph conductor; v2 takes and versions are not
-//     copied either, the copy captures its own.
+//     `private`, not monetized, with no sponsor pool, statement or graph
+//     conductor; v2 takes and versions are not copied either, the copy
+//     captures its own. Conversation memory is never copied: the copy
+//     starts remembering no one. Integrations come along only when
+//     asked for (`integrations`) and only within the same account.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -18420,6 +20329,30 @@ func (c *ClientWithResponses) SetAvatarConductorWithResponse(ctx context.Context
 //     source and try again. A refused duplicate leaves no avatar behind.
 //   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 //     cannot duplicate.
+//   - **Copy to and bring along**: `accountId` names the account the
+//     copy is made in (absent: the account the call acts for). A
+//     signed-in owner or admin of an account may copy its avatars into
+//     any other account where it may create avatars; a plain member may
+//     too when the owner lets anyone copy the avatar (public or unlisted,
+//     with copies allowed), with its knowledge only when the owner shares
+//     it: such a copy without the knowledge goes through, while asking for
+//     unshared knowledge, or copying any other avatar out of the account,
+//     is `403 copy_out_of_team_not_allowed` (the target's
+//     `knowledgeAllowed` in copy-options says which). A signed-in
+//     user may also copy another account's public or unlisted avatar
+//     whose owner lets others make a copy (any other avatar of another
+//     account is `404 avatar_not_found`). An API key copies only its own account's
+//     avatars, into its own account. The target account's own limits
+//     and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+//     facts, questionnaire answers and knowledge files; another
+//     account's avatar brings them only when its owner shares them.
+//     `integrations` (default `false`) binds the copy to the source's
+//     integrations, only for your own avatar copied into its own
+//     account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+//     says whether they were `copied` (with their `count`) or `failed`.
+//     A copy never brings another account's integrations.
+//     `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+//     and where.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18445,7 +20378,8 @@ func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Co
 //     `conversationalHabits`; `greeting` only onto a v1 copy), the preview
 //     message and `previews`, the knowledge (`knowledge.facts`, the
 //     questionnaire answers and every knowledge file with its
-//     description), the portrait and the voice sample. A voice picked
+//     description) unless `knowledge` is false or another account's
+//     owner didn't share it, the portrait and the voice sample. A voice picked
 //     from Creator Studio's premade voices is kept as that pick: its
 //     recording is the voice sample. A portrait cropped in Creator
 //     Studio keeps its crop record, with the uncropped original, so the
@@ -18462,9 +20396,11 @@ func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Co
 //     thumbnail gone from storage, is left out without failing the
 //     duplicate.
 //   - **Not copied**: anything about publishing or money. The copy is
-//     `private`, not monetized, with no sponsor pool, statement,
-//     integrations or graph conductor; v2 takes and versions are not
-//     copied either, the copy captures its own.
+//     `private`, not monetized, with no sponsor pool, statement or graph
+//     conductor; v2 takes and versions are not copied either, the copy
+//     captures its own. Conversation memory is never copied: the copy
+//     starts remembering no one. Integrations come along only when
+//     asked for (`integrations`) and only within the same account.
 //   - **Engine**: `engine` is `v1` or `v2`<!-- v2pro --> or `v2hd`<!-- /v2pro -->;
 //     absent keeps the source's. Any engine may be asked for, an older
 //     model included (a v2<!-- v2pro --> or V2 HD<!-- /v2pro --> avatar onto v1<!-- v2pro -->, a V2 HD avatar onto v2<!-- /v2pro -->).
@@ -18493,6 +20429,30 @@ func (c *ClientWithResponses) DuplicateAvatarWithBodyWithResponse(ctx context.Co
 //     source and try again. A refused duplicate leaves no avatar behind.
 //   - **Scopes**: `avatars:read` and `avatars:write`. An avatar-scoped key
 //     cannot duplicate.
+//   - **Copy to and bring along**: `accountId` names the account the
+//     copy is made in (absent: the account the call acts for). A
+//     signed-in owner or admin of an account may copy its avatars into
+//     any other account where it may create avatars; a plain member may
+//     too when the owner lets anyone copy the avatar (public or unlisted,
+//     with copies allowed), with its knowledge only when the owner shares
+//     it: such a copy without the knowledge goes through, while asking for
+//     unshared knowledge, or copying any other avatar out of the account,
+//     is `403 copy_out_of_team_not_allowed` (the target's
+//     `knowledgeAllowed` in copy-options says which). A signed-in
+//     user may also copy another account's public or unlisted avatar
+//     whose owner lets others make a copy (any other avatar of another
+//     account is `404 avatar_not_found`). An API key copies only its own account's
+//     avatars, into its own account. The target account's own limits
+//     and engine gates apply, for the engine the copy is made on. `knowledge` (default `true`) brings the
+//     facts, questionnaire answers and knowledge files; another
+//     account's avatar brings them only when its owner shares them.
+//     `integrations` (default `false`) binds the copy to the source's
+//     integrations, only for your own avatar copied into its own
+//     account (`400 integrations_copy_not_allowed`); `integrationsCopy`
+//     says whether they were `copied` (with their `count`) or `failed`.
+//     A copy never brings another account's integrations.
+//     `GET /v1/avatars/{avatarId}/copy-options` says what may come along
+//     and where.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18586,6 +20546,11 @@ func (c *ClientWithResponses) ReplaceAvatarKnowledgeWithResponse(ctx context.Con
 // account's cap on monetized avatars, and what the avatar earned, in
 // microcredits (100 = 1 credit). Requires `avatars:read`.
 //
+// Earnings are the owner's, as on `GET /v1/account/earnings`: on an
+// account with more than one member, `earnings` is null for anyone but
+// its signed-in owner (another member, and any key). Everything else is
+// every reader's.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v1/avatars/{avatarId}/monetization (the `GetAvatarMonetization` operationId).
@@ -18658,8 +20623,9 @@ func (c *ClientWithResponses) SelectAvatarCandidateWithResponse(ctx context.Cont
 // GetAvatarSponsorWithResponse Get the sponsor pool
 //
 // Returns the avatar's sponsor pool balance and settings. Readable by an
-// API key with `avatars:read` or a signed-in user of the account. Changing
-// the pool takes an API key with `billing:write` or a signed-in user.
+// API key with `avatars:read` or a signed-in user of the account. The sponsor
+// routes that change it take a signed-in owner or admin of the account, or
+// an API key with `billing:write` whose creator, if known, is one.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18675,7 +20641,9 @@ func (c *ClientWithResponses) GetAvatarSponsorWithResponse(ctx context.Context, 
 // UpdateAvatarSponsorWithBodyWithResponse Update sponsor settings
 //
 // Changes who may spend the avatar's sponsor pool, and when. The request
-// applies all of its fields or none.
+// applies all of its fields or none. Takes a signed-in owner or admin of
+// the account, or an API key with `billing:write` whose creator, if known,
+// is one (`403 insufficient_scope`).
 //
 //   - `anonymousAccess: true` lets visitors without an account spend the
 //     pool. The avatar must be funded first (`409
@@ -18700,7 +20668,9 @@ func (c *ClientWithResponses) UpdateAvatarSponsorWithBodyWithResponse(ctx contex
 // UpdateAvatarSponsorWithResponse Update sponsor settings
 //
 // Changes who may spend the avatar's sponsor pool, and when. The request
-// applies all of its fields or none.
+// applies all of its fields or none. Takes a signed-in owner or admin of
+// the account, or an API key with `billing:write` whose creator, if known,
+// is one (`403 insufficient_scope`).
 //
 //   - `anonymousAccess: true` lets visitors without an account spend the
 //     pool. The avatar must be funded first (`409
@@ -18726,7 +20696,9 @@ func (c *ClientWithResponses) UpdateAvatarSponsorWithResponse(ctx context.Contex
 //
 // Moves credits from the account into the avatar's sponsor pool. Send an
 // `Idempotency-Key` to retry safely: the same key replays the first result
-// instead of granting twice.
+// instead of granting twice. Takes a signed-in owner or admin of the
+// account, or an API key with `billing:write` whose creator, if known, is
+// one (`403 insufficient_scope`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18743,7 +20715,9 @@ func (c *ClientWithResponses) GrantAvatarSponsorWithBodyWithResponse(ctx context
 //
 // Moves credits from the account into the avatar's sponsor pool. Send an
 // `Idempotency-Key` to retry safely: the same key replays the first result
-// instead of granting twice.
+// instead of granting twice. Takes a signed-in owner or admin of the
+// account, or an API key with `billing:write` whose creator, if known, is
+// one (`403 insufficient_scope`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18758,7 +20732,10 @@ func (c *ClientWithResponses) GrantAvatarSponsorWithResponse(ctx context.Context
 
 // WithdrawAvatarSponsorWithBodyWithResponse Withdraw sponsor credits
 //
-// Returns the sponsor pool's unreserved credits to the account.
+// Returns the sponsor pool's unreserved credits to the account. Takes a
+// signed-in owner or admin of the account, or an API key with
+// `billing:write` whose creator, if known, is one (`403
+// insufficient_scope`).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18773,7 +20750,10 @@ func (c *ClientWithResponses) WithdrawAvatarSponsorWithBodyWithResponse(ctx cont
 
 // WithdrawAvatarSponsorWithResponse Withdraw sponsor credits
 //
-// Returns the sponsor pool's unreserved credits to the account.
+// Returns the sponsor pool's unreserved credits to the account. Takes a
+// signed-in owner or admin of the account, or an API key with
+// `billing:write` whose creator, if known, is one (`403
+// insufficient_scope`).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -18942,6 +20922,51 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 	return ParseReplaceAvatarVoiceResponse(rsp)
 }
 
+// ListGenerationsWithResponse List generations
+//
+// The account's generations, newest first: every clip, portrait and
+// voice call that finished (charged), and every one still running, so
+// a clip shows here as `rendering` as soon as its `POST` starts. A
+// call that was flagged, refused or failed charged nothing and is not
+// listed. Calls made before this list existed show `madeBy: null` and
+// `inputs: null`.
+//
+// Each item says who made it (`madeBy`: a member of the account or an
+// API key), what it was made from (`inputs`, enough to make it again;
+// `remake` says what must be given again), what it charged, and its
+// outputs. A `ready` output has a fresh download `url` on every read
+// (a link on this API's host or a Storage link, depending on the
+// server, saving the file as `atmee-clip-xxxxxxxx.mp4`). A clip's
+// output carries a small JPEG `poster` of its first frame, kept after
+// the file has gone, so an expired clip still shows a picture.
+//
+// | `status` | Meaning |
+// |---|---|
+// | `rendering` | The call is running. |
+// | `ready` | At least one output can be downloaded (`outputs[].url`). |
+// | `expired` | The outputs were made but can no longer be downloaded: past `expiresAt` (a clip is kept 30 days, a portrait or voice 7), or used by an avatar. |
+// | `deleted` | The outputs were deleted (`DELETE /v1/generation/{requestId}` or `DELETE /v1/uploads/{uploadId}`). |
+// | `stalled` | The call stopped without finishing; retry its `POST` with the same `Idempotency-Key` and inputs. |
+//
+// Page with `cursor`: pass the `nextCursor` of the previous page, with
+// the same filters; `nextCursor` is `null` on the last page.
+//
+// Any member of the account sees every generation of the account. An
+// API key scoped to an avatar sees only the generations made by keys
+// of that avatar. Requires `generation:write`, `avatars:read` or
+// `avatars:write`. Reading charges nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/generation (the `ListGenerations` operationId).
+func (c *ClientWithResponses) ListGenerationsWithResponse(ctx context.Context, params *ListGenerationsParams, reqEditors ...RequestEditorFn) (*ListGenerationsResponse, error) {
+	rsp, err := c.ListGenerations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListGenerationsResponse(rsp)
+}
+
 // GenerateClipWithBodyWithResponse Generate a clip
 //
 // To make a saved avatar speak, send `avatarId` and `transcript` together.
@@ -18976,7 +21001,7 @@ func (c *ClientWithResponses) ReplaceAvatarVoiceWithResponse(ctx context.Context
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//   - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 //     `url` to download it that works until `urlExpiresAt`; read the clip
 //     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
@@ -19053,7 +21078,7 @@ func (c *ClientWithResponses) GenerateClipWithBodyWithResponse(ctx context.Conte
 //     output size, one of the sizes in `ClipResolution` (listed with
 //     their prices in `pricing.generation.clipSizes` on
 //     `GET /v1/account`). 1080p sizes are coming soon.
-//   - **Output**: the clip as `upload:<uploadId>` (kept 7 days), with a
+//   - **Output**: the clip as `upload:<uploadId>` (kept 30 days), with a
 //     `url` to download it that works until `urlExpiresAt`; read the clip
 //     (`GET /v1/generation/clips/{requestId}`) for a new one.
 //   - **Billing**: a price per clip set by its size and its length tier:
@@ -19108,7 +21133,7 @@ func (c *ClientWithResponses) GenerateClipWithResponse(ctx context.Context, para
 // |---|---|
 // | `rendering` | The render is running. Ask again after `retryAfterSeconds` (also the `Retry-After` header). |
 // | `ready` | `clip` is the mp4, with a new `url` on every read (it works until `urlExpiresAt`), until the clip expires. |
-// | `expired` | The clip was made and charged, but its upload has expired (7 days after it was made): `clip.unavailable` is true and there is no `url`. It is not made again. |
+// | `expired` | The clip was made and charged, but its upload has expired (30 days after it was made) or was deleted: `clip.unavailable` is true and there is no `url`. It is not made again. |
 // | `stalled` | The call stopped without finishing (the server running it went away). Retry `POST /v1/generation/clips` with the same `Idempotency-Key` and inputs: it resumes the call, charged at most once. |
 //
 // `404 clip_not_found` means this account has no clip under the id: the
@@ -19257,6 +21282,28 @@ func (c *ClientWithResponses) GeneratePortraitsWithResponse(ctx context.Context,
 	return ParseGeneratePortraitsResponse(rsp)
 }
 
+// GetGenerationSummaryWithResponse Summarize generations
+//
+// Counts the account's generations by kind and its clips by mode
+// (`picture` or `avatar`; `unknown` for clips made before modes were
+// recorded), under the same `madeBy`, `status`, `since` and `q` filters as
+// `GET /v1/generation`, for filter chips such as "Clips · 14". `makers`
+// lists everyone who made any of the account's generations (whatever
+// the filters), latest first: members, former members (named "Former
+// member") and API keys, each with its user id or key id for
+// `madeBy`. Visibility and scopes are those of `GET /v1/generation`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/generation/summary (the `GetGenerationSummary` operationId).
+func (c *ClientWithResponses) GetGenerationSummaryWithResponse(ctx context.Context, params *GetGenerationSummaryParams, reqEditors ...RequestEditorFn) (*GetGenerationSummaryResponse, error) {
+	rsp, err := c.GetGenerationSummary(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetGenerationSummaryResponse(rsp)
+}
+
 // DesignVoiceWithBodyWithResponse Design a voice
 //
 // Designs voice previews from a description of how the voice should sound.
@@ -19311,6 +21358,32 @@ func (c *ClientWithResponses) DesignVoiceWithResponse(ctx context.Context, param
 		return nil, err
 	}
 	return ParseDesignVoiceResponse(rsp)
+}
+
+// DeleteGenerationWithResponse Delete a generation
+//
+// Deletes a generation's outputs: their files go at once, their links
+// stop working, and `GET /v1/generation` shows the generation as
+// `deleted` (its inputs and poster stay, so it can be made again).
+// Any member of the account may delete any of its generations; an API
+// key scoped to an avatar only those of its avatar. Deleting again
+// answers `204` too. A generation still rendering cannot be deleted
+// yet (`409 generation_rendering`). Requires `generation:write` or
+// `avatars:write`. Nothing is refunded.
+//
+// A request id is unique per operation. If the same id was used for two
+// (say a clip and a voice), pass `operation` (the list's `operation`),
+// or the delete answers `409 generation_ambiguous` and deletes nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v1/generation/{requestId} (the `DeleteGeneration` operationId).
+func (c *ClientWithResponses) DeleteGenerationWithResponse(ctx context.Context, requestId GenerationRequestIdPath, params *DeleteGenerationParams, reqEditors ...RequestEditorFn) (*DeleteGenerationResponse, error) {
+	rsp, err := c.DeleteGeneration(ctx, requestId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteGenerationResponse(rsp)
 }
 
 // StartEmbedSessionWithBodyWithResponse Start an embed avatar session (API-key authenticated, LiveKit only)
@@ -19454,7 +21527,8 @@ func (c *ClientWithResponses) StartEmbedSessionWithResponse(ctx context.Context,
 //     avatar-scoped key must name its avatar), or the owner's signed-in user
 //     token where the deployment accepts one (`X-Account-Id` picks among
 //     several accounts). There are no anonymous speech sessions. Read and
-//     end a session with either credential of its account.
+//     end a session with either credential of its account (on a shared
+//     account, ending someone else's may be refused: see the end route).
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19495,7 +21569,8 @@ func (c *ClientWithResponses) CreateSpeechSessionWithBodyWithResponse(ctx contex
 //     avatar-scoped key must name its avatar), or the owner's signed-in user
 //     token where the deployment accepts one (`X-Account-Id` picks among
 //     several accounts). There are no anonymous speech sessions. Read and
-//     end a session with either credential of its account.
+//     end a session with either credential of its account (on a shared
+//     account, ending someone else's may be refused: see the end route).
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -19541,6 +21616,10 @@ func (c *ClientWithResponses) GetSpeechSessionWithResponse(ctx context.Context, 
 //
 // Idempotent: a repeat keeps the first request, and ending a settled
 // session answers `alreadyEnded: true`.
+//
+// Whoever started a session may end it. On an account shared by several
+// people, ending someone else's may take the account's owner or an admin
+// (`403 forbidden`); an API key counts as the user who created it, if known.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -21068,6 +23147,62 @@ func ParseSetAvatarConductorResponse(rsp *http.Response) (*SetAvatarConductorRes
 	return response, nil
 }
 
+// ParseGetAvatarCopyOptionsResponse parses an HTTP response from a GetAvatarCopyOptionsWithResponse call
+func ParseGetAvatarCopyOptionsResponse(rsp *http.Response) (*GetAvatarCopyOptionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAvatarCopyOptionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AvatarCopyOptions
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case rsp.StatusCode == 409:
+		break // No content-type
+
+	case rsp.StatusCode == 503:
+		break // No content-type
+
+	}
+
+	return response, nil
+}
+
 // ParseDuplicateAvatarResponse parses an HTTP response from a DuplicateAvatarWithResponse call
 func ParseDuplicateAvatarResponse(rsp *http.Response) (*DuplicateAvatarResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21760,6 +23895,66 @@ func ParseReplaceAvatarVoiceResponse(rsp *http.Response) (*ReplaceAvatarVoiceRes
 	return response, nil
 }
 
+// ParseListGenerationsResponse parses an HTTP response from a ListGenerationsWithResponse call
+func ParseListGenerationsResponse(rsp *http.Response) (*ListGenerationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListGenerationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GenerationListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case rsp.StatusCode == 422:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGenerateClipResponse parses an HTTP response from a GenerateClipWithResponse call
 func ParseGenerateClipResponse(rsp *http.Response) (*GenerateClipResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22180,6 +24375,63 @@ func ParseGeneratePortraitsResponse(rsp *http.Response) (*GeneratePortraitsRespo
 	return response, nil
 }
 
+// ParseGetGenerationSummaryResponse parses an HTTP response from a GetGenerationSummaryWithResponse call
+func ParseGetGenerationSummaryResponse(rsp *http.Response) (*GetGenerationSummaryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetGenerationSummaryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GenerationSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest AccountAmbiguous
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseDesignVoiceResponse parses an HTTP response from a DesignVoiceWithResponse call
 func ParseDesignVoiceResponse(rsp *http.Response) (*DesignVoiceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -22286,6 +24538,66 @@ func ParseDesignVoiceResponse(rsp *http.Response) (*DesignVoiceResponse, error) 
 			headers.RetryAfter = &value
 		}
 		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteGenerationResponse parses an HTTP response from a DeleteGenerationWithResponse call
+func ParseDeleteGenerationResponse(rsp *http.Response) (*DeleteGenerationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteGenerationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ApiErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest GenerationUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
 	}
 
 	return response, nil

@@ -1079,3 +1079,11 @@ func TestUploadImageNamesAnImage(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+func TestWaitText(t *testing.T) {
+	for s, want := range map[int]string{1: "1s", 119: "119s", 120: "2m", 121: "3m", 754: "13m", 3600: "1h", 3601: "1h 1m", 86400: "24h"} {
+		if got := WaitText(s); got != want {
+			t.Errorf("%d: %q, want %q", s, got, want)
+		}
+	}
+}

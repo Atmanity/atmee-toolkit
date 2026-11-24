@@ -168,7 +168,7 @@ last column.
 | The avatar to act on their app: turn a slide, look up an order, keep score | Session API with **app tools** | `build-avatar-app` |
 | A conversation with steps: an interview, a lesson, an onboarding | Session API with an **agenda** | `build-avatar-app` |
 | A face for a voice agent they already run on LiveKit Agents | **Render path**: `livekit-plugins-atmee` (v1 and v2 avatars from 0.2.0), or the API's avatar sessions for any engine (V2 HD only this way); a portrait-only avatar is enough | `https://www.atmee.ai/docs/livekit-plugin/livekit-agents-plugin` |
-| Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI: signed-in is enough (`references/pricing.md`, Sponsoring) |
+| Visitors talking free on the owner's credits | a **sponsor** pool on the avatar | Studio → Billing, or directly through the agent or the CLI, signed in; on a shared account, as its owner or an admin (`references/pricing.md`, Sponsoring) |
 | An avatar live in front of an audience: a stream, a webinar | the broadcast-host shape on the Session API, restreamed (Current limits) | `build-avatar-app` |
 | To earn from their avatar | the verified creator program on atmee.ai | Studio; nothing to build (`references/pricing.md`, Earnings) |
 | A portrait or a voice they don't have | the avatars server's generation tools, paid per call | `create-avatar` |
@@ -207,9 +207,9 @@ path that works:
 Prices and plans change: quote them only from a live source, with the date
 you read them.
 
-- **Plans and credit packs:** Studio → Billing,
-  `https://www.atmee.ai/studio/billing` (sign-in needed). There is no public
-  pricing page; `/pricing` sends visitors to sign in.
+- **Plans and credit packs:** the public pricing page,
+  `https://www.atmee.ai/pricing`, and Studio → Billing,
+  `https://www.atmee.ai/studio/billing` (sign-in needed).
 - **API costs, public:** `https://www.atmee.ai/docs/api/overview#costs`:
   credits per minute for the Session API and for the render path, what a
   credit costs depending on how it is bought, and what the Free plan allows

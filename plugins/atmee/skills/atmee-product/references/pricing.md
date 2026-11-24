@@ -129,7 +129,8 @@ visitors with no Atmee account may talk (with a daily allowance per
 visitor). Credits that no session holds can be withdrawn back.
 
 A signed-in agent or user can sponsor directly, as can Studio → Billing or an
-API key with `billing:write`. To let anyone talk free without an account:
+API key with `billing:write`. On a shared account, a signed-in user must be
+its owner or an admin. To let anyone talk free without an account:
 
 1. Make the avatar public or unlisted (`update_avatar`, or `atmee avatars
    update ID --visibility unlisted`).

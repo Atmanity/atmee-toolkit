@@ -388,8 +388,8 @@ func (a *app) duplicateCmd() *cobra.Command {
 	)
 	c := &cobra.Command{
 		Use:   "duplicate AVATAR_ID",
-		Short: "Make a new avatar from one of yours, on the same engine or a newer one (e.g. a V1 avatar on Atmee V2).",
-		Long: "Make a new avatar from one of yours. The copy gets its name and description, language, persona, preview " +
+		Short: "Make a new avatar from one of yours (or a public one its owner lets others copy), on the same engine or a newer one (e.g. a V1 avatar on Atmee V2).",
+		Long: "Make a new avatar from one of yours, or from a public avatar whose owner lets others copy it. The copy gets its name and description, language, persona, preview " +
 			"message, knowledge (the --facts text, the questionnaire answers and every knowledge file), portrait and voice " +
 			"sample; the files are copied inside storage, nothing is uploaded again. The source is left as it is.\n\n" +
 			"Without --engine the copy keeps the source's engine; --engine v2 makes an Atmee V2 version of a v1 avatar " +

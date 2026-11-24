@@ -34,6 +34,7 @@ func isolate(t *testing.T) string {
 	home := t.TempDir()
 	t.Setenv("ATMEE_HOME", home)
 	t.Setenv("ATMEE_API_KEY", "")
+	t.Setenv("ATMEE_ACCOUNT_ID", "")
 	// Nothing here reaches a real API: a test that needs one sets its own.
 	t.Setenv("ATMEE_BASE_URL", "http://127.0.0.1:1")
 	t.Setenv("ATMEE_NO_BROWSER", "1")

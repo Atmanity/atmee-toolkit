@@ -14,7 +14,7 @@ avatar (sessions, app tools, agendas), see the `build-avatar-app` skill's
 |---|---|---|
 | `ATMEE_BASE_URL` | `https://api.atmanity.us` (local mock `http://localhost:8091`) | every command that calls the API, and `atmee login` |
 | `ATMEE_API_KEY` | the key saved by `atmee login --api-key` | every command that calls the API |
-| `ATMEE_ACCOUNT_ID` | the account chosen with `atmee login --account` | a signed-in user who belongs to several accounts |
+| `ATMEE_ACCOUNT_ID` | the account chosen with `atmee login --account`, else the API's default (your only account, or your Personal one) | a signed-in user who belongs to several accounts; ignored with an API key |
 | `ATMEE_HOME` | `~/.atmee` | where the saved sign-in or key lives |
 | `ATMEE_NO_BROWSER` | unset | print the sign-in and candidate picker addresses instead of opening a browser |
 
@@ -27,25 +27,40 @@ replaces the other. `ATMEE_API_KEY`, when set, wins over both.
 atmee login [--account <id>] [--no-browser] [--json]   # sign in with the browser
 atmee login --api-key [--json]  # or: prompt (hidden) for an Avatar API key and save it
 atmee whoami [--json]          # who the commands act as, the server, and from the API: the user and account, or the key's name, scopes, avatar, spend cap
-atmee logout                   # remove the saved sign-in or key
+atmee logout                   # remove the saved sign-in or key from this machine
 ```
 
-`atmee login` prints `Signed in as <email> -> <base URL>` and the account id. It is the
+`atmee logout` forgets the sign-in on this machine. It stays listed in your account settings
+on atmee.ai (Connected agents, or Connected apps) until you revoke it there.
+
+`atmee login` prints `Signed in as <email> -> <base URL>`, the account id (the API returns
+no account name) and how that account was picked. It is the
 same sign-in as the MCP server's: it finds the Avatar API's
 authorization server (`/.well-known/oauth-protected-resource`), registers the CLI there
 for a `127.0.0.1` redirect, opens the sign-in page with PKCE, and saves the tokens. The
 commands then act as you, on your account (`Authorization: Bearer`); the access token is
-renewed before it expires. A login that belongs to several accounts picks one with
-`--account` or `ATMEE_ACCOUNT_ID` (sent as `X-Account-Id`). A sign-in is for the
+renewed before it expires. A login that belongs to several accounts acts for the Personal
+one, unless you pick another with `--account` or `ATMEE_ACCOUNT_ID` (sent as
+`X-Account-Id`). Signing in again as the same user on the same API keeps the `--account`
+you picked, unless you may no longer act for it; another user starts from the default,
+and so does `atmee login --account ""`. Only when the API can't tell which account is
+Personal does it answer `409 account_ambiguous`: the CLI then lists your accounts. A sign-in is for the
 `ATMEE_BASE_URL` it was made against: set `ATMEE_BASE_URL` first, and sign in again to use
-another API. The sign-in must finish within 5 minutes. `--no-browser` prints the link
+another API. An account the API refuses is not saved: `login` says so and exits 1, signed in
+on the default account. The sign-in must finish within 5 minutes. `--no-browser` prints the link
 instead of opening it; the page redirects to `127.0.0.1` on the machine running `atmee`,
 so open it in a browser on that machine (or forward the port).
 
 `whoami` reads the caller from `GET /v1/api_keys/current`. When the API cannot be reached
 (offline, a wrong `ATMEE_BASE_URL`) or refuses the credentials, it prints the saved ones and
-the server and says why on stderr; it still exits 0. `--json` adds `key` (the API's answer)
-or `key_error`.
+the server and says why on stderr; it still exits 0, unless it is the account that is refused. `--json` adds `key` (the API's answer)
+and `account_source` (`api_key`, `env`, `login` or `default`: how the account was picked),
+or `key_error` (with `accounts`, the choices, when the API lists them).
+`atmee login --json` adds `account_source` and `accounts` the same way, and `account_error`
+when the account you named was not saved.
+
+An API key acts for its own account: with a key, `ATMEE_ACCOUNT_ID` is ignored, and the
+commands say so on stderr (never with `--json`).
 
 Local files go up in the create or replace request itself, so the CLI does not use
 `POST /v1/uploads`, which is for clients that cannot send a file in the same request.
@@ -129,10 +144,10 @@ atmee keys rotate KEY_ID [--out FILE [--env-var NAME]] [--json]
 atmee keys revoke KEY_ID [--yes] [--json]
 ```
 
-Only a signed-in user (`atmee login`) who is the account's owner or an admin manages
+Any signed-in member of the account (`atmee login`) manages its
 keys; with an API key in use (`ATMEE_API_KEY`, or one saved by `atmee login --api-key`)
 the commands stop before sending anything (the API answers a key `403 login_required`,
-so a key cannot mint keys), and a member gets `403 owner_or_admin_required`. A secret in
+so a key cannot mint keys), and a user who is not a member gets `403 owner_or_admin_required`. A secret in
 `--out .env` is not picked up by `atmee` itself: keep `ATMEE_API_KEY` out of the shell
 that manages keys.
 
@@ -142,7 +157,8 @@ that manages keys.
   never prints it; a symlinked file keeps its link. `--out` is checked before anything is
   sent. Without `--out` it is printed once (also with `--json`), with a warning.
 - **Keep keys narrow**: `sessions` (start and end conversations) is always included; add
-  `avatars:read`, `avatars:write`, `billing:write` or `generation:write` only when the app needs them, bind a
+  `avatars:read`, `avatars:write`, `billing:write` or `generation:write` only when the app needs them (giving a key
+  `billing:write`, or rotating one that has it, takes the account's owner or an admin), bind a
   key that serves one avatar with `--avatar`, and set a spend cap. Unset caps take the
   database's defaults (the plan is the ceiling).
 - **Update** changes only the flags you pass and keeps the secret. `--scopes` replaces the
@@ -186,7 +202,7 @@ atmee avatars replace-voice ID FILE             # also completes a draft
 atmee avatars replace-knowledge ID [FILE...]     # no files clears the set (the --facts text keeps its own file)
 atmee avatars thumbnail set ID IMAGE [--json]    # the Explore thumbnail: jpg, png or webp, at most 10 MB
 atmee avatars thumbnail remove ID [--yes] [--json]   # asks first; Explore shows the portrait instead
-atmee avatars monetization ID [--json]           # monetized, 30-day eligibility, the plan's cap, earnings
+atmee avatars monetization ID [--json]           # monetized, 30-day eligibility, the plan's cap, earnings (owner only on a shared account)
 atmee avatars delete ID [--yes]
 ```
 
@@ -285,7 +301,8 @@ avatar is monetized).
 
 **Monetization.** `atmee avatars monetization ID` shows whether it is on, the last 30 days (your own
 conversations left out) against the requirements, the plan's cap on monetized avatars and the earnings in
-credits. `update --monetize on` needs a statement (`fictional`, or a verified self or representative one),
+credits. On an account with more than one member, only its signed-in owner sees the earnings; anyone else, and any
+API key, sees the rest. `update --monetize on` needs a statement (`fictional`, or a verified self or representative one),
 verified payouts (`atmee account`), the 30-day requirements and room under the cap; each refusal (`409
 statement_required`, `identity_not_verified`, `payouts_not_ready`, `monetization_eligibility_not_met`,
 `monetization_limit_reached`, `avatar_is_earning`) is printed with what to do. When the sponsor pool holds
@@ -303,7 +320,8 @@ Earnings     2.50 credits this cycle (1 session) · 1,234.56 credits all time (4
 
 ### Duplicate
 
-`atmee avatars duplicate ID` makes a new avatar from one of yours, without giving the
+`atmee avatars duplicate ID` makes a new avatar from one of yours (or from a public
+avatar whose owner lets others copy it), without giving the
 portrait, voice, persona or knowledge again; the source is left as it is. Without
 `--engine` the copy keeps the source's engine. `--engine v2` is how a v1 avatar moves
 to Atmee V2: an avatar's engine can't change in place. `--engine` may also name an older
@@ -418,7 +436,8 @@ atmee earnings [--json]                         # the creator wallet: earned, pa
 ```
 
 `earnings` is what monetized avatars earned, not the credits sessions spend (`atmee
-balance`); it works signed in or with an account-wide key with `avatars:read`.
+balance`); it works signed in or with an account-wide key with `avatars:read`
+(on an account shared by several people, for its signed-in owner only).
 
 ## Generate
 
@@ -433,13 +452,18 @@ atmee generate clip --image PATH|URL|upload:ID --prompt TEXT [--audio PATH|URL|u
 atmee generate clip --avatar ID --transcript TEXT [--prompt TEXT] [--resolution WxH] [--seed N] \
   [--idempotency-key K] [--json]
 atmee generate clip-status REQUEST_ID [--wait] [--json]
+atmee generate list [--kind clip|portrait|voice] [--mode picture,avatar,unknown] [--made-by me,apiKeys,former,ID] \
+  [--status rendering,ready,expiringSoon,expired,deleted] [--since DATE|72h|7d] [-q TEXT] \
+  [--limit N] [--cursor C | --all] [--json]
+atmee generate summary [--made-by ...] [--status ...] [--since ...] [-q TEXT] [--json]
+atmee generate delete REQUEST_ID [--operation OP] [--yes]
 ```
 
 Each answers with `upload:<uploadId>` references and links to look or listen that
 work until they expire (`urlExpiresAt` in `--json`).
 `avatars create --image/--voice` and `avatars replace-appearance/replace-voice` take a
 reference as they are, as they do an https URL (with `create`, not mixed with local
-files). A reference works once and lasts 7 days.
+files). A reference works once and lasts 7 days (a clip, 30).
 
 - **`portraits`** is for invented characters only. For a real person, with their
   permission, use `enhance` on their own photo.
@@ -493,7 +517,7 @@ files). A reference works once and lasts 7 days.
   plan, Free included, and need no Atmee V2 access; `403
   video_generation_not_in_plan` means video generation was turned off for the account (contact
   us through Creator Studio's help center). Credits pay for it. It comes back as an `upload:<uploadId>` with a download
-  link that expires sooner; the clip itself lasts 7 days (`clip-status` signs a new link).
+  link that expires sooner; the clip itself lasts 30 days (`clip-status` signs a new link).
 - **`clip --avatar ID --transcript TEXT`** makes an avatar clip: a saved V1 or V2 avatar
   speaks. Its saved picture is the first frame, its Fish Audio voice speaks the transcript
   (1 to 1000 characters, moderated with the prompt) and the lips follow, so the avatar looks
@@ -513,13 +537,31 @@ files). A reference works once and lasts 7 days.
   charges nothing and never starts a render, so it works from another shell or machine with
   the same account. It prints `rendering` (`--wait` keeps reading, up to 10 minutes), the clip
   and a newly signed download link when `ready`, the upload when `expired` (made, but its
-  7 days are over; it is not made again), or, for `stalled` (the call stopped without
+  30 days are over or it was deleted; it is not made again), or, for `stalled` (the call stopped without
   finishing), how to resume it: run `clip` again with the same inputs and
   `--idempotency-key`, charged at most once, and it exits non-zero. A request id with no
   clip is `404 clip_not_found`: the call ended without a clip and charged nothing. It needs
   `generation:write`, `avatars:read` or `avatars:write`.
+- **`list`** is the account's generation history (`GET /v1/generation`), newest first: every
+  clip, portrait and voice call that finished (charged) or is still running, with its request
+  id, who made it, what it charged, the text it was made from and its outputs, each ready one
+  with a fresh download link. A flagged, refused or failed call charged nothing and is not
+  listed. A clip is kept 30 days, a portrait or voice 7; an output an avatar was made from
+  reads `used`. Filters combine; `--mode` implies clips. A page prints the `--cursor` for the
+  next one (pass the same filters); `--all` fetches every page. Any member sees all of the
+  account's generations; an API key scoped to an avatar only its avatar's.
+- **`summary`** counts the history by kind and clips by mode under the same `--made-by`,
+  `--status`, `--since` and `-q` filters (`GET /v1/generation/summary`), and lists everyone who
+  made any generation, with the user id or key id `--made-by` takes.
+- **`delete`** deletes a generation's outputs (`DELETE /v1/generation/{requestId}`, asks first;
+  `--yes` skips the question): the files go at once and their links stop working, nothing is
+  refunded, and the list shows it as `deleted` with its inputs kept. A generation still
+  rendering is `409 generation_rendering`; a request id used for more than one operation needs
+  `--operation` (`clip`, `portrait_generation`, `portrait_enhancement`, `voice_design`), or it
+  is `409 generation_ambiguous`. `list` and `summary` need `generation:write`, `avatars:read`
+  or `avatars:write`; `delete` needs `generation:write` or `avatars:write`.
 
-Like the other generation commands, none of these asks first.
+Apart from `delete`, none of these asks first.
 
 The price is in `atmee account`, charged only when something comes back. A call still
 running is waited for with the same key, up to 10 minutes, and so is a call the account's

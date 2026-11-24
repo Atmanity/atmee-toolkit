@@ -1,6 +1,6 @@
 ---
 name: atmee-setup
-description: Connect and check what atmee avatars need - the atmee server, sign-in, one account, credits, updates and tool prompts. Use when setting up or if something is off. NOT for building an avatar.
+description: Connect and check what atmee avatars need - the atmee server, sign-in, account, credits, updates and tool prompts. Use when setting up or if something is off. NOT for building an avatar.
 license: Proprietary
 metadata:
   owner: Atmanity
@@ -128,9 +128,13 @@ Do all of these before saying anything:
 
 - **Sign-in.** Call `get_api_key`. A tool that fails asking for sign-in, or
   is missing, means the server is not signed in.
-- **Account.** If `get_api_key` fails with `account_ambiguous`, the sign-in
-  belongs to several accounts. Use the `accountId` in
-  `atmee-avatars/settings.json` if it is one of the error's choices; otherwise
+- **Account.** The `accountId` in `get_api_key`'s answer is the account in
+  use. A sign-in that belongs to several accounts acts for the Personal one
+  unless a call names another: when `atmee-avatars/settings.json` has an
+  `accountId`, pass it on this call and every later one. If that fails with
+  `account_not_allowed`, the saved account isn't this sign-in's: ask in step
+  4. Only when no account is named and the server can't tell which is
+  Personal does the call fail with `account_ambiguous`, listing the choices:
   ask in step 4.
 - **Credits.** `spendableMicrocredits` from `get_balance`, divided by 100.
   It is the only balance to report: one kind of credit pays for every model.
@@ -150,10 +154,14 @@ Do all of these before saying anything:
 Ask what only the creator can decide, in one call of your question tool,
 before telling them anything else:
 
-- Several accounts: "Which account should these avatars belong to?" with one
-  option per account in the `account_ambiguous` error. Save the pick as
-  `"accountId"` in `atmee-avatars/settings.json`, then run the sign-in check
-  again with it.
+- `account_ambiguous`: "Which account should these avatars belong to?" with
+  one option per account in the error. Save the pick as `"accountId"` in
+  `atmee-avatars/settings.json`, then run the sign-in check again with it. Do
+  the same when the creator gives another account's id.
+- `account_not_allowed`: "The account saved for this project isn't one your
+  sign-in can use. Go on with your default account?" On yes, remove
+  `"accountId"` from `atmee-avatars/settings.json` and run the sign-in check
+  again; on no, stop: the creator signs in as the user of that account.
 - `permissions` is `fix`, unless `atmee-avatars/settings.json` has
   `"keepToolPrompts": true`: "Let atmee's tools run without Claude Code
   asking each time? The atmee skills still ask you before anything that
@@ -174,8 +182,10 @@ Without a question tool, ask it in one chat line with the options.
 
 ## 5. Say the result
 
-**Everything fine:** one line, for example "All set: signed in to atmee,
-<balance> credits." Then go on (back to the skill that ran you, if one did).
+**Everything fine:** one line that names the account, for example "All set:
+signed in to atmee on account <its name, or its id when the server gives no
+name>, <balance> credits." Then go on (back to the skill that ran you, if one
+did).
 
 **Something to do:** one line per problem, only the problems, each with its one
 step. No table, no list of what passed.
@@ -184,7 +194,7 @@ step. No table, no list of what passed.
 |---|---|
 | Not signed in | If you have an `authenticate` tool for the server, call it and give the link. Otherwise open the sign-in page for them (say so first): run the login wrapped in `script` as step 2 says (`claude mcp login <server>`, `codex mcp login <server>` or `cursor-agent mcp login <server>`), and give the link it prints if no browser opens; in Claude Code the creator can also run `/mcp`, pick the server and choose Authenticate; Cursor, also Settings > MCP; Antigravity, sign in from its MCP settings. Sign-in goes through the "Connect an app to Atmee" page on atmee.ai. |
 | Tools still missing after adding | The agent hasn't reloaded or can't reach the server: `/mcp` in Claude Code, `codex mcp list` in Codex, `cursor-agent mcp list` in Cursor, or Antigravity's MCP settings show its status. |
-| No credits left | Give the billing page on atmee.ai, where credits are topped up. |
+| No credits left | Give the billing page on atmee.ai, where credits are topped up. On a shared account only its owner or an admin can buy: anyone else asks them to. |
 | `plugin` is `fix` | A newer version is out: give the update steps it prints. You can't update the plugin yourself. |
 
 Run again whenever the creator asks; every check is safe to repeat.

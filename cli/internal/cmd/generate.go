@@ -46,8 +46,9 @@ func checkPortraitEngine(engine string) error {
 const idempotencyHelp = "Reuse the key a failed call printed to retry it: the same key never charges twice and returns the first result"
 
 func (a *app) generateCmd() *cobra.Command {
-	return group("generate", "Make portraits and voices for an avatar, or a video clip (portraits, enhance, voice, clip, clip-status)",
-		a.generatePortraitsCmd(), a.generateEnhanceCmd(), a.generateVoiceCmd(), a.generateClipCmd(), a.generateClipStatusCmd())
+	return group("generate", "Make portraits and voices for an avatar, or a video clip, and see what was made (portraits, enhance, voice, clip, clip-status, list, summary, delete)",
+		a.generatePortraitsCmd(), a.generateEnhanceCmd(), a.generateVoiceCmd(), a.generateClipCmd(), a.generateClipStatusCmd(),
+		a.generateListCmd(), a.generateSummaryCmd(), a.generateDeleteCmd())
 }
 
 func (a *app) generatePortraitsCmd() *cobra.Command {
@@ -250,7 +251,7 @@ func (a *app) generateClipCmd() *cobra.Command {
 			"with its list.\n\n" +
 			"If the image shows a real person other than you, have their permission first. The price is the same with or without audio, " +
 			"charged only when the clip comes back; a flagged, failed or refused call costs nothing. " +
-			"The result lasts 7 days (its download link sooner; run clip-status for a fresh one). Clips are on every plan, Free included, and need no Atmee V2 access: " +
+			"The result lasts 30 days (its download link sooner; run clip-status for a fresh one). Clips are on every plan, Free included, and need no Atmee V2 access: " +
 			"they spend credits at each size's price per clip (atmee account lists them). " +
 			"A signed-in user, or an API key with generation:write (an --image clip needs no avatar scope; --image and --audio files upload " +
 			"with it too), plus avatars:read for an --avatar clip.",
@@ -431,8 +432,8 @@ func (a *app) generateClipStatusCmd() *cobra.Command {
 			"or the --idempotency-key you gave it. It charges nothing and never starts a render, so it is safe from another " +
 			"shell or machine with the same account.\n\n" +
 			"rendering: still running; --wait keeps reading until it is done (up to 10 minutes). " +
-			"ready: the clip, with a download link signed again on each read, until its upload expires 7 days after it was made. " +
-			"expired: the clip was made but its upload has ended; it is not made again. " +
+			"ready: the clip, with a download link signed again on each read, until its upload expires 30 days after it was made. " +
+			"expired: the clip was made but its upload has ended or was deleted; it is not made again. " +
 			"stalled: the call stopped without finishing; run `atmee generate clip` again with the same inputs and " +
 			"--idempotency-key REQUEST_ID to resume it, charged at most once (exits non-zero). " +
 			"A request id with no clip (never used, or a call that ended without one and charged nothing) is clip_not_found.",

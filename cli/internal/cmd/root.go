@@ -46,6 +46,24 @@ type app struct {
 	variant  Variant
 	// rename puts the variant's names into text meant for people.
 	rename func(string) string
+	// jsonMode is --json on the running command: stdout is for a program.
+	jsonMode bool
+	// warnedAccount is set once warnAccountIgnored has spoken.
+	warnedAccount bool
+	// The hooks of a build's Setup, nil where it has none.
+	//
+	// resolveAccount turns accountFlag, the account one call names, into an
+	// id; accountFacts are the lines printed about an account (and the fields
+	// --json adds), nil where the API says no more than its id;
+	// errorHint is what to do about an API error, "" for nothing to add.
+	accountFlag    string
+	pickAccount    string // how to pick another account, for accountHint
+	flagHint       string // what accountFlag takes, for accountHint
+	resolveAccount func(name string) (string, error)
+	accountFacts   func(x *api.Account) (lines []string, facts map[string]json.RawMessage)
+	errorHint      func(error) string
+	planInstead    func(x *api.Account) string
+	savedBy        string // what saved the account, for printAccountSource
 	// mockScenario is the hidden --mock-scenario of the avatar commands.
 	mockScenario string
 }
@@ -62,6 +80,11 @@ func (a *app) api() (*api.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	return a.client(cred)
+}
+
+// client is the Avatar API as cred.
+func (a *app) client(cred api.Credential) (*api.Client, error) {
 	c, err := api.New(a.baseURL(), cred, 60*time.Second)
 	if err != nil {
 		return nil, err
@@ -160,6 +183,11 @@ func (a *app) commands() *cobra.Command {
 		Version:       Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			if f := cmd.Flags().Lookup("json"); f != nil {
+				a.jsonMode = f.Value.String() == "true"
+			}
+		},
 	}
 	root.SetOut(a.out)
 	root.SetErr(a.err)
@@ -168,6 +196,9 @@ func (a *app) commands() *cobra.Command {
 	root.AddCommand(a.earningsCmd(), a.generateCmd())
 	for _, extra := range a.variant.Extra {
 		root.AddCommand(extra(a))
+	}
+	if a.variant.Setup != nil {
+		a.variant.Setup(a, root)
 	}
 	return root
 }
@@ -210,7 +241,15 @@ func ExecuteAs(v Variant, args []string, out, errOut io.Writer, in io.Reader) in
 			msg += "; " + h
 		}
 	}
+	h := a.accountHint(err)
+	if h == "" && a.errorHint != nil {
+		h = a.errorHint(err)
+	}
+	if h != "" {
+		msg = strings.TrimSuffix(msg, ".") + "; " + h
+	}
 	fmt.Fprintf(errOut, "Error: %s\n", a.rename(msg))
+	a.noteAccounts(err)
 	var u usageError
 	if errors.As(err, &u) || strings.HasPrefix(err.Error(), "unknown ") || strings.Contains(err.Error(), "required flag") ||
 		strings.Contains(err.Error(), "accepts ") || strings.Contains(err.Error(), "invalid argument") {

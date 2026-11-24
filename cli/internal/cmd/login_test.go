@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -32,12 +34,22 @@ type fakeAuth struct {
 	lastAccount string
 	// wrongState answers the authorization page with another state.
 	wrongState bool
+	// user is the sub and email of the next sign-in ("u-1" when empty).
+	user string
+	// denied is an account the user may no longer act for (403).
+	denied string
 	// noRefresh issues access tokens without a refresh token.
 	noRefresh bool
 }
 
-func jwtWithEmail(email string, n int) string {
-	p, _ := json.Marshal(map[string]any{"email": email, "n": n})
+func jwtFor(user string, n int) string {
+	email := "dev@example.com"
+	if user == "" {
+		user = "u-1"
+	} else {
+		email = user + "@example.com"
+	}
+	p, _ := json.Marshal(map[string]any{"email": email, "sub": user, "n": n})
 	return "e30." + base64.RawURLEncoding.EncodeToString(p) + ".sig"
 }
 
@@ -119,7 +131,7 @@ func newFakeAuth(t *testing.T) *fakeAuth {
 			js(w, 400, map[string]any{"error": "unsupported_grant_type"})
 			return
 		}
-		f.access = jwtWithEmail("dev@example.com", f.refreshes)
+		f.access = jwtFor(f.user, f.refreshes)
 		f.refresh = fmt.Sprintf("r%d", f.refreshes+1)
 		answer := map[string]any{"access_token": f.access, "refresh_token": f.refresh, "expires_in": 3600, "token_type": "bearer"}
 		if f.noRefresh {
@@ -136,9 +148,14 @@ func newFakeAuth(t *testing.T) *fakeAuth {
 		}
 		f.lastAccount = r.Header.Get("X-Account-Id")
 		acct := f.lastAccount
+		if acct != "" && acct == f.denied {
+			js(w, 403, map[string]any{"error": "account_not_allowed", "message": "not that account"})
+			return
+		}
 		if acct == "" {
 			if f.several {
-				js(w, 409, map[string]any{"error": "account_ambiguous", "message": "send X-Account-Id"})
+				js(w, 409, map[string]any{"error": "account_ambiguous", "message": "send X-Account-Id",
+					"accounts": []map[string]any{{"id": "acct-1", "username": "ada"}, {"id": "acct-2"}}})
 				return
 			}
 			acct = "acct-1"
@@ -295,5 +312,296 @@ func TestSignInWithoutRefreshTokenLastsUntilItExpires(t *testing.T) {
 	_ = st.SaveSession(*s)
 	if _, errOut, code := run(t, "", "balance"); code != 1 || !strings.Contains(errOut, "run `atmee login` again") {
 		t.Fatalf("expired without a refresh token: %d %q", code, errOut)
+	}
+}
+
+func savedAccount(t *testing.T, home string) string {
+	t.Helper()
+	s := (creds.Store{Dir: home}).Session()
+	if s == nil {
+		t.Fatal("no saved sign-in")
+	}
+	return s.AccountID
+}
+
+func TestSigningInAgainKeepsTheAccountOfTheSameUser(t *testing.T) {
+	home := isolate(t)
+	f := newFakeAuth(t)
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	if _, errOut, code := run(t, "", "login", "--account", "acct-2"); code != 0 {
+		t.Fatal(errOut)
+	}
+	out, errOut, code := run(t, "", "login")
+	if code != 0 || savedAccount(t, home) != "acct-2" || f.lastAccount != "acct-2" || !strings.Contains(out, "Account      acct-2\n") {
+		t.Fatalf("the same user keeps the account: %d %q %q", code, out, errOut)
+	}
+	if !strings.Contains(errOut, "Kept the account picked before (acct-2)") || !strings.Contains(out, "Picked by    `atmee login --account`") {
+		t.Fatalf("and is told: %q %q", out, errOut)
+	}
+	if run(t, "", "login", "--account", "acct-3"); savedAccount(t, home) != "acct-3" {
+		t.Fatalf("--account overrides: %q", savedAccount(t, home))
+	}
+	out, errOut, code = run(t, "", "login", "--account", "")
+	if code != 0 || savedAccount(t, home) != "" || f.lastAccount != "" || !strings.Contains(out, "Picked by    default") {
+		t.Fatalf("--account \"\" goes back to the default: %d %q %q", code, out, errOut)
+	}
+	if strings.Contains(errOut, "Kept") {
+		t.Fatalf("nothing was kept: %q", errOut)
+	}
+}
+
+func TestSigningInAsAnotherUserDropsTheAccount(t *testing.T) {
+	home := isolate(t)
+	f := newFakeAuth(t)
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	run(t, "", "login", "--account", "acct-2")
+	f.user = "u-2"
+	out, errOut, code := run(t, "", "login")
+	if code != 0 || savedAccount(t, home) != "" || f.lastAccount != "" || strings.Contains(errOut, "Kept") {
+		t.Fatalf("another user's account is dropped: %d %q %q", code, out, errOut)
+	}
+	// The same user on another API is a different sign-in too.
+	run(t, "", "login", "--account", "acct-2")
+	g := newFakeAuth(t)
+	g.user = "u-2"
+	t.Setenv("ATMEE_BASE_URL", g.srv.URL)
+	if _, errOut, code = run(t, "", "login"); code != 0 || savedAccount(t, home) != "" {
+		t.Fatalf("another API's account is dropped: %d %q", code, errOut)
+	}
+	// Tokens that name no user can't be told apart.
+	if a := keptAccount(&creds.Session{BaseURL: "https://x", AccessToken: "opaque", AccountID: "acct-2"}, "https://x", "opaque"); a != "" {
+		t.Fatalf("kept %q for an unknown user", a)
+	}
+}
+
+func TestAKeptAccountNoLongerAllowedIsDropped(t *testing.T) {
+	home := isolate(t)
+	f := newFakeAuth(t)
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	run(t, "", "login", "--account", "acct-2")
+	f.denied = "acct-2"
+	out, errOut, code := run(t, "", "login")
+	if code != 0 || savedAccount(t, home) != "" || !strings.Contains(out, "acct-1") || !strings.Contains(errOut, "back to the default") {
+		t.Fatalf("%d %q %q", code, out, errOut)
+	}
+	// Also while ATMEE_ACCOUNT_ID names another account, which stays in use.
+	f.denied = ""
+	run(t, "", "login", "--account", "acct-2")
+	f.denied = "acct-2"
+	t.Setenv("ATMEE_ACCOUNT_ID", "acct-4")
+	if out, _, _ = run(t, "", "login"); savedAccount(t, home) != "" || !strings.Contains(out, "acct-4") {
+		t.Fatalf("with ATMEE_ACCOUNT_ID: %q %q", savedAccount(t, home), out)
+	}
+}
+
+// An account the API refuses is not saved, and login says so and fails; the
+// sign-in itself stays, on the default account.
+func TestLoginSavesNoAccountTheAPIRefuses(t *testing.T) {
+	home := isolate(t)
+	f := newFakeAuth(t)
+	f.denied = "acct-9"
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	run(t, "", "login", "--account", "acct-2")
+	out, errOut, code := run(t, "", "login", "--account", "acct-9")
+	if code != 1 || savedAccount(t, home) != "" || !strings.Contains(out, "Signed in as") || !strings.Contains(out, "Account      acct-1\n") ||
+		!strings.Contains(errOut, `this login may not act for the account "acct-9". You are signed in, on the default account: no account was saved`) {
+		t.Fatalf("%d %q %q %q", code, out, errOut, savedAccount(t, home))
+	}
+	if out, errOut, code = run(t, "", "whoami"); code != 0 || !strings.Contains(out, "acct-1") {
+		t.Fatalf("later calls work: %d %q %q", code, out, errOut)
+	}
+	out, _, code = run(t, "", "login", "--account", "acct-9", "--json")
+	var j map[string]any
+	if err := json.Unmarshal([]byte(out), &j); err != nil || code != 1 || j["signed_in"] != true || j["account_error"] == nil || j["user"] == nil {
+		t.Fatalf("--json: %d %v %s", code, err, out)
+	}
+	// Also while ATMEE_ACCOUNT_ID or a key is in use: what is saved is checked.
+	t.Setenv("ATMEE_ACCOUNT_ID", "acct-4")
+	if _, _, code = run(t, "", "login", "--account", "acct-9"); code != 1 || savedAccount(t, home) != "" {
+		t.Fatalf("%d %q", code, savedAccount(t, home))
+	}
+	if _, errOut, code = run(t, "", "login", "--account", "acct-2"); code != 0 || savedAccount(t, home) != "acct-2" {
+		t.Fatalf("a good one is saved: %d %q", code, errOut)
+	}
+}
+
+func TestARefusedAccountVariableSaysWhatItTakes(t *testing.T) {
+	isolate(t)
+	f := newFakeAuth(t)
+	f.denied = "My Account"
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	run(t, "", "login")
+	t.Setenv("ATMEE_ACCOUNT_ID", "My Account")
+	out, errOut, code := run(t, "", "whoami")
+	if code != 1 || !strings.Contains(out, "Signed in as") || strings.Contains(errOut, "X-Account-Id") ||
+		!strings.Contains(errOut, `this login may not act for the account "My Account"; ATMEE_ACCOUNT_ID takes the id of an account you belong to`) {
+		t.Fatalf("%d %q %q", code, out, errOut)
+	}
+	// login still signs in, and says it too.
+	if _, errOut, code = run(t, "", "login"); code != 0 || !strings.Contains(errOut, "ATMEE_ACCOUNT_ID takes the id") {
+		t.Fatalf("login: %d %q", code, errOut)
+	}
+	t.Setenv("ATMEE_ACCOUNT_ID", "")
+	f.denied = "acct-2"
+	s := (creds.Store{Dir: os.Getenv("ATMEE_HOME")}).Session()
+	s.AccountID = "acct-2"
+	_ = (creds.Store{Dir: os.Getenv("ATMEE_HOME")}).SaveSession(*s)
+	if _, errOut, code = run(t, "", "whoami"); code != 1 || !strings.Contains(errOut, "`atmee login --account \"\"` goes back to the default account") {
+		t.Fatalf("saved: %d %q", code, errOut)
+	}
+}
+
+// A firewall's page is one line, whatever the command and in --json too.
+func TestAWebPageIsNeverPrinted(t *testing.T) {
+	page := "<!DOCTYPE html>\n<html><title>Attention Required! | Cloudflare</title>" + strings.Repeat("<p>blocked</p>", 500) + "</html>"
+	status := http.StatusForbidden
+	signedIn(t, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+		w.WriteHeader(status)
+		_, _ = w.Write([]byte(page))
+	})
+	_, errOut, code := run(t, "", "balance")
+	if code != 1 || errOut != "Error: 403: the server answered with a web page, not the API; a firewall may block this path\n" {
+		t.Fatalf("%d %q", code, errOut)
+	}
+	out, _, code := run(t, "", "whoami", "--json")
+	if code != 0 || !json.Valid([]byte(out)) || strings.Contains(out, "<") || !strings.Contains(out, "web page") {
+		t.Fatalf("whoami --json: %d %q", code, out)
+	}
+	for _, status = range []int{http.StatusBadGateway, http.StatusOK} {
+		if _, errOut, code = run(t, "", "account"); code != 1 || strings.Contains(errOut, "<") || !strings.Contains(errOut, "web page, not the API") || strings.Contains(errOut, "firewall") {
+			t.Fatalf("%d: %d %q", status, code, errOut)
+		}
+	}
+	for _, status = range []int{http.StatusForbidden, http.StatusServiceUnavailable, http.StatusOK} {
+		_, errOut, code = run(t, "", "login")
+		if code != 1 || strings.Contains(errOut, "<") || !strings.Contains(errOut, "sign-in got a web page instead of the API") || !strings.Contains(errOut, "a firewall or a proxy may block it") ||
+			strings.Contains(errOut, "API key") || strings.Contains(errOut, "does not offer") {
+			t.Fatalf("login, %d: %d %q", status, code, errOut)
+		}
+	}
+}
+
+// So does the authorization server's metadata, and an API that has no browser
+// sign-in still says to use a key.
+func TestSignInMetadataBehindAFirewall(t *testing.T) {
+	isolate(t)
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/oauth-protected-resource" {
+			_, _ = fmt.Fprintf(w, `{"resource":"x","authorization_servers":[%q]}`, srv.URL+"/auth/v1")
+			return
+		}
+		// The first place is blocked; the later ones are not there.
+		if !strings.HasPrefix(r.URL.Path, "/.well-known/oauth-authorization-server") {
+			w.WriteHeader(http.StatusNotFound)
+			if !strings.HasSuffix(r.URL.Path, "openid-configuration") {
+				_, _ = w.Write([]byte("<html>no such page</html>"))
+			}
+			return
+		}
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("<html>blocked</html>"))
+	}))
+	defer srv.Close()
+	t.Setenv("ATMEE_BASE_URL", srv.URL)
+	if _, errOut, code := run(t, "", "login"); code != 1 || !strings.Contains(errOut, "(403 from ") || !strings.Contains(errOut, "firewall") || strings.Contains(errOut, "API key") {
+		t.Fatalf("%d %q", code, errOut)
+	}
+	none := httptest.NewServer(http.NotFoundHandler())
+	defer none.Close()
+	t.Setenv("ATMEE_BASE_URL", none.URL)
+	if _, errOut, code := run(t, "", "login"); code != 1 || !strings.Contains(errOut, "does not offer browser sign-in") || !strings.Contains(errOut, "use an API key") {
+		t.Fatalf("%d %q", code, errOut)
+	}
+}
+
+func TestAnAmbiguousAccountListsTheChoices(t *testing.T) {
+	isolate(t)
+	f := newFakeAuth(t)
+	f.several = true
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	want := "  acct-1  @ada\n  acct-2\n"
+	if _, errOut, code := run(t, "", "login"); code != 0 || !strings.Contains(errOut, want) {
+		t.Fatalf("login: %d %q", code, errOut)
+	}
+	if _, errOut, code := run(t, "", "whoami"); code != 0 || !strings.Contains(errOut, want) {
+		t.Fatalf("whoami: %d %q", code, errOut)
+	}
+	out, _, _ := run(t, "", "whoami", "--json")
+	var w struct {
+		KeyError string `json:"key_error"`
+		Accounts []struct{ ID, Username string }
+	}
+	if err := json.Unmarshal([]byte(out), &w); err != nil || w.KeyError == "" || len(w.Accounts) != 2 || w.Accounts[0].Username != "ada" {
+		t.Fatalf("whoami --json: %v %s", err, out)
+	}
+}
+
+// Any command refused for the account lists the choices under its error.
+func TestARefusedCommandListsTheAccounts(t *testing.T) {
+	isolate(t)
+	f := newFakeAuth(t)
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	browseFollowing(t)
+	run(t, "", "login")
+	f.srv.Config.Handler.(*http.ServeMux).HandleFunc("GET /v1/account/balance", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"account_ambiguous","message":"name one","accounts":[{"id":"acct-9","username":"lin"}]}`))
+	})
+	out, errOut, code := run(t, "", "balance", "--json")
+	if code != 1 || out != "" || !strings.Contains(errOut, "Error: 409 account_ambiguous: name one\n") || !strings.Contains(errOut, "  acct-9  @lin\n") {
+		t.Fatalf("%d %q %q", code, out, errOut)
+	}
+}
+
+func TestAKeyMakesTheAccountVariableCountForNothing(t *testing.T) {
+	isolate(t)
+	t.Setenv("ATMEE_API_KEY", "sk_atmee_x")
+	t.Setenv("ATMEE_BASE_URL", accountAPI(t).URL)
+	if _, errOut, _ := run(t, "", "balance"); strings.Contains(errOut, "Warning") {
+		t.Fatalf("nothing is ignored: %q", errOut)
+	}
+	t.Setenv("ATMEE_ACCOUNT_ID", "acct-3")
+	out, errOut, code := run(t, "", "account")
+	if code != 0 || strings.Count(errOut, "Warning: ATMEE_ACCOUNT_ID is ignored, because ATMEE_API_KEY is set") != 1 || strings.Contains(out, "Warning") {
+		t.Fatalf("%d %q %q", code, out, errOut)
+	}
+	if !strings.HasPrefix(out, "Account 11111111-1111-4111-8111-111111111111\nPicked by    the API key") {
+		t.Fatalf("account: %q", out)
+	}
+	if _, errOut, _ = run(t, "", "account", "--json"); errOut != "" {
+		t.Fatalf("--json stays quiet: %q", errOut)
+	}
+	out, _, _ = run(t, "", "whoami", "--json")
+	if !strings.Contains(out, `"account_source": "api_key"`) {
+		t.Fatalf("whoami --json: %s", out)
+	}
+}
+
+// A credentials file an older atmee wrote still loads, its account included.
+func TestAnOlderSignInStillLoads(t *testing.T) {
+	home := isolate(t)
+	f := newFakeAuth(t)
+	t.Setenv("ATMEE_BASE_URL", f.srv.URL)
+	f.access = jwtFor("", 0)
+	b, _ := json.Marshal(map[string]any{"oauth": map[string]any{"base_url": f.srv.URL, "client_id": "cli-1", "token_endpoint": f.srv.URL,
+		"access_token": f.access, "expires_at": time.Now().Add(time.Hour), "account_id": "acct-2"}})
+	if err := os.WriteFile(filepath.Join(home, "credentials.json"), b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if out, errOut, code := run(t, "", "whoami"); code != 0 || !strings.Contains(out, "Signed-in user u-1 on account acct-2\n") {
+		t.Fatalf("%d %q %q", code, out, errOut)
+	}
+	browseFollowing(t)
+	if run(t, "", "login"); savedAccount(t, home) != "acct-2" {
+		t.Fatalf("and the account is kept: %q", savedAccount(t, home))
 	}
 }

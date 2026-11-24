@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/Atmanity/atmee-toolkit/cli/internal/creds"
 )
 
 var testVariant = Variant{Name: "atmee-x", BaseURL: "https://x.example", BaseURLEnv: "ATMEE_X_BASE_URL",
@@ -111,6 +114,23 @@ func TestVariantHonoursItsKeyAndOverrides(t *testing.T) {
 	runAs(t, "", "balance")
 	if got != "sk_atmee_mine" {
 		t.Fatalf("sent %q", got)
+	}
+}
+
+// An error's own text takes the variant's names too, on a note and in JSON.
+func TestVariantNamesItselfInAnErrorValue(t *testing.T) {
+	t.Setenv("ATMEE_X_HOME", t.TempDir())
+	t.Setenv("ATMEE_X_API_KEY", "")
+	st := creds.Store{Dir: os.Getenv("ATMEE_X_HOME")}
+	if err := st.SaveSession(creds.Session{BaseURL: "https://other.example", AccessToken: "t", ExpiresAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	_, errOut, _ := runAs(t, "", "whoami")
+	out, _, _ := runAs(t, "", "whoami", "--json")
+	for _, text := range []string{errOut, out} {
+		if !strings.Contains(text, "ATMEE_X_BASE_URL is https://x.example") || !strings.Contains(text, "`atmee-x login`") || strings.Contains(text, "ATMEE_BASE_URL") {
+			t.Fatalf("%q", text)
+		}
 	}
 }
 

@@ -89,6 +89,8 @@ func (a *app) monetizationCmd() *cobra.Command {
 		Long: "What Creator Studio's monetization panel shows: whether monetization is on, the last 30 days (your own " +
 			"conversations left out) against the eligibility requirements, the account's cap on monetized avatars, and the " +
 			"earnings in credits (100 microcredits = 1 credit; the current cycle is the account's billing cycle). " +
+			"On an account with more than one member the earnings are the signed-in owner's to see: anyone else, and any " +
+			"API key, gets the rest without them. " +
 			"Turn it on or off with `atmee avatars update AVATAR_ID --monetize on|off`.",
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -143,6 +145,11 @@ func (a *app) printMonetization(m *api.Monetization) {
 	}
 	a.printf("Account      %d monetized · %s%s\n", cp.MonetizingAvatars, limit, atCap)
 	e := m.Earnings
+	if e == nil {
+		// On an account with several people, earnings are the owner's to see.
+		a.printf("Earnings     only the account's owner can see them\n")
+		return
+	}
 	a.printf("Earnings     %s credits this cycle (%s) · %s credits all time (%s)\n",
 		credits(e.CurrentCycleMicrocredits), plural(int(e.CurrentCycleSessions), "session"),
 		credits(e.AllTimeMicrocredits), plural(int(e.AllTimeSessions), "session"))

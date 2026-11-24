@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
@@ -32,6 +34,9 @@ type Account struct {
 	// the server sent them, given back as sent by --json (a null stays null,
 	// and a field the server left out stays out).
 	rawLimits map[string]json.RawMessage
+	// Extra are the fields the server sent that the generated Account has
+	// not. --json leaves them out.
+	Extra map[string]json.RawMessage `json:"-"`
 	// missing are the v2 rates the server left out, kept out of the JSON
 	// again rather than written as 0.
 	missing []string
@@ -88,8 +93,32 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 		}
 	}
 	_, a.SessionV2Reported = p.Pricing["sessionV2PerMinuteMicrocredits"]
+	a.Extra = nil
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(b, &all); err != nil {
+		return err
+	}
+	for k, v := range all {
+		if !accountFields[k] {
+			if a.Extra == nil {
+				a.Extra = map[string]json.RawMessage{}
+			}
+			a.Extra[k] = v
+		}
+	}
 	return nil
 }
+
+// accountFields are the JSON names of the generated Account.
+var accountFields = func() map[string]bool {
+	names := map[string]bool{}
+	t := reflect.TypeFor[avatarapi.Account]()
+	for i := range t.NumField() {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		names[name] = true
+	}
+	return names
+}()
 
 func (a Account) MarshalJSON() ([]byte, error) {
 	b, err := json.Marshal(a.Account)

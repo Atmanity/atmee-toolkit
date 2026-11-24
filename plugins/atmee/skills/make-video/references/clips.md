@@ -241,7 +241,7 @@ way before any new clip, and give the creator `clip.url` to download.
   with `get_clip` and the same `requestId`: it charges nothing, needs no
   `confirm`, and answers `rendering` (ask again after `retryAfterSeconds`),
   `ready` (`clip.url`, signed again on each read), `expired` (made, but its
-  7 days are over; not made again) or `stalled` (the call stopped: send
+  30 days are over or it was deleted; not made again) or `stalled` (the call stopped: send
   the same `generate_clip` again, same `requestId` and inputs, which resumes
   it and charges once). `clip_not_found` means the call ended without a clip
   and charged nothing: the same `generate_clip` again says why. Where
@@ -405,7 +405,7 @@ The creator's own picture and recording go to the server as uploads.
 
 ## Saving and handing over
 
-The result's `clip.upload` lasts 7 days and `clip.url` until `urlExpiresAt`: save the clip
+The result's `clip.upload` lasts 30 days and `clip.url` until `urlExpiresAt`: save the clip
 at once with `scripts/media.sh save` (kind `seeds`, in `atmee-avatars/clips`,
 named `clip_1`, `clip_2`, …) and show it with `scripts/media.sh show`. You
 can't watch it, so the creator judges it. When they say it looks off, coach
@@ -415,10 +415,19 @@ saying `InvalidJWT` or `"exp" claim timestamp check failed`) has only
 expired: read the clip again with `get_clip` (free) for a new link while the
 clip lasts, and save it at once.
 
-When the creator wants a clip or a picture gone before its 7 days are up,
+When the creator wants a clip (kept 30 days) or a picture (kept 7) gone sooner,
 confirm once (it can't be undone, and nothing is refunded), then call
 `delete_output` with its `upload:<uploadId>` and `confirm: true`: the file
 is deleted at once and its link stops working. Never delete one unasked.
+
+When the creator asks for a clip made earlier (in another chat, by a team
+member or through an API key), call `list_generations` (`kind: clip`; it is
+free): each item has its `requestId`, who made it, its prompt or script and,
+while it lasts, a fresh `url`. An expired one keeps its `inputs`, so it can
+be made again with a new `requestId` (when `remake` says an image or audio
+upload is required, ask the creator for the file again). `delete_generation`
+with the `requestId` deletes all of a generation's outputs, with the same
+confirmation as `delete_output`.
 
 ## Coaching a clip
 

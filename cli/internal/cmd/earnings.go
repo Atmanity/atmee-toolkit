@@ -9,7 +9,8 @@ func (a *app) earningsCmd() *cobra.Command {
 		Short: "The creator wallet: what monetized avatars earned and what was paid out.",
 		Long: "What the account's monetized avatars earned, what was paid out, and the wallet balance between the two. This is not the " +
 			"credit balance sessions spend (`atmee balance`); one avatar's earnings are in `atmee avatars monetization`. " +
-			"Works for a signed-in user, or an account-wide key with avatars:read.",
+			"Works for a signed-in user, or an account-wide key with avatars:read; on an account shared by several people, for its " +
+			"signed-in owner only.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			cl, err := a.api()

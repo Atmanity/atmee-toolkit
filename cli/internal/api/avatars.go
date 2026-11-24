@@ -16,6 +16,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/webpage"
 	"github.com/google/uuid"
 )
 
@@ -52,6 +53,9 @@ func decode[T any](resp *http.Response, body []byte, err error) (*T, error) {
 	out := new(T)
 	if len(bytes.TrimSpace(body)) > 0 {
 		if err := json.Unmarshal(body, out); err != nil {
+			if webpage.Is(resp.Header.Get("Content-Type"), body) {
+				return nil, fmt.Errorf("unexpected response: %s", webpage.Message(resp.StatusCode))
+			}
 			return nil, fmt.Errorf("unexpected response: %w", err)
 		}
 	}

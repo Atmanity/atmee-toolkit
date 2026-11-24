@@ -107,8 +107,9 @@ in this shape, so the creator can answer by number:
      used and charged and its result can't be recovered, tell the creator
      they were charged for a result that was lost, and ask before a new paid
      call.
-   - `account_ambiguous`: run setup's account question, then call again with
-     the `accountId`.
+   - `account_ambiguous` (several accounts, and the server couldn't tell the
+     Personal one): run setup's account question, then call again with the
+     `accountId`.
 
    **Two identical failures stop a retry:** the same tool with the same
    inputs failing with the same error twice. Change the input or ask the
@@ -122,7 +123,8 @@ in this shape, so the creator can answer by number:
 
 One server does everything: `atmee-avatars` with the atmee plugin, `atmee`
 without it. When `atmee-avatars/settings.json` has an `accountId`, pass it on
-every call.
+every call. Without one, calls act for the sign-in's only account, or its
+Personal one when it belongs to several.
 
 | Tool | Use |
 |---|---|

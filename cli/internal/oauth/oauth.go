@@ -22,6 +22,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/Atmanity/atmee-toolkit/cli/internal/webpage"
 )
 
 // Server is the authorization server the Avatar API trusts.
@@ -48,6 +50,12 @@ func Discover(ctx context.Context, hc *http.Client, baseURL string) (*Server, er
 		AuthorizationServers []string `json:"authorization_servers"`
 	}
 	if err := getJSON(ctx, hc, strings.TrimRight(baseURL, "/")+"/.well-known/oauth-protected-resource", &pr); err != nil {
+		// A web page says nothing of what the API offers, and an API key
+		// would meet it too.
+		var page *webpage.Error
+		if errors.As(err, &page) {
+			return nil, blocked(page)
+		}
 		return nil, fmt.Errorf("this Avatar API does not offer browser sign-in (%w); use an API key: atmee login --api-key", err)
 	}
 	if len(pr.AuthorizationServers) == 0 {
@@ -60,18 +68,30 @@ func Discover(ctx context.Context, hc *http.Client, baseURL string) (*Server, er
 		Registration  string `json:"registration_endpoint"`
 	}
 	var err error
+	var page *webpage.Error // the first web page met, whatever came after
 	for _, u := range metadataURLs(issuer) {
 		if err = getJSON(ctx, hc, u, &md); err == nil && md.Authorization != "" && md.Token != "" {
 			break
 		}
+		if page == nil {
+			errors.As(err, &page)
+		}
 	}
 	if md.Authorization == "" || md.Token == "" {
+		if page != nil {
+			return nil, blocked(page)
+		}
 		return nil, fmt.Errorf("reading the authorization server's metadata: %v", err)
 	}
 	if md.Registration == "" {
 		return nil, errors.New("the authorization server does not register clients; use an API key: atmee login --api-key")
 	}
 	return &Server{Resource: pr.Resource, Authorization: md.Authorization, Token: md.Token, Registration: md.Registration}, nil
+}
+
+// blocked is a sign-in that met a web page instead of the API.
+func blocked(page *webpage.Error) error {
+	return fmt.Errorf("sign-in got a web page instead of the API (%d from %s): a firewall or a proxy may block it", page.Status, page.Where)
 }
 
 // metadataURLs are where an issuer with a path keeps its metadata: RFC 8414's
@@ -196,20 +216,29 @@ func Refresh(ctx context.Context, hc *http.Client, tokenURL, clientID, refreshTo
 
 // Email is the email claim of a JWT access token, for display only (the
 // token is not verified here; the API does that).
-func Email(accessToken string) string {
+func Email(accessToken string) string { return claims(accessToken).Email }
+
+// Subject is the token's user id, "" when it has none. Like Email, it is
+// read without checking the signature: good for telling two sign-ins apart,
+// never for trusting one.
+func Subject(accessToken string) string { return claims(accessToken).Subject }
+
+type tokenClaims struct {
+	Email   string `json:"email"`
+	Subject string `json:"sub"`
+}
+
+func claims(accessToken string) (c tokenClaims) {
 	parts := strings.Split(accessToken, ".")
 	if len(parts) != 3 {
-		return ""
+		return c
 	}
 	b, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return ""
-	}
-	var c struct {
-		Email string `json:"email"`
+		return c
 	}
 	_ = json.Unmarshal(b, &c)
-	return c.Email
+	return c
 }
 
 func register(ctx context.Context, hc *http.Client, endpoint, redirect string) (string, error) {
@@ -292,9 +321,15 @@ func do(hc *http.Client, req *http.Request, v any) error {
 		_ = json.Unmarshal(b, &e)
 		msg := strings.TrimSpace(e.Error + " " + e.Description + " " + e.Message)
 		if msg == "" {
+			if webpage.Is(resp.Header.Get("Content-Type"), b) {
+				return &webpage.Error{Where: req.URL.Host + req.URL.Path, Status: resp.StatusCode}
+			}
 			msg = strings.TrimSpace(string(b))
 		}
 		return fmt.Errorf("%s: %d %s", req.URL.Host+req.URL.Path, resp.StatusCode, msg)
+	}
+	if webpage.Is(resp.Header.Get("Content-Type"), b) {
+		return &webpage.Error{Where: req.URL.Host + req.URL.Path, Status: resp.StatusCode}
 	}
 	return json.Unmarshal(b, v)
 }

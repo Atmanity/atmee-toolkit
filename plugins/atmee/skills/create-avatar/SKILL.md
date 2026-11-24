@@ -131,7 +131,7 @@ Read these before anything else, and keep them for the whole conversation.
    - `invalid_input`: fix the input; don't repeat it unchanged. If it says the key was already used and charged and its result can't be recovered, tell the creator they were charged for a result that was lost, and ask before the new paid call it invites.
 
    From the other tools:
-   - `account_ambiguous`: run setup's account question, then call again with the `accountId`.
+   - `account_ambiguous` (several accounts, and the server couldn't tell the Personal one): run setup's account question, then call again with the `accountId`.
    - `insufficient_v2_credits` (older servers that decide Atmee V2 by credits): a balance problem, not missing access. The part of the balance usable on Atmee V2 (`get_balance`'s `v2SpendableMicrocredits`) doesn't cover the call. Say so, and suggest Pro and up (`get_account` `links.billing`); retry only once `v2SpendableMicrocredits` is above 0. Otherwise offer engine v1 where the tool takes an engine. Never switch to v1 without asking.
    - `v2_access_required`: the account can't create Atmee V2 avatars: Atmee V2 needs Pro and up. Say so, and offer the upgrade to Pro (`get_account` `links.billing`) or Atmee V1 (engine v1). Retry V2 only once `get_account`'s `v2Access` is `granted`. Never switch to v1 without asking. Existing V2 avatars keep chatting, sharing and embedding on any plan.
    - `v2hd_access_required` (formerly `v2_pro_not_in_plan`, which older servers still send; treat both the same): a V2 HD create or copy this account may not make. Say Atmee V2 HD needs Growth and up (rule 13), and offer the upgrade to Growth (`get_account` `links.billing`; retry V2 HD once `limits.v2Pro` is true) or Atmee V2 (engine v2; for an existing V2 HD avatar, a copy on an engine it can build: Copy an avatar, below). Never switch without asking. Existing V2 HD avatars keep chatting, sharing and embedding on any plan.
@@ -189,7 +189,8 @@ Read these before anything else, and keep them for the whole conversation.
 
 One server does everything: `atmee-avatars` with the atmee plugin, `atmee`
 without it. When `atmee-avatars/settings.json` has an `accountId`, pass it on
-every call (setup saves it for a sign-in that belongs to several accounts).
+every call. Without one, calls act for the sign-in's only account, or its
+Personal one when it belongs to several.
 
 - **Who and what:** who-am-I (`get_api_key`), the plan, prices and free
   capture slots (`get_account`), the credit balance (`get_balance`, the only
@@ -376,7 +377,8 @@ way. Only when the creator asks, commit as `references/iterations.md`
 
 ## Copy an avatar
 
-`duplicate_avatar` makes a new avatar from one of the creator's: nothing has
+`duplicate_avatar` makes a new avatar from one of the creator's (or from a
+public avatar whose owner lets others copy it): nothing has
 to be given again, and the source stays as it is. Copy when the creator
 wants:
 

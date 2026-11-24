@@ -20,6 +20,14 @@ const (
 	DefaultKeyEnv  = "ATMEE_API_KEY"
 )
 
+// AccountEnv names the account a signed-in user of several acts for. Every
+// build shares it: it is an id, not a secret. An API key has its own account
+// and ignores it.
+const AccountEnv = "ATMEE_ACCOUNT_ID"
+
+// EnvAccountID is the account id in AccountEnv ("" when none).
+func EnvAccountID() string { return strings.TrimSpace(os.Getenv(AccountEnv)) }
+
 // Store is one credentials file. KeyEnv names the variable whose key wins
 // over the file (DefaultKeyEnv when empty).
 type Store struct {
@@ -58,7 +66,8 @@ type Session struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 	Email        string    `json:"email,omitempty"`
 	// AccountID is sent as X-Account-Id: which account a user of several
-	// acts for. Empty for a user of one account.
+	// acts for, as chosen with `login --account`. Empty leaves it to the
+	// API: the user's only account, or the Personal one of several.
 	AccountID string `json:"account_id,omitempty"`
 }
 
@@ -77,13 +86,18 @@ func (s Store) read() file {
 	return f
 }
 
-// APIKey is the key in KeyEnv, else the saved key ("" when none).
-func (s Store) APIKey() string {
+// EnvAPIKey is the key in KeyEnv ("" when none).
+func (s Store) EnvAPIKey() string {
 	env := s.KeyEnv
 	if env == "" {
 		env = DefaultKeyEnv
 	}
-	if k := strings.TrimSpace(os.Getenv(env)); k != "" {
+	return strings.TrimSpace(os.Getenv(env))
+}
+
+// APIKey is the key in KeyEnv, else the saved key ("" when none).
+func (s Store) APIKey() string {
+	if k := s.EnvAPIKey(); k != "" {
 		return k
 	}
 	return strings.TrimSpace(s.read().APIKey)

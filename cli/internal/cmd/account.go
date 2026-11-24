@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -114,7 +115,8 @@ func (a *app) accountCmd() *cobra.Command {
 		Short: "The account's plan, limits, prices per minute, capture quota and payout status.",
 		Long: "The plan your account is on (the signed-in user's or the API key's; and any change scheduled for the next cycle), the limits on API usage, " +
 			"what a session minute and a preview clip cost, how many v2 captures are queued or running against the cap, " +
-			"and whether payouts are set up (monetizing an avatar needs them verified). " +
+			"and whether payouts are set up (monetizing an avatar needs them verified). It shows the account by id (and by name " +
+			"where the API returns one) and how it was picked. " +
 			"Works for a signed-in user, or a key with the sessions or avatars:read scope.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -127,7 +129,7 @@ func (a *app) accountCmd() *cobra.Command {
 				return err
 			}
 			if jsonOut {
-				return a.printJSON(acct)
+				return a.printAccountJSON(acct)
 			}
 			a.printAccount(acct)
 			return nil
@@ -135,6 +137,29 @@ func (a *app) accountCmd() *cobra.Command {
 	}
 	c.Flags().BoolVar(&jsonOut, "json", false, jsonHelp)
 	return c
+}
+
+// printAccountJSON is the API's JSON, with the fields accountFacts adds.
+func (a *app) printAccountJSON(x *api.Account) error {
+	if a.accountFacts == nil {
+		return a.printJSON(x)
+	}
+	_, facts := a.accountFacts(x)
+	if facts == nil {
+		return a.printJSON(x)
+	}
+	b, err := json.Marshal(x)
+	if err != nil {
+		return err
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	for k, v := range facts {
+		m[k] = v
+	}
+	return a.printJSON(m)
 }
 
 // helpCenter is Creator Studio's help center, where an account contacts
@@ -215,6 +240,7 @@ func v2UnlockLine(u *avatarapi.AccountV2Unlock) (label, text string) {
 
 func (a *app) printAccount(x *api.Account) {
 	a.printf("Account %s\n", x.AccountId)
+	a.printAccountSource(x)
 	p := x.Plan
 	plan := deref(p.Name)
 	if plan == "" {
@@ -228,6 +254,9 @@ func (a *app) printAccount(x *api.Account) {
 	}
 	if p.CycleEnd != nil {
 		plan += " · cycle ends " + day(*p.CycleEnd)
+	}
+	if p := a.planText(x); p != "" {
+		plan = p
 	}
 	a.printf("Plan         %s\n", plan)
 	if pp := p.PendingPlan; pp != nil {
@@ -387,8 +416,8 @@ func (a *app) whoamiCmd() *cobra.Command {
 	c := &cobra.Command{
 		Use:   "whoami",
 		Short: "Show who you are signed in as, and which API the commands use.",
-		Long: "Show who the commands act as and on which Avatar API: the signed-in user and account, or the API key's name, scopes, " +
-			"avatar restriction and spend cap. They come from the API (GET /v1/api_keys/current); when it cannot be reached, " +
+		Long: "Show who the commands act as and on which Avatar API: the signed-in user, the account (by id, and by name where " +
+			"the API returns one) and how it was picked, or the API key's name, scopes, avatar restriction and spend cap. They come from the API (GET /v1/api_keys/current); when it cannot be reached, " +
 			"the saved key or sign-in and the base URL are shown alone.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -411,18 +440,35 @@ func (a *app) whoamiCmd() *cobra.Command {
 				}
 				if cur != nil {
 					out["key"] = cur
+					out["account_source"] = a.accountSource()
+					if facts := a.accountJSON(); facts != nil {
+						out["account"] = facts
+					}
 				} else {
-					out["key_error"] = lookupErr.Error()
+					out["key_error"] = a.rename(lookupErr.Error())
+					if choices := ambiguousAccounts(lookupErr); len(choices) > 0 {
+						out["accounts"] = choices
+					}
 				}
-				return a.printJSON(out)
+				if err := a.printJSON(out); err != nil {
+					return err
+				}
+				if accountProblem(lookupErr) {
+					return lookupErr
+				}
+				return nil
 			}
 			if key != "" {
 				a.printf("API key %s -> %s\n", maskKey(key), base)
 			} else {
 				a.printf("Signed in as %s -> %s\n", orDash(sess.Email), sess.BaseURL)
 			}
+			if accountProblem(lookupErr) {
+				return lookupErr
+			}
 			if cur == nil {
-				a.note("Could not read who this is from the API (%s); showing the saved credentials only.\n", describeLookup(lookupErr))
+				a.note("Could not read who this is from the API (%s); showing the saved credentials only.\n", a.rename(describeLookup(lookupErr)))
+				a.noteAccounts(lookupErr)
 				return nil
 			}
 			a.printCurrentKey(cur)
@@ -465,6 +511,7 @@ func describeLookup(err error) string {
 func (a *app) printCurrentKey(k *api.CurrentUser) {
 	if string(k.Kind) == "user" {
 		a.printf("Signed-in user %s on account %s\n", deref(k.UserId), k.AccountId)
+		a.printAccountUsed()
 		return
 	}
 	name := deref(k.Name)
@@ -477,6 +524,7 @@ func (a *app) printCurrentKey(k *api.CurrentUser) {
 	}
 	a.printf("Key          %s%s  %s\n", name, state, deref(k.Id))
 	a.printf("Account      %s\n", k.AccountId)
+	a.printAccountUsed()
 	scopes := "-"
 	if k.Scopes != nil && len(*k.Scopes) > 0 {
 		scopes = strings.Join(*k.Scopes, ", ")

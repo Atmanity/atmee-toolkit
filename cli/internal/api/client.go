@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Atmanity/atmee-toolkit/cli/internal/avatarapi"
+	"github.com/Atmanity/atmee-toolkit/cli/internal/webpage"
 	"github.com/google/uuid"
 )
 
@@ -137,17 +138,61 @@ type Error struct {
 	PayoutsStatus           string
 	SponsorPoolMicrocredits int64
 	ModerationState         string
+	// Accounts are the accounts a 409 account_ambiguous offers.
+	Accounts []AccountChoice
+}
+
+// CodeAccountAmbiguous refuses a user of several accounts who named none,
+// when the API cannot tell which one is Personal.
+const CodeAccountAmbiguous = "account_ambiguous"
+
+// CodeAccountNotAllowed refuses a user who named an account they may not act for.
+const CodeAccountNotAllowed = "account_not_allowed"
+
+// AccountChoice is an account a signed-in user may act for; Username is
+// empty when the account has none.
+type AccountChoice struct {
+	ID       string `json:"id"`
+	Username string `json:"username,omitempty"`
 }
 
 func (e *Error) Error() string {
 	msg := e.Message
 	if (e.Status == 429 || e.Status == 503) && e.RetryAfter > 0 {
-		msg += fmt.Sprintf(" (retry in %ds)", e.RetryAfter)
+		msg += " (retry in " + WaitText(e.RetryAfter) + ")"
 	}
 	if e.Code != "" {
 		return fmt.Sprintf("%d %s: %s", e.Status, e.Code, msg)
 	}
 	return fmt.Sprintf("%d: %s", e.Status, msg)
+}
+
+// WaitText is a wait for a person: seconds under two minutes, then minutes
+// and hours, rounded up.
+func WaitText(seconds int) string {
+	if seconds < 120 {
+		return fmt.Sprintf("%ds", seconds)
+	}
+	m := (seconds + 59) / 60
+	switch {
+	case m < 60:
+		return fmt.Sprintf("%dm", m)
+	case m%60 == 0:
+		return fmt.Sprintf("%dh", m/60)
+	}
+	return fmt.Sprintf("%dh %dm", m/60, m%60)
+}
+
+// plainAccountMessage is an account refusal's message for a person: the API's
+// names the header, which is the CLI's to send. named is what it sent.
+func plainAccountMessage(code, named, msg string) string {
+	switch {
+	case code == CodeAccountNotAllowed && named != "":
+		return fmt.Sprintf("this login may not act for the account %q", named)
+	case code == CodeAccountAmbiguous && strings.Contains(msg, "X-Account-Id"):
+		return "this login may act for more than one account, and the API could not tell which one is Personal"
+	}
+	return msg
 }
 
 // check turns a non-2xx response into *Error.
@@ -170,6 +215,10 @@ func check(resp *http.Response, body []byte) error {
 		PayoutsStatus           string   `json:"payoutsStatus"`
 		SponsorPoolMicrocredits int64    `json:"sponsorPoolMicrocredits"`
 		ModerationState         string   `json:"moderationState"`
+
+		Accounts json.RawMessage `json:"accounts"`
+		// Seconds, as in Retry-After.
+		RetryAfterSeconds int `json:"retry_after_seconds"`
 	}
 	_ = json.Unmarshal(body, &b)
 	e := &Error{Status: resp.StatusCode, Code: b.Error, Message: b.Message, Reason: b.Reason,
@@ -180,6 +229,9 @@ func check(resp *http.Response, body []byte) error {
 			e.Code = s
 		}
 	}
+	if e.Code == CodeAccountAmbiguous {
+		_ = json.Unmarshal(b.Accounts, &e.Accounts)
+	}
 	if e.Message == "" {
 		_ = json.Unmarshal(b.Detail, &e.Message)
 	}
@@ -188,9 +240,17 @@ func check(resp *http.Response, body []byte) error {
 	if i := strings.Index(e.Message, "\nSchema:"); i >= 0 {
 		e.Message = strings.TrimSpace(e.Message[:i])
 	}
+	if e.Message == "" && webpage.Is(resp.Header.Get("Content-Type"), body) {
+		e.Message = webpage.Message(e.Status)
+	}
 	if e.Message == "" {
 		e.Message = strings.TrimSpace(string(body))
 	}
+	named := ""
+	if resp.Request != nil {
+		named = resp.Request.Header.Get("X-Account-Id")
+	}
+	e.Message = plainAccountMessage(e.Code, named, e.Message)
 	if e.Status == 401 && e.Message == "" {
 		e.Message = "missing or invalid API key or sign-in"
 	}
@@ -200,6 +260,9 @@ func check(resp *http.Response, body []byte) error {
 	if e.Status == 409 || e.Status == 429 || e.Status == 503 {
 		// A full or cold pool (503) says when to come back, like a capture limit.
 		e.RetryAfter, _ = strconv.Atoi(resp.Header.Get("Retry-After"))
+		if e.RetryAfter == 0 {
+			e.RetryAfter = b.RetryAfterSeconds
+		}
 	}
 	return e
 }

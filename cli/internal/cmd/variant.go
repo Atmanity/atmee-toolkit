@@ -24,10 +24,15 @@ type Variant struct {
 	APIKeyEnv  string
 	// Extra are commands only this build has, added beside the shared ones.
 	Extra []CommandFunc
+	// Setup wires what else only this build has into the command tree.
+	Setup SetupFunc
 }
 
 // CommandFunc builds one command of a build.
 type CommandFunc func(*app) *cobra.Command
+
+// SetupFunc changes the finished command tree of a build, and the app's hooks.
+type SetupFunc func(a *app, root *cobra.Command)
 
 var defaultVariant = Variant{
 	Name:       "atmee",
@@ -65,6 +70,7 @@ func (v Variant) renamer(root *cobra.Command) func(string) string {
 func renameTree(c *cobra.Command, rename func(string) string) {
 	c.Short, c.Long, c.Example = rename(c.Short), rename(c.Long), rename(c.Example)
 	c.Flags().VisitAll(func(f *pflag.Flag) { f.Usage = rename(f.Usage) })
+	c.PersistentFlags().VisitAll(func(f *pflag.Flag) { f.Usage = rename(f.Usage) })
 	for _, sub := range c.Commands() {
 		renameTree(sub, rename)
 	}

@@ -21,7 +21,7 @@ import (
 // API key is refused). A secret exists only in a create's or a rotate's
 // answer: with --out it goes straight into a file and is never printed.
 
-const keysNeedLogin = "Needs a signed-in user who is the account's owner or an admin (`atmee login`); an API key cannot manage keys."
+const keysNeedLogin = "Needs a signed-in user who is a member of the account (`atmee login`); an API key cannot manage keys."
 
 // defaultKeyVar is the variable --out writes the secret to.
 const defaultKeyVar = "ATMEE_API_KEY"
@@ -329,6 +329,9 @@ func (a *app) keysAPI() (*api.Client, error) { return a.loginAPI("managing API k
 func (a *app) loginAPI(what string) (*api.Client, error) {
 	if a.store.APIKey() != "" {
 		return nil, usagef("%s needs a signed-in user, but an API key is in use (ATMEE_API_KEY, or one saved by `atmee login --api-key`): unset ATMEE_API_KEY and run `atmee login`", what)
+	}
+	if err := a.userLogin(); err != nil {
+		return nil, err
 	}
 	return a.api()
 }

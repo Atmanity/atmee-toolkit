@@ -16,7 +16,7 @@ of it in one file with no packages; its two `/api` routes are what to port.
 
 ## Keys
 
-Only a signed-in owner or admin of the account creates keys, and the secret
+Any signed-in member of the account creates keys, and the secret
 exists once, in the answer to create or rotate. Get it straight into the
 backend's environment file so it never passes through the chat, with the
 `atmee` CLI. The server's `create_api_key` tool never returns the secret, so
@@ -27,7 +27,7 @@ keys page and pastes it into `.env` themselves. When `atmee --version` fails, in
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Atmanity/atmee-toolkit/main/install.sh | sh
 export ATMEE_BASE_URL=https://api.atmanity.us
-atmee login        # opens the browser; the same account as the avatar
+atmee login        # opens the browser; with several accounts, --account <id> unless the avatar is on Personal
 ```
 
 A sign-in or key works only against the server it was made for, so keep

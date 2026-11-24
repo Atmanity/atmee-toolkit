@@ -128,16 +128,24 @@ instead. The API is at `https://api.atmanity.us`.
   Fish Audio voice speaks the transcript, lip-synced; the length follows the
   speech (at most 15 seconds), it is charged at its actual length's tier but
   the balance must cover the size's 15-second price first, and a key also
-  needs `avatars:read`. Every generated output (a portrait, a voice preview,
-  a clip) is kept 7 days; its link works until `urlExpiresAt`, and reading a clip
+  needs `avatars:read`. A clip is kept 30 days, a generated portrait or voice
+  preview 7; its link works until `urlExpiresAt`, and reading a clip
   again (`get_clip`) gives a new one. The account can delete one sooner (`DELETE
-  /v1/uploads/{uploadId}`, MCP `delete_output`).
-- **API keys:** list, create, rotate, revoke (signed in as the account's
-  owner or an admin). Scopes `sessions`, `avatars:read`, `avatars:write`,
+  /v1/uploads/{uploadId}`, MCP `delete_output`; a whole generation with `DELETE
+  /v1/generation/{requestId}`, MCP `delete_generation`).
+- **Generation history:** every clip, portrait and voice call of the account,
+  newest first, with who made it, its inputs, its charge and fresh download
+  links (`GET /v1/generation`, MCP `list_generations`, CLI `atmee generate
+  list`), and counts by kind and maker (`GET /v1/generation/summary`, MCP
+  `get_generation_summary`, CLI `atmee generate summary`). Any member sees all
+  of the account's generations; a clip shows a small poster after it expires.
+- **API keys:** list, create, rotate, revoke (signed in as any member of
+  the account). Scopes `sessions`, `avatars:read`, `avatars:write`,
   `billing:write`, `generation:write`; optionally one avatar only, a spend cap, a longest
   session, sessions at once, visitor memory.
 - **Sponsoring:** the avatar's pool and its settings, moving credits in and
-  out (signed in, or a key with `billing:write`).
+  out (signed in, or a key with `billing:write`; on a shared account, signed
+  in as its owner or an admin).
 - **Languages:** an avatar takes one of the codes `update_avatar` accepts; a
   session may name another. The API reference lists which are spoken end to
   end.

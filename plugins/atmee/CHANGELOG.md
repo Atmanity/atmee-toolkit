@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.20 (2026-11-24)
+
+
+### Bug Fixes
+
+* say which account a sign-in uses, and keep the one picked
+
 ## 0.10.19 (2026-11-19)
 
 
